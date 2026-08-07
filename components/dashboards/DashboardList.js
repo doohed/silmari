@@ -172,7 +172,10 @@ export function DashboardList({ dashboards }) {
           className="border-border bg-surface sticky top-0 z-10 flex border-b"
           style={{ width: TOTAL_WIDTH }}
         >
-          <div className="flex shrink-0 items-center justify-end pr-2" style={{ width: GUTTER }}>
+          <div className="flex shrink-0 items-center gap-1 pl-2" style={{ width: GUTTER }}>
+            {/* Espaciador del ancho del asa de arrastre para alinear el checkbox
+                con los de las filas. */}
+            <span aria-hidden className="w-3.5 shrink-0" />
             <input
               type="checkbox"
               checked={allSelected}
