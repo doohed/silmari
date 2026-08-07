@@ -453,3 +453,25 @@ input[type='checkbox']:focus-visible {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
+
+/* Revelado de campos del login progresivo: entran bajando a su sitio, como
+   saliendo desde detrás del elemento superior. Keyframe (no grid 0fr, que
+   Safari no colapsa) para funcionar en todos los navegadores. */
+@keyframes auth-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.auth-reveal {
+  animation: auth-reveal 280ms var(--ease-spring) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-reveal {
+    animation: none;
+  }
+}

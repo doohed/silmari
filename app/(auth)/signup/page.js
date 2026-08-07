@@ -2,12 +2,14 @@ import { SignupForm } from './SignupForm';
 
 export const metadata = { title: 'Crear cuenta · Silmari' };
 
-export default function SignupPage() {
+export default async function SignupPage({ searchParams }) {
+  const { email } = (await searchParams) ?? {};
   return (
     <div>
-      <h1 className="text-primary mb-1 text-base font-semibold">Continúa con tu email</h1>
-      <p className="text-secondary mb-6 text-xs">Crea tu cuenta para empezar</p>
-      <SignupForm />
+      <h1 className="text-primary mb-8 text-center text-2xl font-semibold tracking-tight">
+        Crea tu cuenta
+      </h1>
+      <SignupForm defaultEmail={typeof email === 'string' ? email : ''} />
     </div>
   );
 }

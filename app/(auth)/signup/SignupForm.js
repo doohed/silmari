@@ -6,13 +6,15 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { emailSignupSchema } from '@/lib/validation/auth';
 import { signupAction } from '../actions';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
+import { PasswordInput } from '@/components/auth/PasswordInput';
 import { FormError } from '@/components/ui/FormError';
 import { applyFieldErrors } from '@/lib/forms/apply-field-errors';
 
-export function SignupForm() {
+const submitBtn =
+  'press flex h-11 w-full items-center justify-center rounded-xl bg-accent text-accent-fg text-sm font-semibold hover:bg-accent/90 disabled:opacity-60';
+
+export function SignupForm({ defaultEmail = '' }) {
   const {
     register,
     handleSubmit,
@@ -20,7 +22,7 @@ export function SignupForm() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(emailSignupSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: defaultEmail, password: '' },
   });
 
   async function onSubmit(values) {
@@ -32,26 +34,29 @@ export function SignupForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-3">
       <div>
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" autoComplete="email" {...register('email')} />
+        <Input
+          type="email"
+          autoComplete="email"
+          placeholder="Email"
+          className="h-11 rounded-xl px-4 text-sm"
+          {...register('email')}
+        />
         <FormError message={errors.email?.message} />
       </div>
       <div>
-        <Label htmlFor="password">Contraseña</Label>
-        <Input
-          id="password"
-          type="password"
+        <PasswordInput
           autoComplete="new-password"
+          placeholder="Contraseña"
           {...register('password')}
         />
         <FormError message={errors.password?.message} />
       </div>
-      <Button type="submit" disabled={isSubmitting} className="w-full">
+      <button type="submit" disabled={isSubmitting} className={submitBtn}>
         {isSubmitting ? 'Creando…' : 'Continuar'}
-      </Button>
-      <p className="text-secondary text-center text-xs">
+      </button>
+      <p className="text-secondary pt-1 text-center text-xs">
         ¿Ya tienes cuenta?{' '}
         <Link href="/login" className="text-accent font-medium">
           Inicia sesión
