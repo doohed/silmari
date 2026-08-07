@@ -77,7 +77,22 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
   const [filters, setFilters] = useState(initialMapped.filters);
   const [sorts, setSorts] = useState(initialMapped.sorts);
 
-  const queryKey = ['records', objectSlug, filters, sorts];
+  // Nombres de los campos visibles (ordenados y únicos): la tabla solo pide al
+  // servidor esas columnas (proyección). Reordenar columnas no cambia el set
+  // (misma clave → sin refetch); ocultar/mostrar sí.
+  const visibleFieldNames = useMemo(
+    () =>
+      [
+        ...new Set(
+          [...(view.viewFields ?? [])]
+            .filter((vf) => vf.isVisible && fieldById[vf.fieldMetadataId])
+            .map((vf) => fieldById[vf.fieldMetadataId].name),
+        ),
+      ].sort(),
+    [view, fieldById],
+  );
+
+  const queryKey = ['records', objectSlug, filters, sorts, visibleFieldNames];
 
   // `initialPage` (SSR) solo vale para el estado inicial de la vista. Si se pasa
   // como `initialData` de forma incondicional, react-query lo reaplica a cada
@@ -101,6 +116,7 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
         sorts,
         cursor: pageParam,
         limit: PAGE,
+        fieldNames: visibleFieldNames,
       });
       if (!r.ok) throw new Error(r.message);
       return r.data;
@@ -273,7 +289,7 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
     if (sortActive) {
       const r = await reorderRecordsAction({ objectSlug, orderedIds: moved.map((x) => x.id) });
       if (!r.ok) return toast.error(r.message || 'No se pudo reordenar');
-      const newKey = ['records', objectSlug, filters, []];
+      const newKey = ['records', objectSlug, filters, [], visibleFieldNames];
       qc.setQueryData(newKey, {
         pages: [{ records: moved, nextCursor: null, hasMore: false }],
         pageParams: [undefined],

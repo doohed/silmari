@@ -45,7 +45,10 @@ const recordSchema = new mongoose.Schema(
 
 // Índices base (los índices sobre data.<campo> son dinámicos, en lib/db/indexes.js).
 recordSchema.index({ workspaceId: 1, objectMetadataId: 1, deletedAt: 1, createdAt: -1 });
-recordSchema.index({ workspaceId: 1, objectMetadataId: 1, position: 1 });
+// Orden por defecto (`position`, con `_id` de desempate) filtrando borrados: con
+// `deletedAt` en la clave y `_id` al final, la lista queda totalmente cubierta
+// por índice (igualdad ws/objeto/deletedAt + orden position,_id) → sin etapa SORT.
+recordSchema.index({ workspaceId: 1, objectMetadataId: 1, deletedAt: 1, position: 1, _id: 1 });
 recordSchema.index({ searchText: 'text' });
 
 export const Record = mongoose.models.Record || mongoose.model('Record', recordSchema);

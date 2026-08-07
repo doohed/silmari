@@ -50,6 +50,24 @@ describe('seed de objetos estándar', () => {
     expect(stage.options.find((o) => o.value === 'won').color).toBe('green');
   });
 
+  it('indexar un campo: updateField crea el índice compartido `fld_<name>`', async () => {
+    const ctx = await owner();
+    const companies = await getObjectBySlug(ctx, 'companies');
+    const precio = await createField(ctx, {
+      objectMetadataId: companies.id,
+      name: 'precioTest',
+      label: 'Precio',
+      type: 'NUMBER',
+    });
+    expect(precio.isIndexed).toBe(false);
+
+    const updated = await updateField(ctx, precio.id, { isIndexed: true });
+    expect(updated.isIndexed).toBe(true);
+
+    const names = (await mongoose.connection.collection('records').indexes()).map((i) => i.name);
+    expect(names).toContain('fld_precioTest');
+  });
+
   it('personalizar las etapas: renombra, recolorea y añade sin desligar registros', async () => {
     const ctx = await owner();
     const opp = await getObjectBySlug(ctx, 'opportunities');

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, X, ChevronUp, ChevronDown, SlidersHorizontal } from 'lucide-react';
+import { Plus, Trash2, X, ChevronUp, ChevronDown, SlidersHorizontal, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { FIELD_TYPES } from '@/lib/field-types';
 import { Button } from '@/components/ui/Button';
@@ -100,9 +100,10 @@ export function FieldsManager({ object, objects }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [field, setField] = useState({ name: '', label: '', type: 'TEXT' });
+  const [field, setField] = useState({ name: '', label: '', type: 'TEXT', isIndexed: false });
   const [options, setOptions] = useState([{ label: '', color: 'blue' }]);
   const [relationTarget, setRelationTarget] = useState('');
+  const [indexingId, setIndexingId] = useState(null);
 
   // Edición de opciones de un campo existente.
   const [editingId, setEditingId] = useState(null);
@@ -112,10 +113,22 @@ export function FieldsManager({ object, objects }) {
   const targets = objects.filter((o) => o.id !== object.id);
 
   function reset() {
-    setField({ name: '', label: '', type: 'TEXT' });
+    setField({ name: '', label: '', type: 'TEXT', isIndexed: false });
     setOptions([{ label: '', color: 'blue' }]);
     setRelationTarget('');
     setOpen(false);
+  }
+
+  async function toggleIndex(f) {
+    setIndexingId(f.id);
+    const r = await updateFieldAction({ id: f.id, patch: { isIndexed: !f.isIndexed } });
+    setIndexingId(null);
+    if (r.ok) {
+      toast.success(f.isIndexed ? 'Índice desactivado' : 'Campo indexado');
+      router.refresh();
+    } else {
+      toast.error(r.message);
+    }
   }
 
   async function create(e) {
@@ -125,6 +138,7 @@ export function FieldsManager({ object, objects }) {
       name: field.name,
       label: field.label,
       type: field.type,
+      isIndexed: field.isIndexed,
     };
     if (CHOICE.has(field.type)) payload.options = options.filter((o) => o.label.trim());
     if (field.type === 'RELATION') {
@@ -256,6 +270,16 @@ export function FieldsManager({ object, objects }) {
             </div>
           )}
 
+          <label className="text-secondary flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={field.isIndexed}
+              onChange={(e) => setField({ ...field, isIndexed: e.target.checked })}
+              className="accent-accent size-3.5"
+            />
+            Indexar para filtrar y ordenar rápido
+          </label>
+
           <Button size="sm" type="submit" disabled={saving}>
             {saving ? 'Creando…' : 'Crear campo'}
           </Button>
@@ -281,6 +305,22 @@ export function FieldsManager({ object, objects }) {
                   <p className="text-tertiary font-mono text-xs">{f.name}</p>
                 </div>
                 <Chip label={f.type} />
+                {!f.isSystem && (
+                  <button
+                    type="button"
+                    onClick={() => toggleIndex(f)}
+                    disabled={indexingId === f.id}
+                    className={f.isIndexed ? 'text-accent' : 'text-tertiary hover:text-primary'}
+                    aria-label={f.isIndexed ? 'Quitar índice' : 'Indexar campo'}
+                    title={
+                      f.isIndexed
+                        ? 'Indexado (filtrar/ordenar rápido) · clic para quitar'
+                        : 'Indexar para filtrar y ordenar rápido'
+                    }
+                  >
+                    <Zap size={14} />
+                  </button>
+                )}
                 {editable && (
                   <button
                     type="button"

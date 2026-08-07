@@ -36,7 +36,16 @@ export default async function ObjectIndexPage({ params, searchParams }) {
     const sorts = (activeView.viewSorts ?? [])
       .map((s) => ({ fieldName: byId[s.fieldMetadataId]?.name, direction: s.direction }))
       .filter((s) => s.fieldName);
-    initialPage = await listRecords(ctx, { objectSlug, filters, sorts, limit: 100 });
+    // Mismos campos visibles (ordenados y únicos) que calcula RecordTable, para
+    // proyectar también la página del SSR y que sirva de `initialData`.
+    const fieldNames = [
+      ...new Set(
+        (activeView.viewFields ?? [])
+          .filter((vf) => vf.isVisible && byId[vf.fieldMetadataId])
+          .map((vf) => byId[vf.fieldMetadataId].name),
+      ),
+    ].sort();
+    initialPage = await listRecords(ctx, { objectSlug, filters, sorts, limit: 100, fieldNames });
   }
 
   return activeView.type === 'TABLE' ? (

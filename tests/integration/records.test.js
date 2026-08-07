@@ -47,6 +47,40 @@ describe('capa genérica de registros', () => {
     expect(auto.data.name).toBe('Sin título');
   });
 
+  it('proyección de columnas: solo devuelve los campos pedidos', async () => {
+    const ctx = await owner();
+    await createRecord(ctx, {
+      objectSlug: 'companies',
+      data: { name: 'Proj', employees: 42, industry: 'SaaS' },
+    });
+
+    const { records } = await listRecords(ctx, { objectSlug: 'companies', fieldNames: ['name'] });
+    expect(records[0].data.name).toBe('Proj');
+    expect(records[0].data.employees).toBeUndefined(); // no pedido → proyectado fuera
+    expect(records[0].data.industry).toBeUndefined();
+    // La raíz imprescindible sigue viajando (posición, creado por…).
+    expect(typeof records[0].position).toBe('string');
+  });
+
+  it('proyección: ordena/pagina por un campo oculto (viaja para el cursor)', async () => {
+    const ctx = await owner();
+    for (const n of [1, 2, 3]) {
+      await createRecord(ctx, { objectSlug: 'companies', data: { name: `P${n}`, employees: n * 10 } });
+    }
+    const args = {
+      objectSlug: 'companies',
+      fieldNames: ['name'], // "employees" no es visible, pero es el orden
+      sorts: [{ fieldName: 'employees', direction: 'desc' }],
+      limit: 2,
+    };
+    const page1 = await listRecords(ctx, args);
+    expect(page1.records.map((r) => r.data.name)).toEqual(['P3', 'P2']);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await listRecords(ctx, { ...args, cursor: page1.nextCursor });
+    expect(page2.records.map((r) => r.data.name)).toEqual(['P1']);
+  });
+
   it('filtra y pagina por cursor', async () => {
     const ctx = await owner();
     for (const n of [1, 2, 3]) {
