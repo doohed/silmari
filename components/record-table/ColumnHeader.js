@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ChevronUp, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 /**
  * Cabecera de columna: etiqueta, indicador de orden (click para ciclar) y menú
@@ -17,9 +18,11 @@ export function ColumnHeader({
   onResizeStart,
 }) {
   const [menu, setMenu] = useState(false);
+  const menuRef = useRef(null);
+  useClickOutside(menuRef, () => setMenu(false), menu);
 
   return (
-    <div className="group text-tertiary relative flex h-full items-center pr-1 pl-2 text-[11px] font-medium tracking-wide uppercase select-none">
+    <div className="group text-tertiary relative flex h-full items-center pr-1 pl-2 text-xs font-medium tracking-wide uppercase select-none">
       <button
         type="button"
         onClick={onSort}
@@ -30,38 +33,39 @@ export function ColumnHeader({
         {sortDir === 'desc' && <ChevronDown size={13} />}
       </button>
 
-      <button
-        type="button"
-        onClick={() => setMenu((m) => !m)}
-        onBlur={() => setTimeout(() => setMenu(false), 120)}
-        className="text-tertiary hover:text-primary opacity-0 group-hover:opacity-100"
-        aria-label="Opciones de columna"
-      >
-        <MoreHorizontal size={14} />
-      </button>
+      <div ref={menuRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setMenu((m) => !m)}
+          className="text-tertiary hover:text-primary opacity-0 group-hover:opacity-100 aria-expanded:opacity-100"
+          aria-expanded={menu}
+          aria-label="Opciones de columna"
+        >
+          <MoreHorizontal size={14} />
+        </button>
 
-      {menu && (
-        <div className="border-border bg-elevated absolute top-full right-0 z-30 mt-1 w-40 rounded-md border p-1 text-left shadow-lg">
-          {[
-            ['Ocultar', onHide],
-            ['Mover a la izquierda', onMoveLeft],
-            ['Mover a la derecha', onMoveRight],
-          ].map(([text, fn]) => (
-            <button
-              key={text}
-              type="button"
-              className="hover:bg-chip-gray text-primary block w-full rounded px-2 py-1 text-left text-xs"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                fn?.();
-                setMenu(false);
-              }}
-            >
-              {text}
-            </button>
-          ))}
-        </div>
-      )}
+        {menu && (
+          <div className="border-border bg-elevated absolute top-full right-0 z-40 mt-1 w-40 rounded-md border p-1 text-left shadow-lg">
+            {[
+              ['Ocultar', onHide],
+              ['Mover a la izquierda', onMoveLeft],
+              ['Mover a la derecha', onMoveRight],
+            ].map(([text, fn]) => (
+              <button
+                key={text}
+                type="button"
+                className="hover:bg-chip-gray text-primary block w-full rounded px-2 py-1 text-left text-xs"
+                onClick={() => {
+                  fn?.();
+                  setMenu(false);
+                }}
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div
         onMouseDown={onResizeStart}

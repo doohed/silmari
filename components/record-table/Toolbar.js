@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Plus, Filter, Trash2, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { FilterEditor } from './FilterEditor';
 
 /**
@@ -21,6 +22,8 @@ export function Toolbar({
   onImport,
 }) {
   const [showFilter, setShowFilter] = useState(false);
+  const filterRef = useRef(null);
+  useClickOutside(filterRef, () => setShowFilter(false), showFilter);
 
   if (selectedCount > 0) {
     return (
@@ -40,7 +43,7 @@ export function Toolbar({
 
   return (
     <>
-      <div className="relative">
+      <div ref={filterRef} className="relative">
         <Button size="sm" variant="ghost" onClick={() => setShowFilter((s) => !s)}>
           <Filter size={14} /> Filtrar
           {filters.length > 0 && (

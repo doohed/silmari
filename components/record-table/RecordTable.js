@@ -461,9 +461,9 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
           onScroll={onScroll}
           className="relative flex-1 overflow-auto outline-none"
         >
-          {/* Cabecera */}
+          {/* Cabecera (z-30 para que el menú de columna quede sobre las filas) */}
           <div
-            className="border-border bg-surface sticky top-0 z-10 flex border-b"
+            className="border-border bg-surface sticky top-0 z-30 flex h-9 border-b"
             style={{ width: totalWidth + GUTTER }}
           >
             <div className="flex shrink-0 items-center justify-center" style={{ width: GUTTER }}>

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
 import { cellInputClass } from './cell-keys';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { listMemberOptionsAction } from '@/app/(workspace)/objects/actions';
 
 const empty = <span className="text-tertiary">—</span>;
@@ -21,6 +22,8 @@ function MemberDisplay({ relation }) {
 /** Edit: desplegable con los miembros del workspace (avatar + nombre). */
 function MemberEdit({ value, onCommit, onCancel }) {
   const [members, setMembers] = useState([]);
+  const ref = useRef(null);
+  useClickOutside(ref, onCancel);
 
   useEffect(() => {
     let active = true;
@@ -34,6 +37,7 @@ function MemberEdit({ value, onCommit, onCancel }) {
 
   return (
     <div
+      ref={ref}
       className="relative h-full w-full"
       onKeyDown={(e) => {
         if (e.key === 'Escape') {

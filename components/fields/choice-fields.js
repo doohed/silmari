@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Chip } from './Chip';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 const empty = <span className="text-tertiary">—</span>;
 
@@ -18,8 +19,11 @@ function SelectDisplay({ value, field }) {
 }
 
 function Dropdown({ children, onCancel }) {
+  const ref = useRef(null);
+  useClickOutside(ref, onCancel);
   return (
     <div
+      ref={ref}
       className="border-border bg-elevated absolute top-full left-0 z-20 mt-1 max-h-60 w-56 overflow-auto rounded-md border p-1 shadow-lg"
       tabIndex={-1}
       onKeyDown={(e) => {

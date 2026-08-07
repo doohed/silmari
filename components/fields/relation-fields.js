@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Chip } from './Chip';
 import { cellInputClass } from './cell-keys';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { searchRelationOptionsAction } from '@/app/(workspace)/objects/actions';
 
 const empty = <span className="text-tertiary">—</span>;
@@ -15,6 +16,8 @@ function RelationDisplay({ relation }) {
 function RelationEdit({ field, onCommit, onCancel }) {
   const [q, setQ] = useState('');
   const [opts, setOpts] = useState([]);
+  const ref = useRef(null);
+  useClickOutside(ref, onCancel);
 
   useEffect(() => {
     let active = true;
@@ -27,7 +30,7 @@ function RelationEdit({ field, onCommit, onCancel }) {
   }, [q, field.id]);
 
   return (
-    <div className="relative h-full w-full">
+    <div ref={ref} className="relative h-full w-full">
       <input
         autoFocus
         className={cellInputClass}
