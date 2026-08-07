@@ -67,21 +67,31 @@ Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
 - **Vista tabla** (`components/record-table/`, TanStack Table + `react-virtual`):
   edición inline, teclado, filtros, orden por columna, columnas configurables
   (persistidas en la vista), selección + borrado masivo, **orden manual por
-  defecto reordenando filas al arrastrar**, import/export CSV.
+  defecto reordenando filas al arrastrar**, **proyección de columnas** (solo pide
+  al servidor los campos visibles), import/export CSV.
 - **Vista kanban** (`components/record-board/`): columnas por opciones de un
   SELECT, drag&drop (`@dnd-kit`), `position` fraccional, agregados por columna.
 - **Ficha de registro** (`components/record-detail/`): campos editables en sitio,
   **timeline en lenguaje humano** con el autor del cambio, registros relacionados
   (vincular/desvincular/crear) y pestañas de **Notas (Tiptap), Tareas y Adjuntos**.
+- **Tareas** (`/tasks`, `components/activities/`): bandeja con vista **Lista /
+  Calendario mensual**; cada tarea con **fecha límite** (`dueAt`) y **varios
+  responsables** (`assigneeIds`). Las tareas pueden ser sueltas (sin registro) o
+  vinculadas; las notas siempre van vinculadas.
 - **Paneles** (`/dashboards`, `components/dashboards/`): varios paneles por
   workspace (crear/renombrar/borrar/reordenar), rejilla de **widgets** y
   **métricas de Oportunidades** con gráficos SVG propios.
 - **Command menu ⌘K, búsqueda global y favoritos** (`components/command-menu/`,
   `lib/search/`, `lib/favorites/`).
-- **Ajustes** (`/settings`): perfil (foto, contraseña, borrar cuenta), workspace
-  (logo, **moneda de visualización**, zona horaria), miembros, **editor visual
-  del modelo de datos** (crear objetos/campos, **editar opciones/etapas de un
-  SELECT**), **API keys** y **webhooks** (firma HMAC + reintento).
+- **Ajustes** (`/settings`): perfil (foto, contraseña, **idioma**, borrar cuenta),
+  workspace (logo, **moneda de visualización**, zona horaria), miembros, **editor
+  visual del modelo de datos** (crear objetos **con icono** / campos, **editar
+  opciones/etapas de un SELECT**, **indexar campos**, **borrar objetos custom**),
+  **API keys** y **webhooks** (firma HMAC + reintento).
+- **Chrome**: el sidebar es un **rail completo** (menú de usuario, buscador,
+  nombre de workspace, navegación); no hay barra superior. Popovers/menús propios
+  cierran al clic fuera (`hooks/useClickOutside`); confirmaciones con diálogo
+  temático (`components/ui/ConfirmDialog`, `useConfirm`) en vez de `window.confirm`.
 - **Transversal**: multi-tenant estricto, soft delete + **papelera** (`/trash`),
   **tema claro/oscuro**, **i18n es/en**, 404/500 propias, **API pública**
   `app/api/v1` (auth por API key; ver `README.md`).
@@ -92,16 +102,22 @@ Colecciones (todas con `workspaceId` en los datos y soft delete vía `deletedAt`
 
 - **workspaces**, **users**, **workspaceMembers** `(workspaceId,userId)` único,
   **invitations**.
-- **objectMetadata** — definición de objetos; `(workspaceId, slug)` único.
+- **objectMetadata** — definición de objetos; `(workspaceId, slug)` único
+  **parcial** (`deletedAt: null`), para que un objeto borrado no bloquee reusar el
+  slug. `createObject` añade el identificador `name` (indexado) y el campo de
+  sistema **"Creado por"** (ACTOR).
 - **fieldMetadata** — definición de campos; `(workspaceId, objectMetadataId, name)`
-  único. `type`, `options` (SELECT), `relation`, etc.
+  único **parcial** (`deletedAt: null`). `type`, `options` (SELECT), `relation`,
+  `isIndexed`, etc.
 - **records** — **colección polimórfica única** con `objectMetadataId` + `data`
   (keys = `fieldMetadata.name`), `position` (String, fractional indexing),
   `searchText`, `createdBy`. Ver nota abajo.
 - **recordRelations** — MANY_TO_MANY y relaciones consultables en ambos sentidos.
 - **views** — TABLE | KANBAN, con `viewFields`, `viewFilters`, `viewSorts`, `viewGroups`.
-- **activities** (NOTE | TASK), **attachments**, **timelineActivities** (log
-  inmutable), **favorites**, **apiKeys** (solo `tokenHash`), **webhooks**.
+- **activities** (NOTE | TASK): tareas con `dueAt` y `assigneeIds` (varios
+  responsables); `targets` polimórficos opcionales (tareas sueltas permitidas).
+- **attachments**, **timelineActivities** (log inmutable), **favorites**,
+  **apiKeys** (solo `tokenHash`), **webhooks**.
 
 ### Por qué una colección `records` única
 
@@ -167,6 +183,33 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
 - **Editar opciones de un SELECT** preserva `id`/`value` de las existentes (los
   registros no se desligan); las nuevas reciben `value` por slug
   (`normalizeOptions`).
+- **Unicidad de metadata parcial**: los índices únicos de `objectMetadata`
+  (`slug`) y `fieldMetadata` (`name`) filtran por `deletedAt: null`, así un
+  objeto/campo borrado (soft delete) no bloquea reusar su slug/nombre.
+- **Proyección de columnas**: `listRecords(ctx, { fieldNames })` proyecta solo
+  `data.<campoVisible>` + raíz (`position/createdAt/createdBy`) + el campo de
+  orden (para el cursor), e hidrata solo las relaciones visibles. La tabla pasa
+  sus columnas visibles (menos payload con 2000+ filas).
+- **Índices de `records`**: el orden por defecto va por
+  `(ws, obj, deletedAt, position, _id)` (sin SORT en memoria). Los índices
+  dinámicos **no-únicos** (`fld_<name>`, `lib/db/indexes.js`) tienen forma
+  `(ws, obj, deletedAt, data.<campo>, _id)` para cubrir **filtro + orden** por esa
+  columna. El identificador se auto-indexa; hay un toggle "indexar" por campo en
+  el editor. Compartidos por nombre de campo (límite de 64 índices/colección).
+- **Tareas** (`lib/activities/`): `assigneeIds` (varios responsables; si se crea
+  sin ninguno → el creador, así sale en "Mías"), `dueAt`; tareas **sueltas** (sin
+  `targets`) permitidas. `listTasks` acepta `from`/`to` (rango por `dueAt`) para el
+  calendario mensual.
+- **`initialData` de react-query** solo se pasa cuando la vista está en su estado
+  inicial (`RecordTable`); si se pasa siempre, se reaplica a cada queryKey nueva y,
+  con `staleTime`, la tabla no refresca al ordenar/filtrar.
+- **UI transversal**: `useConfirm` (`components/ui/ConfirmDialog`, Radix) reemplaza
+  `window.confirm`; toasts estilados con los tokens (sin `richColors`);
+  `hooks/useClickOutside` cierra popovers al clic fuera; **checkbox propio**
+  (`appearance:none` en `globals.css`) porque Safari no repinta el nativo con
+  `color-scheme`. `revalidatePath('/', 'layout')` en las acciones de objeto para
+  que el sidebar refleje crear/renombrar/borrar al instante. Idioma en Ajustes →
+  Perfil (cookie `locale`).
 - **Vistas**: `View` (TABLE|KANBAN) persiste `viewFields`/`viewFilters`/
   `viewSorts`; la KANBAN se auto-crea para objetos con un SELECT. El fetching en
   cliente son **Server Actions con sesión** como `queryFn`/`mutationFn` de
@@ -182,8 +225,15 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   key); no compartido entre instancias.
 - **Búsqueda**: regex parcial case-insensitive sobre `records.searchText`.
   **Imágenes** (logo/avatar): reescaladas en cliente y guardadas como **data URL**.
-- **Migraciones puntuales**: scripts en `scripts/` (p. ej. `remove-referred-by.mjs`,
-  `add-created-by.mjs`), ejecutables vía `scripts/alias-loader.mjs`.
+- **Migraciones puntuales**: scripts en `scripts/` (p. ej.
+  `remove-referred-by.mjs`, `add-created-by.mjs`, `optimize-record-indexes.mjs`,
+  `fix-metadata-unique-indexes.mjs`, `migrate-task-assignees.mjs`), ejecutables
+  vía `scripts/alias-loader.mjs`. Idempotentes; se corren una vez por entorno.
+- **⚠️ Cambios de esquema de un modelo → reiniciar el dev server.** Los modelos
+  usan `mongoose.models.X || mongoose.model(...)`, así que un hot-reload conserva
+  el **esquema compilado anterior** y descarta campos nuevos (p. ej. añadir
+  `assigneeIds`). Tras editar un `models/*.js`, reinicia `npm run dev`. (Cambios
+  de datos/índices no lo requieren: se aplican por script de migración.)
 - **Tests**: integración con `mongodb-memory-server` (sin Docker); e2e Playwright
   con `retries:1` (el alta transaccional puede dar flakiness bajo concurrencia).
 

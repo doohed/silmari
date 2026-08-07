@@ -19,12 +19,15 @@ CSS v4**, **MongoDB + Mongoose**. Sin TypeScript.
 - **Ficha de registro**: campos editables en sitio, **timeline** en lenguaje
   humano (con el autor de cada cambio), registros relacionados (vincular/crear) y
   pestañas de **notas (Tiptap), tareas y adjuntos**.
+- **Tareas**: bandeja global con vista **Lista / Calendario mensual**, **fecha
+  límite** y **varios responsables** por tarea; también dentro de cada ficha.
 - **Paneles**: varios paneles por workspace con **widgets** y **métricas de
   oportunidades** (pipeline, por etapa, por responsable, valor por mes…).
 - **Productividad**: command menu **⌘K**, búsqueda global y favoritos.
-- **Ajustes**: perfil, workspace (logo, moneda, zona horaria), miembros e
-  invitaciones, **editor del modelo de datos** (crear objetos/campos y
-  **personalizar opciones/etapas**), API keys y **webhooks**.
+- **Ajustes**: perfil (con idioma), workspace (logo, moneda, zona horaria),
+  miembros e invitaciones, **editor del modelo de datos** (crear objetos con
+  **icono** / campos, **personalizar opciones/etapas**, **indexar campos**,
+  **borrar objetos custom**), API keys y **webhooks**.
 - **Cuenta**: auth propio con onboarding guiado y **Google OAuth**.
 - **Base sólida**: multi-tenant, soft delete + **papelera**, **tema claro/
   oscuro**, **i18n es/en** y una **API REST pública** (`/api/v1`).

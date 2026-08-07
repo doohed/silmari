@@ -215,6 +215,49 @@ h3 {
   letter-spacing: -0.02em;
 }
 
+/* Checkbox propio: consistente en claro/oscuro y entre navegadores (Safari no
+   repinta bien el checkbox nativo con color-scheme/accent-color). Respeta el
+   tamaño que fije Tailwind (size-3.5, size-4, …). */
+input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+input[type='checkbox']:hover {
+  border-color: var(--text-tertiary);
+}
+input[type='checkbox']:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 32%;
+  height: 62%;
+  border: solid var(--accent-fg);
+  border-width: 0 2px 2px 0;
+  transform: translateY(-8%) rotate(45deg);
+  opacity: 0;
+}
+input[type='checkbox']:checked::after {
+  opacity: 1;
+}
+input[type='checkbox']:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

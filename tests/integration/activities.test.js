@@ -2,7 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { createAccount } from '@/lib/accounts/signup';
 import { getObjectBySlug } from '@/lib/metadata/object-service';
 import { createRecord } from '@/lib/records/service';
-import { createActivity, listForRecord, listTasks, toggleTask } from '@/lib/activities/service';
+import {
+  createActivity,
+  listForRecord,
+  listTasks,
+  toggleTask,
+  updateActivity,
+} from '@/lib/activities/service';
 import { getStorage } from '@/lib/storage';
 import {
   createAttachment,
@@ -62,13 +68,56 @@ describe('actividades', () => {
       targets: [{ objectMetadataId: companies.id, recordId: acme.id }],
     });
 
-    expect((await listTasks(ctx, { scope: 'all' })).length).toBe(1);
-    expect((await listTasks(ctx, { scope: 'mine' })).length).toBe(1);
+    // Sin responsables explícitos (array vacío) → se asigna al creador y sale en "Mías".
+    const auto = await createActivity(ctx, {
+      type: 'TASK',
+      title: 'Sin responsable explícito',
+      assigneeIds: [],
+      targets: [{ objectMetadataId: companies.id, recordId: acme.id }],
+    });
+    expect(auto.assigneeIds).toEqual([String(ctx.userId)]);
+    expect((await listTasks(ctx, { scope: 'mine' })).map((t) => t.id)).toContain(auto.id);
+
+    expect((await listTasks(ctx, { scope: 'all' })).length).toBe(2);
+    expect((await listTasks(ctx, { scope: 'mine' })).length).toBe(2);
     expect((await listTasks(ctx, { scope: 'overdue' })).map((t) => t.id)).toContain(overdue.id);
 
     await toggleTask(ctx, overdue.id);
     // Ya hecha: no cuenta como vencida.
     expect((await listTasks(ctx, { scope: 'overdue' })).length).toBe(0);
+  });
+
+  it('tarea suelta (sin registro), varios responsables y rango de calendario', async () => {
+    const ctx = await owner();
+    // Segundo miembro para asignar.
+    const other = await createAccount({
+      firstName: 'Otro',
+      lastName: 'Miembro',
+      email: 'otro-act@test.dev',
+      password: 'secret123',
+      workspaceName: 'X',
+    });
+
+    // Tarea suelta (sin targets) con fecha y dos responsables.
+    const task = await createActivity(ctx, {
+      type: 'TASK',
+      title: 'Planificar sprint',
+      dueAt: '2030-06-15T12:00:00.000Z',
+      assigneeIds: [ctx.userId, other.userId],
+    });
+    expect(task.targets).toHaveLength(0);
+    expect(task.assigneeIds).toEqual([String(ctx.userId), String(other.userId)]);
+    expect(task.assignees.map((a) => a.label)).toContain('Owner Act');
+
+    // Rango de calendario: solo tareas con dueAt dentro del mes.
+    const inRange = await listTasks(ctx, { from: '2030-06-01', to: '2030-07-01' });
+    expect(inRange.map((t) => t.id)).toContain(task.id);
+    const outRange = await listTasks(ctx, { from: '2030-07-01', to: '2030-08-01' });
+    expect(outRange.map((t) => t.id)).not.toContain(task.id);
+
+    // Editar responsables.
+    const updated = await updateActivity(ctx, task.id, { assigneeIds: [other.userId] });
+    expect(updated.assigneeIds).toEqual([String(other.userId)]);
   });
 
   it('adjuntos: subir, listar y leer', async () => {

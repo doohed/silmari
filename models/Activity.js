@@ -8,7 +8,8 @@ import mongoose from 'mongoose';
  * @property {string} title
  * @property {any} body  JSON de Tiptap (notas)
  * @property {'TODO'|'IN_PROGRESS'|'DONE'} status  (tareas)
- * @property {Date} [dueAt]
+ * @property {Date} [dueAt]  fecha límite (tareas)
+ * @property {Array<any>} assigneeIds  responsables (tareas)
  * @property {Array<{ objectMetadataId: any, recordId: any }>} targets
  */
 
@@ -32,7 +33,7 @@ const activitySchema = new mongoose.Schema(
     body: { type: mongoose.Schema.Types.Mixed, default: null },
     status: { type: String, enum: ['TODO', 'IN_PROGRESS', 'DONE'], default: 'TODO' },
     dueAt: { type: Date, default: null },
-    assigneeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    assigneeIds: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] },
     authorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     targets: { type: [targetSchema], default: [] },
     completedAt: { type: Date, default: null },
@@ -42,9 +43,11 @@ const activitySchema = new mongoose.Schema(
 );
 
 activitySchema.index({ workspaceId: 1, type: 1, deletedAt: 1, createdAt: -1 });
-// Consulta por registro (targets.recordId) y bandeja por asignado/estado.
+// Consulta por registro (targets.recordId) y bandeja por responsable/estado.
 activitySchema.index({ workspaceId: 1, 'targets.recordId': 1 });
-activitySchema.index({ workspaceId: 1, type: 1, assigneeId: 1, status: 1 });
+activitySchema.index({ workspaceId: 1, type: 1, assigneeIds: 1, status: 1 });
+// Calendario: tareas por fecha límite.
+activitySchema.index({ workspaceId: 1, type: 1, dueAt: 1 });
 
 export const Activity = mongoose.models.Activity || mongoose.model('Activity', activitySchema);
 export default Activity;
