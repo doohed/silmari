@@ -27,7 +27,20 @@ export default async function RootLayout({ children }) {
     >
       <body className="flex min-h-full flex-col">
         {children}
-        <Toaster position="top-right" richColors />
+        <Toaster
+          position="top-right"
+          theme={theme === 'dark' ? 'dark' : 'light'}
+          toastOptions={{
+            style: {
+              background: 'var(--elevated)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border)',
+              borderRadius: '10px',
+              boxShadow: 'var(--elev-md)',
+              fontSize: '13px',
+            },
+          }}
+        />
       </body>
     </html>
   );

@@ -35,7 +35,12 @@ const objectMetadataSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-objectMetadataSchema.index({ workspaceId: 1, slug: 1 }, { unique: true });
+// Unicidad del slug por workspace, pero solo entre objetos vivos: un objeto
+// borrado (soft delete) no ocupa el slug, así puede reutilizarse el nombre.
+objectMetadataSchema.index(
+  { workspaceId: 1, slug: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+);
 
 export const ObjectMetadata =
   mongoose.models.ObjectMetadata || mongoose.model('ObjectMetadata', objectMetadataSchema);

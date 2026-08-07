@@ -3,18 +3,27 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, ChevronRight } from 'lucide-react';
+import { Plus, ChevronRight, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import { Icon } from '@/components/ui/Icon';
-import { createObjectAction } from '@/app/(workspace)/settings/actions';
+import { Icon, OBJECT_ICONS } from '@/components/ui/Icon';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { createObjectAction, deleteObjectAction } from '@/app/(workspace)/settings/actions';
+
+const DEFAULT_ICON = 'Box';
 
 export function ObjectsManager({ objects }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ nameSingular: '', labelSingular: '', labelPlural: '' });
+  const [form, setForm] = useState({
+    nameSingular: '',
+    labelSingular: '',
+    labelPlural: '',
+    icon: DEFAULT_ICON,
+  });
   const [saving, setSaving] = useState(false);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -26,6 +35,23 @@ export function ObjectsManager({ objects }) {
     if (r.ok) {
       toast.success('Objeto creado');
       router.push(`/settings/data-model/${r.data.slug}`);
+    } else {
+      toast.error(r.message);
+    }
+  }
+
+  async function remove(o) {
+    const ok = await confirm({
+      title: `Borrar «${o.labelPlural}»`,
+      message: 'El objeto y sus campos se ocultan; sus registros dejarán de ser accesibles.',
+      confirmLabel: 'Borrar',
+      danger: true,
+    });
+    if (!ok) return;
+    const r = await deleteObjectAction({ id: o.id });
+    if (r.ok) {
+      toast.success('Objeto borrado');
+      router.refresh();
     } else {
       toast.error(r.message);
     }
@@ -71,6 +97,29 @@ export function ObjectsManager({ objects }) {
               placeholder="Productos"
             />
           </div>
+
+          <div>
+            <Label>Icono</Label>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {OBJECT_ICONS.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, icon: name }))}
+                  aria-label={name}
+                  aria-pressed={form.icon === name}
+                  className={
+                    form.icon === name
+                      ? 'border-accent bg-accent-subtle text-accent flex size-8 items-center justify-center rounded-md border'
+                      : 'border-border text-secondary hover:bg-chip-gray hover:text-primary flex size-8 items-center justify-center rounded-md border'
+                  }
+                >
+                  <Icon name={name} size={15} />
+                </button>
+              ))}
+            </div>
+          </div>
+
           <Button size="sm" type="submit" disabled={saving}>
             {saving ? 'Creando…' : 'Crear objeto'}
           </Button>
@@ -79,16 +128,28 @@ export function ObjectsManager({ objects }) {
 
       <ul className="border-border bg-surface divide-border divide-y rounded-lg border">
         {objects.map((o) => (
-          <li key={o.id}>
+          <li key={o.id} className="hover:bg-bg flex items-center gap-2 px-4 py-2.5">
             <Link
               href={`/settings/data-model/${o.slug}`}
-              className="hover:bg-bg flex items-center gap-2 px-4 py-2.5 text-sm"
+              className="flex min-w-0 flex-1 items-center gap-2 text-sm"
             >
-              <Icon name={o.icon} size={15} className="text-secondary" />
-              <span className="text-primary flex-1">{o.labelPlural}</span>
-              {!o.isCustom && <span className="text-tertiary text-xs">estándar</span>}
-              <ChevronRight size={15} className="text-tertiary" />
+              <Icon name={o.icon} size={15} className="text-secondary shrink-0" />
+              <span className="text-primary truncate">{o.labelPlural}</span>
             </Link>
+            {o.isCustom ? (
+              <button
+                type="button"
+                onClick={() => remove(o)}
+                className="text-tertiary hover:text-danger shrink-0"
+                aria-label="Borrar objeto"
+                title="Borrar objeto"
+              >
+                <Trash2 size={14} />
+              </button>
+            ) : (
+              <span className="text-tertiary shrink-0 text-xs">estándar</span>
+            )}
+            <ChevronRight size={15} className="text-tertiary shrink-0" />
           </li>
         ))}
       </ul>

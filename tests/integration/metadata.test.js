@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import mongoose from 'mongoose';
 import { createAccount } from '@/lib/accounts/signup';
-import { listObjects, getObjectBySlug, createObject } from '@/lib/metadata/object-service';
-import { createField, updateField } from '@/lib/metadata/field-service';
+import {
+  listObjects,
+  getObjectBySlug,
+  createObject,
+  deleteObject,
+} from '@/lib/metadata/object-service';
+import { createField, updateField, deleteField } from '@/lib/metadata/field-service';
 import Record from '@/models/Record';
 
 async function owner() {
@@ -48,6 +53,52 @@ describe('seed de objetos estándar', () => {
     const stage = opp.fields.find((f) => f.name === 'stage');
     expect(stage.options.map((o) => o.value)).toContain('won');
     expect(stage.options.find((o) => o.value === 'won').color).toBe('green');
+  });
+
+  it('reutiliza el nombre de un objeto/campo borrado (soft delete no bloquea)', async () => {
+    const ctx = await owner();
+    const a = await createObject(ctx, { nameSingular: 'proveedor', labelSingular: 'Proveedor' });
+    await deleteObject(ctx, a.id);
+    // Recrear con el mismo nombre/slug debe funcionar.
+    const b = await createObject(ctx, { nameSingular: 'proveedor', labelSingular: 'Proveedor' });
+    expect(b.slug).toBe(a.slug);
+    expect(b.id).not.toBe(a.id);
+
+    // Igual para campos: crear, borrar, recrear con el mismo nombre.
+    const companies = await getObjectBySlug(ctx, 'companies');
+    const f1 = await createField(ctx, {
+      objectMetadataId: companies.id,
+      name: 'reuseField',
+      label: 'X',
+      type: 'TEXT',
+    });
+    await deleteField(ctx, f1.id);
+    const f2 = await createField(ctx, {
+      objectMetadataId: companies.id,
+      name: 'reuseField',
+      label: 'Y',
+      type: 'TEXT',
+    });
+    expect(f2.id).not.toBe(f1.id);
+  });
+
+  it('crea un objeto con icono y lo borra (solo custom)', async () => {
+    const ctx = await owner();
+    const obj = await createObject(ctx, {
+      nameSingular: 'gadget',
+      labelSingular: 'Gadget',
+      icon: 'Rocket',
+    });
+    expect(obj.icon).toBe('Rocket');
+    expect(obj.isCustom).toBe(true);
+
+    await deleteObject(ctx, obj.id);
+    const slugs = (await listObjects(ctx)).map((o) => o.slug);
+    expect(slugs).not.toContain(obj.slug);
+
+    // Los estándar no se pueden borrar.
+    const companies = await getObjectBySlug(ctx, 'companies');
+    await expect(deleteObject(ctx, companies.id)).rejects.toThrow(/estándar/i);
   });
 
   it('indexar un campo: updateField crea el índice compartido `fld_<name>`', async () => {
@@ -137,7 +188,9 @@ describe('CRUD de metadata + criterio de la fase', () => {
     }
 
     const hydrated = await getObjectBySlug(ctx, 'productos');
-    expect(hydrated.fields).toHaveLength(9); // name + 8
+    expect(hydrated.fields).toHaveLength(10); // name + createdBy + 8
+    // El objeto nuevo incluye el campo de sistema "Creado por" (ACTOR).
+    expect(hydrated.fields.find((f) => f.name === 'createdBy')?.type).toBe('ACTOR');
     const types = hydrated.fields.map((f) => f.type);
     expect(new Set(types).size).toBeGreaterThanOrEqual(8);
 

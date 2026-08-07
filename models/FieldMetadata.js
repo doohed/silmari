@@ -66,7 +66,12 @@ const fieldMetadataSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-fieldMetadataSchema.index({ workspaceId: 1, objectMetadataId: 1, name: 1 }, { unique: true });
+// Unicidad del nombre por objeto solo entre campos vivos: un campo borrado no
+// ocupa el nombre, así puede recrearse un campo con el mismo nombre.
+fieldMetadataSchema.index(
+  { workspaceId: 1, objectMetadataId: 1, name: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+);
 
 export const FieldMetadata =
   mongoose.models.FieldMetadata || mongoose.model('FieldMetadata', fieldMetadataSchema);

@@ -58,14 +58,22 @@ export async function deleteAccountAction() {
 }
 
 // --- Modelo de datos ---
+// Crear/renombrar/borrar un objeto cambia la navegación (sidebar), que la pinta
+// el layout (server). Revalidamos el layout para que se refleje sin recargar.
 export async function createObjectAction(input) {
-  return withCtx((ctx) => createObject(ctx, input));
+  const res = await withCtx((ctx) => createObject(ctx, input));
+  if (res.ok) revalidatePath('/', 'layout');
+  return res;
 }
 export async function updateObjectAction({ id, patch }) {
-  return withCtx((ctx) => updateObject(ctx, id, patch));
+  const res = await withCtx((ctx) => updateObject(ctx, id, patch));
+  if (res.ok) revalidatePath('/', 'layout');
+  return res;
 }
 export async function deleteObjectAction({ id }) {
-  return withCtx((ctx) => deleteObject(ctx, id));
+  const res = await withCtx((ctx) => deleteObject(ctx, id));
+  if (res.ok) revalidatePath('/', 'layout');
+  return res;
 }
 export async function createFieldAction(input) {
   return withCtx((ctx) => createField(ctx, input));
