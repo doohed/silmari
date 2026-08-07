@@ -20,13 +20,13 @@ export function TabsPanel({ object, timeline, related, currentRecordId, onRelate
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-border flex shrink-0 gap-1 border-b px-4">
+      <div className="border-border flex h-10 shrink-0 items-center gap-1 border-b px-3">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`border-b-2 px-3 py-2.5 text-sm transition-colors ${
+            className={`-mb-px h-10 border-b-2 px-2.5 text-[13px] transition-colors ${
               tab === t.id
                 ? 'border-accent text-primary font-medium'
                 : 'text-secondary hover:text-primary border-transparent'

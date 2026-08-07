@@ -10,7 +10,7 @@ export function BrandMark({ size = 44, className }) {
     <span
       style={{ width: size, height: size, fontSize: Math.round(size * 0.5) }}
       className={cn(
-        'bg-accent text-accent-fg inline-flex items-center justify-center rounded-2xl font-bold tracking-tight shadow-md select-none',
+        'bg-accent text-accent-fg inline-flex items-center justify-center rounded-lg font-bold tracking-tight shadow-xs select-none',
         className,
       )}
       aria-hidden="true"

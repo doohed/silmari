@@ -10,6 +10,7 @@ import {
   getRecord,
   searchRecords,
   moveRecord,
+  reorderRecords,
   columnAggregates,
   listBoardColumn,
   restoreRecord,
@@ -141,6 +142,11 @@ export async function searchRecordsAction(input) {
 /** Mueve un registro en el kanban (grupo y/o posición). */
 export async function moveRecordAction(input) {
   return withCtx((ctx) => moveRecord(ctx, input));
+}
+
+/** Reordena en bloque (arrastrar con orden de columna activo → orden manual). */
+export async function reorderRecordsAction(input) {
+  return withCtx((ctx) => reorderRecords(ctx, input));
 }
 
 /** Agregados por columna kanban (conteo + suma). */

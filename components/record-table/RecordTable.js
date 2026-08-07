@@ -33,14 +33,16 @@ import {
   updateViewAction,
   exportRecordsAction,
   moveRecordAction,
+  reorderRecordsAction,
 } from '@/app/(workspace)/objects/actions';
 import { Toolbar } from './Toolbar';
+import { RecordViewBar } from './RecordViewBar';
 import { ColumnHeader } from './ColumnHeader';
 import { CellContent } from './CellContent';
 import { EmptyState } from './EmptyState';
 import { ImportDialog } from './ImportDialog';
 
-const ROW_H = 40;
+const ROW_H = 34;
 const GUTTER = 76;
 const PAGE = 100;
 
@@ -59,7 +61,7 @@ function mapView(view, fieldById) {
   return { filters, sorts };
 }
 
-export function RecordTable({ objectSlug, object, initialView, initialPage }) {
+export function RecordTable({ objectSlug, object, initialView, initialPage, views, activeViewId }) {
   const qc = useQueryClient();
   const router = useRouter();
   const scrollRef = useRef(null);
@@ -77,6 +79,18 @@ export function RecordTable({ objectSlug, object, initialView, initialPage }) {
 
   const queryKey = ['records', objectSlug, filters, sorts];
 
+  // `initialPage` (SSR) solo vale para el estado inicial de la vista. Si se pasa
+  // como `initialData` de forma incondicional, react-query lo reaplica a cada
+  // queryKey nueva (al ordenar/filtrar) y, con `staleTime`, no vuelve a pedir
+  // datos: la tabla se quedaría con el orden original. Por eso solo lo usamos
+  // cuando filtros y orden coinciden con los iniciales.
+  const isInitialView = useMemo(
+    () =>
+      JSON.stringify(filters) === JSON.stringify(initialMapped.filters) &&
+      JSON.stringify(sorts) === JSON.stringify(initialMapped.sorts),
+    [filters, sorts, initialMapped],
+  );
+
   const query = useInfiniteQuery({
     queryKey,
     initialPageParam: undefined,
@@ -92,7 +106,7 @@ export function RecordTable({ objectSlug, object, initialView, initialPage }) {
       return r.data;
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,
-    initialData: { pages: [initialPage], pageParams: [undefined] },
+    initialData: isInitialView ? { pages: [initialPage], pageParams: [undefined] } : undefined,
   });
 
   const rows = useMemo(() => (query.data?.pages ?? []).flatMap((p) => p.records), [query.data]);
@@ -247,12 +261,29 @@ export function RecordTable({ objectSlug, object, initialView, initialPage }) {
     },
   });
 
-  function onDragEnd({ active: dragged, over }) {
-    if (sortActive || !over || dragged.id === over.id) return;
+  async function onDragEnd({ active: dragged, over }) {
+    if (!over || dragged.id === over.id) return;
     const from = rows.findIndex((r) => r.id === dragged.id);
     const to = rows.findIndex((r) => r.id === over.id);
     if (from < 0 || to < 0) return;
     const moved = arrayMove(rows, from, to);
+
+    // Con un orden de columna activo, arrastrar convierte la vista en orden
+    // manual: «hornea» el orden visible actual en `position` y quita el orden.
+    if (sortActive) {
+      const r = await reorderRecordsAction({ objectSlug, orderedIds: moved.map((x) => x.id) });
+      if (!r.ok) return toast.error(r.message || 'No se pudo reordenar');
+      const newKey = ['records', objectSlug, filters, []];
+      qc.setQueryData(newKey, {
+        pages: [{ records: moved, nextCursor: null, hasMore: false }],
+        pageParams: [undefined],
+      });
+      setSorts([]);
+      persistView({ viewSorts: [] });
+      qc.invalidateQueries({ queryKey: newKey });
+      return;
+    }
+
     const prev = moved[to - 1]?.position ?? null;
     const next = moved[to + 1]?.position ?? null;
     let position;
@@ -378,18 +409,23 @@ export function RecordTable({ objectSlug, object, initialView, initialPage }) {
 
   return (
     <div className="flex h-full flex-col">
-      <Toolbar
-        viewName={view.name}
+      <RecordViewBar
+        objectSlug={objectSlug}
+        views={views}
+        activeViewId={activeViewId}
         count={rows.length}
-        selectedCount={selected.size}
-        fields={object.fields}
-        filters={filters}
-        onFiltersChange={applyFilters}
-        onNewRecord={() => createM.mutate()}
-        onDeleteSelected={() => deleteM.mutate([...selected])}
-        onExport={exportCsv}
-        onImport={() => setImportOpen(true)}
-      />
+      >
+        <Toolbar
+          selectedCount={selected.size}
+          fields={object.fields}
+          filters={filters}
+          onFiltersChange={applyFilters}
+          onNewRecord={() => createM.mutate()}
+          onDeleteSelected={() => deleteM.mutate([...selected])}
+          onExport={exportCsv}
+          onImport={() => setImportOpen(true)}
+        />
+      </RecordViewBar>
 
       <ImportDialog
         open={importOpen}
@@ -464,7 +500,7 @@ export function RecordTable({ objectSlug, object, initialView, initialPage }) {
                       cells={row.getVisibleCells()}
                       top={vItem.start}
                       width={totalWidth + GUTTER}
-                      dragEnabled={!sortActive}
+                      dragEnabled
                       isActiveRow={active.row === vItem.index}
                       activeCol={active.col}
                       editing={editing}

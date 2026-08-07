@@ -37,10 +37,10 @@ export function PlanStep() {
       <button
         type="button"
         onClick={() => setPlan('upgraded')}
-        className={`w-full rounded-xl border p-4 text-left transition-shadow ${
+        className={`w-full rounded-lg border p-4 text-left transition-shadow ${
           plan === 'upgraded'
-            ? 'border-accent bg-surface shadow-md'
-            : 'border-border bg-surface hover:shadow-sm'
+            ? 'border-accent bg-surface shadow-sm'
+            : 'border-border bg-surface hover:border-border-strong'
         }`}
       >
         <div className="flex items-center justify-between">
@@ -66,8 +66,8 @@ export function PlanStep() {
       <button
         type="button"
         onClick={() => setPlan('basic')}
-        className={`mt-3 flex w-full items-center justify-between rounded-xl border p-4 transition-shadow ${
-          plan === 'basic' ? 'border-accent bg-surface shadow-md' : 'border-border bg-surface'
+        className={`mt-3 flex w-full items-center justify-between rounded-lg border p-4 transition-shadow ${
+          plan === 'basic' ? 'border-accent bg-surface shadow-sm' : 'border-border bg-surface'
         }`}
       >
         <p className="text-primary text-sm">

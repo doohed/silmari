@@ -13,11 +13,11 @@ export function FieldsPanel({ fields, record, onCommit }) {
   const [open, setOpen] = useState(true);
 
   return (
-    <div className="p-4">
+    <div className="p-3">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="text-tertiary mb-2 flex items-center gap-1 px-2 text-[11px] font-medium tracking-wider uppercase"
+        className="text-tertiary mb-2 flex items-center gap-1 px-2 text-[11px] font-medium tracking-wide uppercase"
       >
         {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         Detalles

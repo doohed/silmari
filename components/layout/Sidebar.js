@@ -1,34 +1,49 @@
-import Link from 'next/link';
 import { NavItem } from '@/components/layout/NavItem';
 import { FavoritesList } from '@/components/layout/FavoritesList';
+import { WorkspaceSwitcher } from '@/components/layout/WorkspaceSwitcher';
+import { UserMenu } from '@/components/layout/UserMenu';
+import { SearchButton } from '@/components/command-menu/SearchButton';
 import { getLocale, t } from '@/lib/i18n';
 
 /**
- * Navegación lateral: enlaces a los objetos del workspace (generada desde la
- * metadata, sin código por objeto).
- * @param {{ objects: Array<{ id: string, slug: string, labelPlural: string, icon: string }> }} props
+ * Navegación lateral (rail): menú de usuario (avatar → configuraciones, tema,
+ * idioma, cerrar sesión), buscador, nombre del workspace y enlaces a los objetos
+ * del workspace (generados desde la metadata).
+ * @param {{
+ *   objects: Array<{ id: string, slug: string, labelPlural: string, icon: string }>,
+ *   workspaces: Array<{ id: string, name: string }>,
+ *   activeId: string,
+ *   user: { firstName: string, lastName: string, email?: string, avatarUrl?: string|null } | null,
+ * }} props
  */
-export async function Sidebar({ objects }) {
+export async function Sidebar({ objects, workspaces, activeId, user }) {
   const locale = await getLocale();
+
   return (
-    <aside className="border-border bg-surface flex w-60 shrink-0 flex-col border-r">
-      <div className="border-border flex h-14 items-center border-b px-5">
-        <Link href="/" className="text-primary text-base font-semibold tracking-tight">
-          Silmari
-        </Link>
+    <aside className="border-border bg-surface flex w-56 shrink-0 flex-col border-r">
+      <div className="p-2">
+        <UserMenu user={user} />
       </div>
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+      <div className="px-2">
+        <SearchButton />
+      </div>
+      <div className="px-2 pt-2 pb-1">
+        <WorkspaceSwitcher workspaces={workspaces} activeId={activeId} />
+      </div>
+
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2.5 pb-3">
         <FavoritesList />
 
-        {/* Lista plana: Paneles · objetos del workspace · Apuntes/Tareas/Papelera/Ajustes. */}
         <NavItem href="/dashboards" label={t(locale, 'nav.dashboards')} icon="LayoutDashboard" />
         {objects.map((o) => (
           <NavItem key={o.id} href={`/objects/${o.slug}`} label={o.labelPlural} icon={o.icon} />
         ))}
+
+        <div className="border-border my-2 border-t" />
+
         <NavItem href="/notes" label={t(locale, 'nav.notes')} icon="StickyNote" />
         <NavItem href="/tasks" label={t(locale, 'nav.tasks')} icon="CheckSquare" />
         <NavItem href="/trash" label={t(locale, 'nav.trash')} icon="Trash2" />
-        <NavItem href="/settings/profile" label={t(locale, 'nav.settings')} icon="Settings" />
       </nav>
     </aside>
   );

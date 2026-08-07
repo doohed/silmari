@@ -15,7 +15,7 @@ export function SearchButton() {
     <button
       type="button"
       onClick={() => window.dispatchEvent(new Event('command-menu:open'))}
-      className="press border-border bg-bg text-tertiary hover:border-border-strong hover:text-secondary hover:shadow-xs flex h-9 w-64 items-center gap-2 rounded-lg border px-3 text-xs"
+      className="press border-border bg-bg text-tertiary hover:border-border-strong hover:text-secondary flex h-8 w-full items-center gap-2 rounded-md border px-2.5 text-xs"
     >
       <Search size={14} />
       <span className="flex-1 text-left">Buscar o navegar…</span>

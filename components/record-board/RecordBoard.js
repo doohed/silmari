@@ -20,10 +20,11 @@ import {
   moveRecordAction,
 } from '@/app/(workspace)/objects/actions';
 import { BoardColumn } from './BoardColumn';
+import { RecordViewBar } from '@/components/record-table/RecordViewBar';
 
 const NONE = '__none__';
 
-export function RecordBoard({ objectSlug, object, view }) {
+export function RecordBoard({ objectSlug, object, view, views, activeViewId }) {
   const { currency } = useWorkspaceSettings();
   const groupField = object.fields.find((f) => f.id === view.kanbanFieldMetadataId);
   const titleField = object.fields.find((f) => f.id === object.labelIdentifierFieldId);
@@ -157,30 +158,49 @@ export function RecordBoard({ objectSlug, object, view }) {
     loadAggregates();
   }
 
+  const total = cols.reduce((sum, col) => sum + (aggFor(col)?.count ?? 0), 0);
+
+  const bar = (
+    <RecordViewBar
+      objectSlug={objectSlug}
+      views={views}
+      activeViewId={activeViewId}
+      count={total || undefined}
+    />
+  );
+
   if (!groupField) {
-    return <p className="text-tertiary p-6 text-sm">Este objeto no tiene un campo para agrupar.</p>;
+    return (
+      <div className="flex h-full flex-col">
+        {bar}
+        <p className="text-tertiary p-6 text-sm">Este objeto no tiene un campo para agrupar.</p>
+      </div>
+    );
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-      <div className="flex h-full gap-5 overflow-x-auto p-5">
-        {cols.map((col) => (
-          <BoardColumn
-            key={col.key}
-            col={col}
-            records={recordsByCol[col.key] ?? []}
-            aggregate={aggFor(col)}
-            sumText={sumText(aggFor(col)?.sum)}
-            objectSlug={objectSlug}
-            titleField={titleField}
-            bodyFields={bodyFields}
-            hasMore={Boolean(cursors[col.key])}
-            loading={recordsByCol[col.key] === undefined}
-            onLoadMore={() => loadColumn(col, cursors[col.key])}
-          />
-        ))}
-      </div>
-    </DndContext>
+    <div className="flex h-full flex-col">
+      {bar}
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
+        <div className="flex min-h-0 flex-1 gap-5 overflow-x-auto p-5">
+          {cols.map((col) => (
+            <BoardColumn
+              key={col.key}
+              col={col}
+              records={recordsByCol[col.key] ?? []}
+              aggregate={aggFor(col)}
+              sumText={sumText(aggFor(col)?.sum)}
+              objectSlug={objectSlug}
+              titleField={titleField}
+              bodyFields={bodyFields}
+              hasMore={Boolean(cursors[col.key])}
+              loading={recordsByCol[col.key] === undefined}
+              onLoadMore={() => loadColumn(col, cursors[col.key])}
+            />
+          ))}
+        </div>
+      </DndContext>
+    </div>
   );
 }
 

@@ -7,8 +7,8 @@ export default async function OnboardingLayout({ children }) {
   await requireContext();
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex h-14 shrink-0 items-center justify-between px-5">
-        <BrandMark size={28} />
+      <header className="flex h-12 shrink-0 items-center justify-between px-4">
+        <BrandMark size={24} />
         <form action={onboardingLogoutAction}>
           <button
             type="submit"

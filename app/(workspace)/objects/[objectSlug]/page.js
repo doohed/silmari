@@ -3,7 +3,6 @@ import { requireContext } from '@/lib/auth/dal';
 import { getObjectViews } from '@/lib/views/service';
 import { listRecords } from '@/lib/records/service';
 import { NotFoundError } from '@/lib/errors/domain-errors';
-import { ViewBar } from '@/components/record-table/ViewBar';
 import { RecordTable } from '@/components/record-table/RecordTable';
 import { RecordBoard } from '@/components/record-board/RecordBoard';
 
@@ -40,21 +39,22 @@ export default async function ObjectIndexPage({ params, searchParams }) {
     initialPage = await listRecords(ctx, { objectSlug, filters, sorts, limit: 100 });
   }
 
-  return (
-    <div className="flex h-full flex-col">
-      <ViewBar objectSlug={objectSlug} views={views} activeViewId={activeView.id} />
-      <div className="min-h-0 flex-1">
-        {activeView.type === 'TABLE' ? (
-          <RecordTable
-            objectSlug={objectSlug}
-            object={object}
-            initialView={activeView}
-            initialPage={initialPage}
-          />
-        ) : (
-          <RecordBoard objectSlug={objectSlug} object={object} view={activeView} />
-        )}
-      </div>
-    </div>
+  return activeView.type === 'TABLE' ? (
+    <RecordTable
+      objectSlug={objectSlug}
+      object={object}
+      initialView={activeView}
+      initialPage={initialPage}
+      views={views}
+      activeViewId={activeView.id}
+    />
+  ) : (
+    <RecordBoard
+      objectSlug={objectSlug}
+      object={object}
+      view={activeView}
+      views={views}
+      activeViewId={activeView.id}
+    />
   );
 }

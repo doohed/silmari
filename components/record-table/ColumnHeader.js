@@ -19,7 +19,7 @@ export function ColumnHeader({
   const [menu, setMenu] = useState(false);
 
   return (
-    <div className="group text-secondary relative flex h-full items-center pr-1 pl-2 text-xs font-medium select-none">
+    <div className="group text-tertiary relative flex h-full items-center pr-1 pl-2 text-[11px] font-medium tracking-wide uppercase select-none">
       <button
         type="button"
         onClick={onSort}

@@ -16,14 +16,22 @@ export function NavItem({ href, label, icon }) {
   return (
     <Link
       href={href}
+      aria-current={active ? 'page' : undefined}
       className={cn(
-        'press flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm',
+        'press relative flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px]',
         active
-          ? 'bg-accent-subtle text-primary font-medium shadow-xs'
-          : 'text-secondary hover:bg-chip-gray hover:text-primary',
+          ? 'bg-chip-gray text-primary font-medium'
+          : 'text-secondary hover:bg-chip-gray/60 hover:text-primary',
       )}
     >
-      <Icon name={icon} size={15} className="shrink-0" />
+      {active && (
+        <span className="bg-accent absolute top-1/2 left-0 h-4 w-0.5 -translate-y-1/2 rounded-full" />
+      )}
+      <Icon
+        name={icon}
+        size={15}
+        className={cn('shrink-0', active ? 'text-primary' : 'text-tertiary')}
+      />
       <span className="truncate">{label}</span>
     </Link>
   );

@@ -76,7 +76,7 @@ export function RecordDetail({
         onDelete={onDelete}
       />
       <div className="flex min-h-0 flex-1">
-        <aside className="border-border w-80 shrink-0 overflow-auto border-r">
+        <aside className="border-border w-72 shrink-0 overflow-auto border-r">
           <FieldsPanel fields={fieldsForPanel} record={record} onCommit={commitField} />
         </aside>
         <div className="min-w-0 flex-1 overflow-auto">

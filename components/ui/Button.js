@@ -2,16 +2,16 @@ import { cn } from '@/lib/utils/cn';
 
 const VARIANTS = {
   primary:
-    'bg-accent text-accent-fg shadow-sm hover:opacity-90 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
+    'bg-accent text-accent-fg shadow-xs hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
   secondary:
-    'bg-surface text-primary border border-border shadow-xs hover:border-border-strong hover:shadow-sm disabled:opacity-50',
+    'bg-surface text-primary border border-border hover:bg-chip-gray/60 hover:border-border-strong disabled:opacity-50',
   ghost: 'text-secondary hover:bg-chip-gray hover:text-primary disabled:opacity-50',
-  danger: 'bg-danger text-white shadow-sm hover:opacity-90 hover:shadow-md disabled:opacity-50',
+  danger: 'bg-danger text-white shadow-xs hover:opacity-90 disabled:opacity-50',
 };
 
 const SIZES = {
-  sm: 'h-9 px-3.5 text-xs',
-  md: 'h-10 px-5',
+  sm: 'h-8 gap-1.5 px-3 text-xs',
+  md: 'h-9 px-4 text-[13px]',
 };
 
 /**
@@ -25,8 +25,8 @@ export function Button({ variant = 'primary', size = 'md', className, ...props }
   return (
     <button
       className={cn(
-        'press inline-flex items-center justify-center gap-2 rounded-lg font-medium',
-        'focus-visible:ring-accent focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none',
+        'press inline-flex items-center justify-center gap-2 rounded-md font-medium',
+        'focus-visible:ring-accent/40 focus-visible:ring-2 focus-visible:outline-none',
         VARIANTS[variant],
         SIZES[size],
         className,

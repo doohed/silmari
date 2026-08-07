@@ -6,6 +6,7 @@ import {
   listRecords,
   updateRecord,
   moveRecord,
+  reorderRecords,
   softDeleteRecord,
   restoreRecord,
 } from '@/lib/records/service';
@@ -122,6 +123,21 @@ describe('capa genérica de registros', () => {
       source: 'SYSTEM',
     });
     expect(demo.createdBy.source).toBe('SYSTEM'); // se mostrará como "Sistema"
+  });
+
+  it('reorderRecords hornea un orden manual desde una lista de ids', async () => {
+    const ctx = await owner();
+    const a = await createRecord(ctx, { objectSlug: 'companies', data: { name: 'A' } });
+    const b = await createRecord(ctx, { objectSlug: 'companies', data: { name: 'B' } });
+    const c = await createRecord(ctx, { objectSlug: 'companies', data: { name: 'C' } });
+
+    let list = await listRecords(ctx, { objectSlug: 'companies' });
+    expect(list.records.map((r) => r.data.name)).toEqual(['A', 'B', 'C']);
+
+    await reorderRecords(ctx, { objectSlug: 'companies', orderedIds: [c.id, a.id, b.id] });
+
+    list = await listRecords(ctx, { objectSlug: 'companies' });
+    expect(list.records.map((r) => r.data.name)).toEqual(['C', 'A', 'B']);
   });
 
   it('actualiza y registra el diff en el timeline', async () => {

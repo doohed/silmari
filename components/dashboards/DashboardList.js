@@ -30,7 +30,7 @@ import {
 } from '@/app/(workspace)/dashboards/actions';
 
 // Rejilla de la tabla, con las mismas medidas que la tabla de registros.
-const ROW_H = 40;
+const ROW_H = 34;
 const GUTTER = 76;
 const COLS = [
   { key: 'title', label: 'Título', width: 260 },
@@ -184,7 +184,7 @@ export function DashboardList({ dashboards }) {
           {COLS.map((c) => (
             <div
               key={c.key}
-              className="border-border text-secondary flex h-10 shrink-0 items-center border-l pr-1 pl-2 text-xs font-medium select-none"
+              className="border-border text-tertiary flex h-9 shrink-0 items-center border-l pr-1 pl-2 text-xs font-medium tracking-wide uppercase select-none"
               style={{ width: c.width }}
             >
               <span className="truncate">{c.label}</span>

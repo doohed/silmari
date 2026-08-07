@@ -11,9 +11,9 @@ export function Input({ className, ref, ...props }) {
     <input
       ref={ref}
       className={cn(
-        'bg-surface text-primary placeholder:text-tertiary h-10 w-full rounded-lg border px-3.5',
-        'border-border focus:border-accent focus:outline-none',
-        'transition-[border-color] duration-150',
+        'bg-surface text-primary placeholder:text-tertiary h-9 w-full rounded-md border px-3 text-[13px]',
+        'border-border focus:border-accent focus:ring-accent/15 focus:ring-2 focus:outline-none',
+        'transition-[border-color,box-shadow] duration-150',
         className,
       )}
       {...props}

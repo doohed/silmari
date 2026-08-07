@@ -26,7 +26,7 @@ export function WelcomeStep({ firstName, brand }) {
         </span>
       </div>
 
-      <h1 className="anim-fade-up text-primary mt-10 text-3xl font-semibold tracking-tight">
+      <h1 className="anim-fade-up text-primary mt-8 text-2xl font-semibold tracking-tight">
         ¡Todo listo{firstName ? `, ${firstName}` : ''}!
       </h1>
       <p className="anim-fade-up text-secondary mt-3 text-sm">
