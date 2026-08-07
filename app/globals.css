@@ -1,26 +1,396 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* Activa la variante dark:* de Tailwind v4 mediante la clase .dark
+   (toggle claro/oscuro en la Fase 10; por defecto, claro). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================================
+   Tokens de diseño (CSS variables)
+   Estética "Apple": aire generoso, radios amplios, profundidad por sombras
+   suaves en capas (superficies sólidas, sin translúcido) y movimiento con
+   easing tipo spring. El contenido sigue mandando pero respira. Ningún
+   componente hardcodea colores: todos consumen estas variables vía las
+   utilidades de Tailwind (@theme abajo).
+   ========================================================================== */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Superficies y bordes */
+  --bg: #fbfbfc; /* fondo de la app */
+  --surface: #ffffff; /* tarjetas, filas, paneles */
+  --elevated: #ffffff; /* popovers, dropdowns, diálogos */
+  --border: #ececef; /* borde por defecto */
+  --border-strong: #d7d7dd; /* borde de énfasis / foco de celda */
+
+  /* Texto en tres niveles */
+  --text-primary: #1b1b1f;
+  --text-secondary: #5b5b66;
+  --text-tertiary: #9797a3;
+
+  /* Acento */
+  --accent: #ff4800;
+  --accent-fg: #ffffff;
+  --accent-subtle: #ffece2;
+
+  /* Feedback */
+  --danger: #dc2626;
+  --success: #16a34a;
+
+  /* Paleta tenue para chips de SELECT (fondo + texto) */
+  --chip-gray-bg: #f0f0f2;
+  --chip-gray-fg: #55555f;
+  --chip-red-bg: #fdecec;
+  --chip-red-fg: #b42318;
+  --chip-orange-bg: #fdefe0;
+  --chip-orange-fg: #b54708;
+  --chip-yellow-bg: #fcf4dc;
+  --chip-yellow-fg: #a15c07;
+  --chip-green-bg: #e6f6ec;
+  --chip-green-fg: #067647;
+  --chip-blue-bg: #e7f0fe;
+  --chip-blue-fg: #175cd3;
+  --chip-purple-bg: #f0ecfe;
+  --chip-purple-fg: #6941c6;
+  --chip-pink-bg: #fdeaf4;
+  --chip-pink-fg: #c11574;
+
+  /* Paleta categórica para gráficos (validada CVD, claro). Ver skill dataviz. */
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-3: #1baf7a;
+  --viz-4: #eda100;
+  --viz-5: #e87ba4;
+  --viz-6: #008300;
+  --viz-7: #4a3aa7;
+  --viz-8: #e34948;
+
+  /* Elevaciones (modo claro) */
+  --elev-xs: 0 1px 2px rgb(17 17 26 / 0.04);
+  --elev-sm: 0 1px 3px rgb(17 17 26 / 0.05), 0 1px 2px rgb(17 17 26 / 0.04);
+  --elev-md: 0 4px 14px rgb(17 17 26 / 0.08), 0 2px 4px rgb(17 17 26 / 0.05);
+  --elev-lg: 0 12px 34px rgb(17 17 26 / 0.12), 0 4px 8px rgb(17 17 26 / 0.06);
 }
 
+.dark {
+  --bg: #0d0d0f;
+  --surface: #161619;
+  --elevated: #1f1f24;
+  --border: #26262c;
+  --border-strong: #3a3a43;
+
+  --text-primary: #ededef;
+  --text-secondary: #a1a1ad;
+  --text-tertiary: #6c6c78;
+
+  --accent: #ff5a1f;
+  --accent-fg: #ffffff;
+  --accent-subtle: #3a1c0c;
+
+  --danger: #f87171;
+  --success: #4ade80;
+
+  --chip-gray-bg: #26262c;
+  --chip-gray-fg: #b6b6c0;
+  --chip-red-bg: #3a1d1d;
+  --chip-red-fg: #f5a5a0;
+  --chip-orange-bg: #3a2716;
+  --chip-orange-fg: #f5bd8a;
+  --chip-yellow-bg: #362d13;
+  --chip-yellow-fg: #ecc67a;
+  --chip-green-bg: #14301f;
+  --chip-green-fg: #7ee0a5;
+  --chip-blue-bg: #162a45;
+  --chip-blue-fg: #9cc2f5;
+  --chip-purple-bg: #241d3f;
+  --chip-purple-fg: #c3aef5;
+  --chip-pink-bg: #3a1a2c;
+  --chip-pink-fg: #f0a5cf;
+
+  /* Paleta categórica para gráficos (misma, stepeada para fondo oscuro). */
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-3: #199e70;
+  --viz-4: #c98500;
+  --viz-5: #d55181;
+  --viz-6: #008300;
+  --viz-7: #9085e9;
+  --viz-8: #e66767;
+
+  /* Elevaciones (modo oscuro): más marcadas sobre fondo oscuro */
+  --elev-xs: 0 1px 2px rgb(0 0 0 / 0.3);
+  --elev-sm: 0 1px 3px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
+  --elev-md: 0 4px 14px rgb(0 0 0 / 0.45), 0 2px 4px rgb(0 0 0 / 0.3);
+  --elev-lg: 0 14px 40px rgb(0 0 0 / 0.55), 0 4px 10px rgb(0 0 0 / 0.35);
+}
+
+/* Mapeo de tokens a utilidades de Tailwind v4:
+   genera bg-surface, text-secondary, border-border, bg-chip-blue, etc. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-subtle: var(--accent-subtle);
+
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+
+  --color-chip-gray: var(--chip-gray-bg);
+  --color-chip-gray-fg: var(--chip-gray-fg);
+  --color-chip-red: var(--chip-red-bg);
+  --color-chip-red-fg: var(--chip-red-fg);
+  --color-chip-orange: var(--chip-orange-bg);
+  --color-chip-orange-fg: var(--chip-orange-fg);
+  --color-chip-yellow: var(--chip-yellow-bg);
+  --color-chip-yellow-fg: var(--chip-yellow-fg);
+  --color-chip-green: var(--chip-green-bg);
+  --color-chip-green-fg: var(--chip-green-fg);
+  --color-chip-blue: var(--chip-blue-bg);
+  --color-chip-blue-fg: var(--chip-blue-fg);
+  --color-chip-purple: var(--chip-purple-bg);
+  --color-chip-purple-fg: var(--chip-purple-fg);
+  --color-chip-pink: var(--chip-pink-bg);
+  --color-chip-pink-fg: var(--chip-pink-fg);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Radios amplios y consistentes (estilo Apple) */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Sombras suaves en capas: la profundidad viene de aquí, no de los bordes.
+     Los valores reales viven en :root/.dark (--elev-*) para variar por tema. */
+  --shadow-xs: var(--elev-xs);
+  --shadow-sm: var(--elev-sm);
+  --shadow-md: var(--elev-md);
+  --shadow-lg: var(--elev-lg);
+
+  /* Easing: spring juguetón para press/entradas, soft para movimientos amplios */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Transiciones algo más largas para que el movimiento se aprecie */
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  /* Aire primero: 14px de base para una lectura más cómoda */
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Contenido de Tiptap (notas) */
+.tiptap ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.tiptap ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.tiptap a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.tiptap code {
+  background: var(--chip-gray-bg);
+  border-radius: 3px;
+  padding: 0 3px;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.85em;
+}
+.tiptap ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+.tiptap ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+.tiptap p.is-editor-empty:first-child::before {
+  content: 'Escribe una nota…';
+  color: var(--text-tertiary);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Command menu (cmdk) */
+[cmdk-overlay] {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 40%);
+  z-index: 50;
+}
+.cmdk-dialog {
+  position: fixed;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92%;
+  max-width: 560px;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 25%);
+  z-index: 51;
+  overflow: hidden;
+}
+.cmdk-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.cmdk-item svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.cmdk-item[data-selected='true'] {
+  background: var(--accent-subtle);
+}
+[cmdk-group-heading] {
+  padding: 0.4rem 0.6rem 0.2rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+/* Micro-animaciones de entrada (diálogos, ⌘K, popovers) */
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.cmdk-dialog,
+.anim-dialog {
+  animation: dialog-in 200ms var(--ease-spring);
+}
+[cmdk-overlay],
+.anim-overlay {
+  animation: overlay-in 140ms ease-out;
+}
+.anim-pop {
+  animation: pop-in 160ms var(--ease-spring);
+}
+
+/* Entrada suave hacia arriba. Combínala con .stagger para escalonar hijos. */
+.anim-fade-up {
+  animation: fade-up 320ms var(--ease-soft) both;
+}
+.stagger > * {
+  animation: fade-up 340ms var(--ease-soft) both;
+}
+.stagger > *:nth-child(1) {
+  animation-delay: 20ms;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 55ms;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 90ms;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 125ms;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.stagger > *:nth-child(6) {
+  animation-delay: 195ms;
+}
+.stagger > *:nth-child(n + 7) {
+  animation-delay: 230ms;
+}
+
+/* Press físico (spring) para elementos accionables. */
+.press {
+  transition:
+    transform 140ms var(--ease-spring),
+    box-shadow 180ms var(--ease-soft),
+    background-color 150ms ease,
+    border-color 150ms ease,
+    opacity 150ms ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Elevación al pasar el cursor (tarjetas y superficies clicables no arrastrables). */
+.hover-lift {
+  transition:
+    transform 180ms var(--ease-soft),
+    box-shadow 180ms var(--ease-soft);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }

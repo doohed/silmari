@@ -1,0 +1,40 @@
+import mongoose from 'mongoose';
+
+/**
+ * Usuario global (no pertenece a un workspace; se relaciona vía WorkspaceMember).
+ * @typedef {'WORKSPACE'|'PROFILE'|'INVITE'|'PLAN'|'WELCOME'|'DONE'} OnboardingStep
+ * @typedef {object} UserDoc
+ * @property {string} email
+ * @property {string} [passwordHash] Ausente en cuentas OAuth (Google).
+ * @property {'email'|'google'} authProvider
+ * @property {string} firstName
+ * @property {string} lastName
+ * @property {string} [avatarUrl]
+ * @property {OnboardingStep} onboardingStep
+ * @property {Date} [lastActiveAt]
+ */
+
+const ONBOARDING_STEPS = ['WORKSPACE', 'PROFILE', 'INVITE', 'PLAN', 'WELCOME', 'DONE'];
+
+const userSchema = new mongoose.Schema(
+  {
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    // Opcional: las cuentas OAuth (Google) no tienen contraseña.
+    passwordHash: { type: String, default: null },
+    authProvider: { type: String, enum: ['email', 'google'], default: 'email' },
+    firstName: { type: String, required: true, trim: true },
+    lastName: { type: String, default: '', trim: true },
+    avatarUrl: { type: String, default: null },
+    // Paso del onboarding. Default DONE para no atrapar cuentas ya existentes
+    // ni las creadas por invitación; el alta nueva lo pone en WORKSPACE.
+    onboardingStep: { type: String, enum: ONBOARDING_STEPS, default: 'DONE' },
+    lastActiveAt: { type: Date, default: null },
+    // Soft delete de la cuenta (danger zone). Las guardas de auth la rechazan.
+    deletedAt: { type: Date, default: null },
+  },
+  { timestamps: true },
+);
+
+export const ONBOARDING_STEP_ORDER = ONBOARDING_STEPS;
+export const User = mongoose.models.User || mongoose.model('User', userSchema);
+export default User;

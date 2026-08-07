@@ -1,0 +1,31 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: silmari-mongo
+    restart: unless-stopped
+    # Replica set de un solo nodo: necesario para transacciones de Mongoose
+    # (escrituras multi-colección en signup, metadata, relaciones, etc.).
+    command: ['--replSet', 'rs0', '--bind_ip_all']
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      # Inicia el replica set la primera vez; en arranques posteriores rs.status()
+      # ya devuelve ok y no se reinicializa. El host 'localhost:27017' hace que el
+      # cliente en la máquina anfitriona resuelva el nodo correctamente.
+      test:
+        [
+          'CMD',
+          'mongosh',
+          '--quiet',
+          '--eval',
+          "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }).ok }",
+        ]
+      interval: 10s
+      timeout: 10s
+      start_period: 20s
+      retries: 10
+
+volumes:
+  mongo-data:
