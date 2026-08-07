@@ -34,7 +34,7 @@
   --accent-subtle: #fff1e9;
 
   /* Feedback */
-  --danger: #e11d48;
+  --danger: #b91c1c;
   --success: #16a34a;
 
   /* Paleta tenue para chips de SELECT (fondo + texto) */
@@ -92,7 +92,7 @@
   --accent-fg: #ffffff;
   --accent-subtle: #3a1e10;
 
-  --danger: #fb7185;
+  --danger: #b91c1c;
   --success: #4ade80;
 
   --chip-gray-bg: #26262a;
