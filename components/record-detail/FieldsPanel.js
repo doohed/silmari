@@ -6,24 +6,29 @@ import { readFieldValue } from '@/lib/records/field-path';
 import { EditableValue } from './EditableValue';
 
 /**
- * Panel lateral de campos, agrupados y colapsables. Todos editables en sitio.
- * @param {{ fields: object[], record: object, onCommit: (name:string, value:any)=>void }} props
+ * Panel de campos, agrupados y colapsables. Todos editables en sitio. Con
+ * `hideHeader` se oculta el título "Detalles" (cuando ya es el nombre de la
+ * pestaña que lo contiene, en el panel lateral).
+ * @param {{ fields: object[], record: object, onCommit: (name:string, value:any)=>void, hideHeader?: boolean }} props
  */
-export function FieldsPanel({ fields, record, onCommit }) {
+export function FieldsPanel({ fields, record, onCommit, hideHeader = false }) {
   const [open, setOpen] = useState(true);
+  const collapsed = !hideHeader && !open;
 
   return (
     <div className="p-3">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="text-tertiary mb-2 flex items-center gap-1 px-2 text-[11px] font-medium tracking-wide uppercase"
-      >
-        {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-        Detalles
-      </button>
+      {!hideHeader && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="text-tertiary mb-2 flex items-center gap-1 px-2 text-[11px] font-medium tracking-wide uppercase"
+        >
+          {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+          Detalles
+        </button>
+      )}
 
-      {open && (
+      {!collapsed && (
         <dl className="space-y-1.5">
           {fields.map((field) => (
             <div key={field.id} className="grid grid-cols-[120px_1fr] items-center gap-2">

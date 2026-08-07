@@ -369,6 +369,18 @@ input[type='checkbox']:focus-visible {
     transform: translate(-50%, -50%) scale(1);
   }
 }
+/* La ⌘K reposa en top:18% con solo centrado horizontal; su keyframe debe
+   respetar ese transform (si usa translateY(-50%) salta al terminar). */
+@keyframes cmdk-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
 @keyframes pop-in {
   from {
     opacity: 0;
@@ -389,7 +401,9 @@ input[type='checkbox']:focus-visible {
     transform: translateY(0);
   }
 }
-.cmdk-dialog,
+.cmdk-dialog {
+  animation: cmdk-in 200ms var(--ease-spring);
+}
 .anim-dialog {
   animation: dialog-in 200ms var(--ease-spring);
 }

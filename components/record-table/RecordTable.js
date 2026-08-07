@@ -1,17 +1,10 @@
 'use client';
 
 import { useMemo, useRef, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -41,6 +34,7 @@ import { ColumnHeader } from './ColumnHeader';
 import { CellContent } from './CellContent';
 import { EmptyState } from './EmptyState';
 import { ImportDialog } from './ImportDialog';
+import { RecordDrawer } from '@/components/record-detail/RecordDrawer';
 
 const ROW_H = 34;
 const GUTTER = 76;
@@ -63,7 +57,6 @@ function mapView(view, fieldById) {
 
 export function RecordTable({ objectSlug, object, initialView, initialPage, views, activeViewId }) {
   const qc = useQueryClient();
-  const router = useRouter();
   const scrollRef = useRef(null);
   const persistTimer = useRef(null);
 
@@ -197,6 +190,8 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.id)));
 
   const [importOpen, setImportOpen] = useState(false);
+  // Registro abierto en el panel lateral (cajón); null = cerrado.
+  const [openRecordId, setOpenRecordId] = useState(null);
 
   // ---- Celda activa / edición ----
   const [active, setActive] = useState({ row: 0, col: 0 });
@@ -424,123 +419,136 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
   const sortDir = (name) => (sorts[0]?.fieldName === name ? sorts[0].direction : null);
 
   return (
-    <div className="flex h-full flex-col">
-      <RecordViewBar
-        objectSlug={objectSlug}
-        views={views}
-        activeViewId={activeViewId}
-        count={rows.length}
-      >
-        <Toolbar
-          selectedCount={selected.size}
-          fields={object.fields}
-          filters={filters}
-          onFiltersChange={applyFilters}
-          onNewRecord={() => createM.mutate()}
-          onDeleteSelected={() => deleteM.mutate([...selected])}
-          onExport={exportCsv}
-          onImport={() => setImportOpen(true)}
-        />
-      </RecordViewBar>
-
-      <ImportDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        objectSlug={objectSlug}
-        fields={object.fields}
-        onImported={() => qc.invalidateQueries({ queryKey })}
-      />
-
-      {rows.length === 0 && !query.isFetching ? (
-        <EmptyState label={object.labelPlural} onCreate={() => createM.mutate()} />
-      ) : (
-        <div
-          ref={scrollRef}
-          tabIndex={0}
-          onKeyDown={onKeyDown}
-          onScroll={onScroll}
-          className="relative flex-1 overflow-auto outline-none"
+    <div className="flex h-full">
+      <div className="flex h-full min-w-0 flex-1 flex-col">
+        <RecordViewBar
+          objectSlug={objectSlug}
+          views={views}
+          activeViewId={activeViewId}
+          count={rows.length}
         >
-          {/* Cabecera (z-30 para que el menú de columna quede sobre las filas) */}
-          <div
-            className="border-border bg-surface sticky top-0 z-30 flex h-9 border-b"
-            style={{ width: totalWidth + GUTTER }}
-          >
-            <div className="flex shrink-0 items-center gap-1 pl-2" style={{ width: GUTTER }}>
-              {/* Espaciador del ancho del asa de arrastre para alinear el
-                  checkbox con los de las filas. */}
-              <span aria-hidden className="w-3.5 shrink-0" />
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={toggleAll}
-                className="accent-accent size-3.5"
-              />
-            </div>
-            {table.getFlatHeaders().map((header) => {
-              const field = header.column.columnDef.meta.field;
-              return (
-                <div
-                  key={header.id}
-                  className="border-border shrink-0 border-l"
-                  style={{ width: header.getSize() }}
-                >
-                  <ColumnHeader
-                    label={field.label}
-                    sortDir={sortDir(field.name)}
-                    onSort={() => toggleSort(field.name)}
-                    onHide={() => hideField(field.id)}
-                    onMoveLeft={() => moveField(field.id, -1)}
-                    onMoveRight={() => moveField(field.id, 1)}
-                    onResizeStart={header.getResizeHandler()}
-                  />
-                </div>
-              );
-            })}
-          </div>
+          <Toolbar
+            selectedCount={selected.size}
+            fields={object.fields}
+            filters={filters}
+            onFiltersChange={applyFilters}
+            onNewRecord={() => createM.mutate()}
+            onDeleteSelected={() => deleteM.mutate([...selected])}
+            onExport={exportCsv}
+            onImport={() => setImportOpen(true)}
+          />
+        </RecordViewBar>
 
-          {/* Cuerpo virtualizado (filas ordenables por arrastre) */}
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-              <div
-                style={{
-                  height: rowVirtualizer.getTotalSize(),
-                  width: totalWidth + GUTTER,
-                  position: 'relative',
-                }}
-              >
-                {rowVirtualizer.getVirtualItems().map((vItem) => {
-                  const row = table.getRowModel().rows[vItem.index];
-                  const record = row.original;
-                  return (
-                    <RecordRow
-                      key={row.id}
-                      record={record}
-                      cells={row.getVisibleCells()}
-                      top={vItem.start}
-                      width={totalWidth + GUTTER}
-                      dragEnabled
-                      isActiveRow={active.row === vItem.index}
-                      activeCol={active.col}
-                      editing={editing}
-                      selected={selected.has(record.id)}
-                      onToggleSelected={() => toggleSelected(record.id)}
-                      onOpen={() => router.push(`/objects/${objectSlug}/${record.id}`)}
-                      onActivateCell={(colIndex) => setActive({ row: vItem.index, col: colIndex })}
-                      onStartEdit={() => setEditing(true)}
-                      onCommitCell={(field, v) => commitCell(record.id, field.name, v)}
-                      onCancelEdit={() => {
-                        setEditing(false);
-                        focusGrid();
-                      }}
-                    />
-                  );
-                })}
+        <ImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          objectSlug={objectSlug}
+          fields={object.fields}
+          onImported={() => qc.invalidateQueries({ queryKey })}
+        />
+
+        {rows.length === 0 && !query.isFetching ? (
+          <EmptyState label={object.labelPlural} onCreate={() => createM.mutate()} />
+        ) : (
+          <div
+            ref={scrollRef}
+            tabIndex={0}
+            onKeyDown={onKeyDown}
+            onScroll={onScroll}
+            className="relative flex-1 overflow-auto outline-none"
+          >
+            {/* Cabecera (z-30 para que el menú de columna quede sobre las filas) */}
+            <div
+              className="border-border bg-surface sticky top-0 z-30 flex h-9 border-b"
+              style={{ width: totalWidth + GUTTER }}
+            >
+              <div className="flex shrink-0 items-center gap-1 pl-2" style={{ width: GUTTER }}>
+                {/* Espaciador del ancho del asa de arrastre para alinear el
+                  checkbox con los de las filas. */}
+                <span aria-hidden className="w-3.5 shrink-0" />
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                  className="accent-accent size-3.5"
+                />
               </div>
-            </SortableContext>
-          </DndContext>
-        </div>
-      )}
+              {table.getFlatHeaders().map((header) => {
+                const field = header.column.columnDef.meta.field;
+                return (
+                  <div
+                    key={header.id}
+                    className="border-border shrink-0 border-l"
+                    style={{ width: header.getSize() }}
+                  >
+                    <ColumnHeader
+                      label={field.label}
+                      sortDir={sortDir(field.name)}
+                      onSort={() => toggleSort(field.name)}
+                      onHide={() => hideField(field.id)}
+                      onMoveLeft={() => moveField(field.id, -1)}
+                      onMoveRight={() => moveField(field.id, 1)}
+                      onResizeStart={header.getResizeHandler()}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Cuerpo virtualizado (filas ordenables por arrastre) */}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+              <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+                <div
+                  style={{
+                    height: rowVirtualizer.getTotalSize(),
+                    width: totalWidth + GUTTER,
+                    position: 'relative',
+                  }}
+                >
+                  {rowVirtualizer.getVirtualItems().map((vItem) => {
+                    const row = table.getRowModel().rows[vItem.index];
+                    const record = row.original;
+                    return (
+                      <RecordRow
+                        key={row.id}
+                        record={record}
+                        cells={row.getVisibleCells()}
+                        top={vItem.start}
+                        width={totalWidth + GUTTER}
+                        dragEnabled
+                        isActiveRow={active.row === vItem.index}
+                        activeCol={active.col}
+                        editing={editing}
+                        selected={selected.has(record.id)}
+                        onToggleSelected={() => toggleSelected(record.id)}
+                        onOpen={() => setOpenRecordId(record.id)}
+                        onActivateCell={(colIndex) =>
+                          setActive({ row: vItem.index, col: colIndex })
+                        }
+                        onStartEdit={() => setEditing(true)}
+                        onCommitCell={(field, v) => commitCell(record.id, field.name, v)}
+                        onCancelEdit={() => {
+                          setEditing(false);
+                          focusGrid();
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </div>
+        )}
+      </div>
+
+      <RecordDrawer
+        open={openRecordId != null}
+        objectSlug={objectSlug}
+        object={object}
+        recordId={openRecordId}
+        onClose={() => setOpenRecordId(null)}
+        onChanged={() => qc.invalidateQueries({ queryKey: ['records', objectSlug] })}
+      />
     </div>
   );
 }

@@ -20,7 +20,7 @@ export async function Sidebar({ objects, workspaces, activeId, user }) {
   const locale = await getLocale();
 
   return (
-    <aside className="border-border bg-surface flex w-56 shrink-0 flex-col border-r">
+    <aside className="border-border bg-surface flex h-full w-full flex-col border-r">
       <div className="p-2">
         <UserMenu user={user} />
       </div>

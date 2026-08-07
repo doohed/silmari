@@ -19,6 +19,8 @@ export function RecordDetail({
   initialRecord,
   initialTimeline,
   initialRelated,
+  onClose,
+  onChanged,
 }) {
   const router = useRouter();
   const [record, setRecord] = useState(initialRecord);
@@ -51,22 +53,34 @@ export function RecordDetail({
     }
     setRecord(r.data);
     refreshTimeline();
+    onChanged?.();
   }
 
   async function onDelete() {
     const r = await deleteRecordAction({ objectSlug, recordId: record.id });
     if (r.ok) {
       toast.success('Registro eliminado');
-      router.push(`/objects/${objectSlug}`);
+      onChanged?.();
+      // En cajón: cierra el panel y deja la tabla; en página: navega a la lista.
+      if (onClose) onClose();
+      else router.push(`/objects/${objectSlug}`);
     } else {
       toast.error(r.message);
     }
   }
 
   const fieldsForPanel = object.fields.filter((f) => f.id !== object.labelIdentifierFieldId);
+  const fieldsPanel = (
+    <FieldsPanel
+      fields={fieldsForPanel}
+      record={record}
+      onCommit={commitField}
+      hideHeader={Boolean(onClose)}
+    />
+  );
 
   return (
-    <div className="anim-fade-up flex h-full flex-col">
+    <div className={`flex h-full flex-col ${onClose ? '' : 'anim-fade-up'}`}>
       <RecordHeader
         objectSlug={objectSlug}
         object={object}
@@ -74,21 +88,35 @@ export function RecordDetail({
         idField={idField}
         onCommit={commitField}
         onDelete={onDelete}
+        onClose={onClose}
       />
-      <div className="flex min-h-0 flex-1">
-        <aside className="border-border w-72 shrink-0 overflow-auto border-r">
-          <FieldsPanel fields={fieldsForPanel} record={record} onCommit={commitField} />
-        </aside>
-        <div className="min-w-0 flex-1 overflow-auto">
+      {onClose ? (
+        // Panel lateral: "Detalles" es una pestaña más, a ancho completo.
+        <div className="flex min-h-0 flex-1 flex-col">
           <TabsPanel
             object={object}
             timeline={timeline}
             related={related}
             currentRecordId={record.id}
             onRelatedChange={refreshRelated}
+            detailsContent={fieldsPanel}
           />
         </div>
-      </div>
+      ) : (
+        // Página completa: los campos van en una columna lateral (hay espacio).
+        <div className="flex min-h-0 flex-1">
+          <aside className="border-border w-72 shrink-0 overflow-auto border-r">{fieldsPanel}</aside>
+          <div className="min-w-0 flex-1 overflow-auto">
+            <TabsPanel
+              object={object}
+              timeline={timeline}
+              related={related}
+              currentRecordId={record.id}
+              onRelatedChange={refreshRelated}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

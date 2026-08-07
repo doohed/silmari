@@ -2,6 +2,7 @@ import { requireOnboarded, getCurrentUser } from '@/lib/auth/dal';
 import { listUserWorkspaces, getCurrentWorkspace } from '@/lib/workspaces/service';
 import { listObjects } from '@/lib/metadata/object-service';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { ResizableSidebar } from '@/components/layout/ResizableSidebar';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { WorkspaceProvider } from '@/components/providers/WorkspaceProvider';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
@@ -26,12 +27,14 @@ export default async function WorkspaceLayout({ children }) {
         <ConfirmProvider>
           <AppShortcuts />
           <div className="flex h-screen">
-            <Sidebar
-              objects={objects}
-              workspaces={workspaces}
-              activeId={ctx.workspaceId}
-              user={user}
-            />
+            <ResizableSidebar>
+              <Sidebar
+                objects={objects}
+                workspaces={workspaces}
+                activeId={ctx.workspaceId}
+                user={user}
+              />
+            </ResizableSidebar>
             <main className="min-w-0 flex-1 overflow-hidden">{children}</main>
           </div>
         </ConfirmProvider>
