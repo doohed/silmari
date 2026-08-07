@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Settings, Sun, Moon, Languages, LogOut, ChevronsUpDown } from 'lucide-react';
+import { Settings, Sun, Moon, LogOut, ChevronsUpDown } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { logoutAction } from '@/app/(workspace)/actions';
 
@@ -12,22 +11,20 @@ const ITEM =
 
 /**
  * Menú de cuenta: el avatar del usuario abre un desplegable con configuraciones,
- * tema, idioma y cerrar sesión. (Tema e idioma se persisten en cookie.)
+ * tema y cerrar sesión. (El tema se persiste en cookie; el idioma se cambia en
+ * Ajustes → Perfil.)
  * @param {{ user: { firstName:string, lastName:string, email?:string, avatarUrl?:string|null } | null }} props
  */
 export function UserMenu({ user }) {
-  const router = useRouter();
   const ref = useRef(null);
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useState(false);
-  const [locale, setLocale] = useState('es');
   const name = user ? `${user.firstName} ${user.lastName}`.trim() : '';
 
   useEffect(() => {
-    // Estado inicial desde el DOM/cookie (aplicados por el layout raíz).
+    // Estado inicial del tema desde el DOM (aplicado por el layout raíz).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDark(document.documentElement.classList.contains('dark'));
-    setLocale(document.cookie.includes('locale=en') ? 'en' : 'es');
   }, []);
 
   useEffect(() => {
@@ -49,13 +46,6 @@ export function UserMenu({ user }) {
     setDark(next);
     document.documentElement.classList.toggle('dark', next);
     document.cookie = `theme=${next ? 'dark' : 'light'}; path=/; max-age=31536000; samesite=lax`;
-  }
-
-  function toggleLocale() {
-    const next = locale === 'es' ? 'en' : 'es';
-    setLocale(next);
-    document.cookie = `locale=${next}; path=/; max-age=31536000; samesite=lax`;
-    router.refresh();
   }
 
   return (
@@ -95,12 +85,6 @@ export function UserMenu({ user }) {
               <Moon size={15} className="text-tertiary" />
             )}
             {dark ? 'Tema claro' : 'Tema oscuro'}
-          </button>
-          <button type="button" role="menuitem" onClick={toggleLocale} className={ITEM}>
-            <Languages size={15} className="text-tertiary" />
-            <span>
-              Idioma: <span className="uppercase">{locale}</span>
-            </span>
           </button>
 
           <div className="border-border my-1 border-t" />

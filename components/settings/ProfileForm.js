@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { ImagePicker } from '@/components/onboarding/ImagePicker';
 import { PasswordSection } from './PasswordSection';
+import { LanguageSection } from './LanguageSection';
 import { DeleteAccountSection } from './DeleteAccountSection';
 import { updateProfileAction } from '@/app/(workspace)/settings/actions';
 
@@ -84,6 +85,10 @@ export function ProfileForm({ account }) {
             <Pencil size={15} />
           </button>
         </div>
+      </Section>
+
+      <Section title="Idioma" description="Idioma de la interfaz">
+        <LanguageSection />
       </Section>
 
       <Section
