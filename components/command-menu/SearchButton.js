@@ -18,7 +18,7 @@ export function SearchButton() {
       className="press border-border bg-bg text-tertiary hover:border-border-strong hover:text-secondary flex h-8 w-full items-center gap-2 rounded-md border px-2.5 text-xs"
     >
       <Search size={14} />
-      <span className="flex-1 text-left">Buscar o navegar…</span>
+      <span className="flex-1 text-left">Buscar</span>
       <kbd className="border-border bg-surface rounded-md border px-1.5 py-0.5 font-mono text-[10px]">
         {mac ? '⌘' : 'Ctrl'} K
       </kbd>

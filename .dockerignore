@@ -1,0 +1,30 @@
+# Nunca copiar al contexto de build (más rápido y más seguro)
+node_modules
+.next
+.git
+.gitignore
+
+# Secretos de runtime: se inyectan por env_file/environment, no se hornean.
+.env
+.env.*
+
+# Subidas locales y datos
+storage
+mongo-data
+
+# Artefactos de test / tooling
+coverage
+playwright-report
+test-results
+tests/e2e/.auth
+*.log
+
+# Editor / SO
+.vscode
+.idea
+.DS_Store
+
+# El propio Docker
+Dockerfile
+.dockerignore
+docker-compose.yml

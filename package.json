@@ -16,7 +16,12 @@
     "seed": "node --no-warnings --loader ./scripts/alias-loader.mjs scripts/seed.js",
     "migrate:created-by": "node --no-warnings --loader ./scripts/alias-loader.mjs scripts/add-created-by.mjs",
     "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "app:up": "docker compose --profile app up -d --build",
+    "app:down": "docker compose --profile app down",
+    "dev:docker": "docker compose --profile dev up -d",
+    "dev:docker:down": "docker compose --profile dev down",
+    "dev:docker:logs": "docker compose --profile dev logs -f dev"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

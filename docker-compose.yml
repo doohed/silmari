@@ -6,6 +6,9 @@ services:
     # Replica set de un solo nodo: necesario para transacciones de Mongoose
     # (escrituras multi-colección en signup, metadata, relaciones, etc.).
     command: ['--replSet', 'rs0', '--bind_ip_all']
+    # Tope de RAM: Mongo 7 respeta el cgroup y ajusta su caché WiredTiger.
+    mem_limit: 1g
+    mem_reservation: 256m
     ports:
       - '27017:27017'
     volumes:
@@ -27,5 +30,75 @@ services:
       start_period: 20s
       retries: 10
 
+  # App Next en producción. Bajo el perfil `app` para NO arrancar con el flujo de
+  # desarrollo (`npm run db:up` sigue levantando solo Mongo). Levanta el stack
+  # completo con:  docker compose --profile app up -d --build
+  app:
+    build:
+      context: .
+      args:
+        # NEXT_PUBLIC_* se hornean en build; ajusta si cambias de dominio/URL.
+        NEXT_PUBLIC_APP_URL: 'http://localhost:3000'
+    container_name: silmari-app
+    restart: unless-stopped
+    profiles: ['app']
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    env_file:
+      # AUTH_SECRET y demás secretos de runtime (crea .env.local a partir de
+      # .env.example). MONGODB_URI de aquí se ignora: lo fija `environment`.
+      - .env.local
+    environment:
+      # Dentro de la red de compose el host de Mongo es el servicio `mongo`.
+      # directConnection evita que el driver intente resolver `localhost:27017`
+      # (host anunciado por el replica set) desde este contenedor.
+      MONGODB_URI: 'mongodb://mongo:27017/silmari?replicaSet=rs0&directConnection=true'
+      NODE_ENV: 'production'
+    volumes:
+      # Persiste las subidas (STORAGE_DIR=./storage dentro del contenedor).
+      - app-storage:/app/storage
+
+  # App Next en DESARROLLO (hot reload) dentro de un contenedor. Bajo el perfil
+  # `dev`. Monta el código del host como volumen; `next dev` recompila al guardar.
+  # Levanta con:  docker compose --profile dev up
+  dev:
+    image: node:24-alpine
+    container_name: silmari-dev
+    profiles: ['dev']
+    # Tope de RAM del contenedor de dev (uso real ~1.6 GB; 2.5 GB deja margen
+    # para picos de compilación de Turbopack sin que lo mate el OOM killer).
+    mem_limit: 2560m
+    mem_reservation: 512m
+    working_dir: /app
+    # Instala deps (el volumen anónimo de node_modules las conserva entre
+    # arranques) y arranca el dev server escuchando en todas las interfaces.
+    command: sh -c "npm install && npm run dev -- -H 0.0.0.0"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env.local
+    environment:
+      MONGODB_URI: 'mongodb://mongo:27017/silmari?replicaSet=rs0&directConnection=true'
+      NODE_ENV: 'development'
+      # Capa el heap de Node (~1.5 GB) para que no crezca sin freno.
+      NODE_OPTIONS: '--max-old-space-size=1536'
+      # File watching sobre bind mount en macOS: usa polling para detectar cambios.
+      WATCHPACK_POLLING: 'true'
+    volumes:
+      # Código del host en vivo…
+      - .:/app
+      # …pero node_modules y el caché .next quedan en volúmenes del contenedor:
+      # los binarios/caché de macOS del host NO deben pisar los de Linux (si no,
+      # Turbopack entra en bucle de «Next.js package not found» y recarga sola).
+      - /app/node_modules
+      - /app/.next
+
 volumes:
   mongo-data:
+  app-storage:

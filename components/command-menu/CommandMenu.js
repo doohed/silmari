@@ -66,7 +66,7 @@ export function CommandMenu({ open, onOpenChange, objects }) {
       <Command.Input
         value={query}
         onValueChange={setQuery}
-        placeholder="Buscar o navegar…"
+        placeholder="Buscar"
         className="border-border text-primary placeholder:text-tertiary w-full border-b bg-transparent px-4 py-3 text-sm outline-none"
       />
       <Command.List className="max-h-80 overflow-auto p-2">
