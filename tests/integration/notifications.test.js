@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import mongoose from 'mongoose';
 import { createAccount } from '@/lib/accounts/signup';
+import { createActivity, updateActivity } from '@/lib/activities/service';
+import { subscribe } from '@/lib/events/bus';
 import {
   notifyUsers,
   listNotifications,
@@ -108,5 +110,63 @@ describe('notificaciones', () => {
     });
     expect(await unreadCount(b)).toBe(0);
     expect(await listNotifications(b, {})).toHaveLength(0);
+  });
+});
+
+/**
+ * Cableado de la emisión: `createActivity`/`updateActivity` deben publicar el
+ * evento `task.assigned` con los destinatarios correctos. Se comprueba con un
+ * espía síncrono en el bus (determinista); el efecto downstream (crear la fila
+ * de notificación) ya lo cubren los tests de `notifyUsers` de arriba.
+ */
+describe('actividades → evento task.assigned', () => {
+  /** Recolecta los eventos del bus mientras corre `fn`, y limpia el espía. */
+  async function captureEvents(fn) {
+    const events = [];
+    subscribe('__spy__', (_ctx, e) => events.push(e));
+    try {
+      await fn();
+      await Promise.resolve();
+      await Promise.resolve();
+    } finally {
+      // El registro es un Map por nombre; sobrescribir con un no-op lo desactiva.
+      subscribe('__spy__', () => {});
+    }
+    return events;
+  }
+
+  it('crear una tarea asignada a otra persona emite task.assigned', async () => {
+    const ctx = await owner();
+    const other = new mongoose.Types.ObjectId().toString();
+    const events = await captureEvents(() =>
+      createActivity(ctx, { type: 'TASK', title: 'Revisar', assigneeIds: [other] }),
+    );
+    const ev = events.find((e) => e.type === 'task.assigned');
+    expect(ev).toBeTruthy();
+    expect(ev.payload.recipientIds).toContain(other);
+    expect(ev.payload.title).toBe('Revisar');
+  });
+
+  it('reasignar una tarea solo anuncia a los responsables nuevos', async () => {
+    const ctx = await owner();
+    const first = new mongoose.Types.ObjectId().toString();
+    const second = new mongoose.Types.ObjectId().toString();
+    const task = await createActivity(ctx, { type: 'TASK', title: 'x', assigneeIds: [first] });
+
+    const events = await captureEvents(() =>
+      updateActivity(ctx, task.id, { assigneeIds: [first, second] }),
+    );
+    const ev = events.find((e) => e.type === 'task.assigned');
+    expect(ev).toBeTruthy();
+    expect(ev.payload.recipientIds).toEqual([second]); // `first` ya lo era
+  });
+
+  it('actualizar una tarea sin tocar responsables no emite el evento', async () => {
+    const ctx = await owner();
+    const task = await createActivity(ctx, { type: 'TASK', title: 'y' });
+    const events = await captureEvents(() =>
+      updateActivity(ctx, task.id, { title: 'y2' }), // no toca assigneeIds
+    );
+    expect(events.find((e) => e.type === 'task.assigned')).toBeUndefined();
   });
 });
