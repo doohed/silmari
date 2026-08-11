@@ -273,14 +273,15 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   el modelo de datos). Son **solo lectura y no filtrables ni ordenables en BD**
   (el valor no se persiste). Falta **ROLLUP** (agregados sobre registros
   relacionados) y **productos/cotizaciones con líneas** (Fase 4 pendiente).
-- **Envío de email y WhatsApp**: el **dominio** está (tipo de actividad
-  EMAIL/WHATSAPP con `comm`, `logCommunication`, registro entrante y composición
-  con plantillas), pero el **envío real** es un seam sin credenciales:
-  `lib/email/provider.js` (`getEmailProvider` → `null`, requiere OAuth de
-  Gmail/Outlook) y `lib/whatsapp/provider.js` (WhatsApp Cloud API de Meta).
-  `sendEmail`/`sendWhatsapp` lanzan un error claro mientras no haya proveedor;
-  registrar comunicaciones a mano y las plantillas ya funcionan. Falta también la
-  UI: pestaña de comunicaciones en la ficha y el flujo de "conectar cuenta".
+- **Envío de email y WhatsApp**: **implementado**. Se conectan en Ajustes →
+  Integraciones (`lib/integrations/`, secretos cifrados con `lib/utils/crypto`).
+  Email por **SMTP** (`nodemailer`; con Gmail, contraseña de aplicación);
+  WhatsApp por la **Cloud API de Meta** (`phone_number_id` + token, POST a la
+  Graph API). Los proveedores (`lib/email/provider.js`, `lib/whatsapp/provider.js`)
+  leen la conexión del workspace; si no hay ninguna, `sendEmail`/`sendWhatsapp`
+  avisan de que falta conectar. Se envía desde la **pestaña Comunicaciones** de la
+  ficha (con plantillas). Pendiente: **OAuth de Gmail/Outlook** (alternativa al
+  SMTP) y **recepción entrante** (webhook de WhatsApp / sync IMAP).
 
 ## Convenciones de código
 
