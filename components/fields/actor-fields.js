@@ -11,11 +11,16 @@ import { Avatar } from '@/components/ui/Avatar';
 const SOURCES = {
   API: { label: 'API', color: 'purple' },
   SYSTEM: { label: 'Sistema', color: 'gray' },
+  FORM: { label: 'Formulario', color: 'blue' },
 };
 
-/** ¿El valor ACTOR corresponde a una persona (usuario real, no Sistema/API)? */
+/**
+ * ¿El valor ACTOR corresponde a una persona (usuario real)? Lo es cuando hay
+ * `userId` y el origen NO es uno de los no humanos (los de `SOURCES`), así que
+ * añadir un origen nuevo a `SOURCES` lo excluye automáticamente.
+ */
 function isPerson(value) {
-  return Boolean(value?.userId) && value.source !== 'SYSTEM' && value.source !== 'API';
+  return Boolean(value?.userId) && !(value?.source in SOURCES);
 }
 
 /**

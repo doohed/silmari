@@ -61,8 +61,9 @@ Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
   **wizard de onboarding** de 5 pasos (`app/onboarding/`,
   `WORKSPACE→PROFILE→INVITE→PLAN→WELCOME→DONE`). Workspaces, miembros e
   invitaciones; roles con `can(ctx, action)`.
-- **Motor de metadata.** Objetos y campos custom (`lib/metadata/`), **22 tipos**
-  de campo en el registry (`lib/field-types/`). La UI (tabla/kanban/ficha/
+- **Motor de metadata.** Objetos y campos custom (`lib/metadata/`), **24 tipos**
+  de campo en el registry (`lib/field-types/`), incluido **FORMULA** (campo
+  calculado de solo lectura). La UI (tabla/kanban/ficha/
   filtros) se genera desde la metadata.
 - **Vista tabla** (`components/record-table/`, TanStack Table + `react-virtual`):
   edición inline, teclado, filtros, orden por columna, columnas configurables
@@ -267,6 +268,11 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   ellas el botón sale deshabilitado. **Microsoft**: "próximamente".
 - **Pasarela de pago** (Stripe): el paso del onboarding es solo visual; seam en
   `lib/billing/`.
+- **Campos calculados (FORMULA)**: hechos (evaluador puro `lib/field-types/
+  formula-eval.js`, cálculo en `hydrate`, config en `settings.formula`, editor en
+  el modelo de datos). Son **solo lectura y no filtrables ni ordenables en BD**
+  (el valor no se persiste). Falta **ROLLUP** (agregados sobre registros
+  relacionados) y **productos/cotizaciones con líneas** (Fase 4 pendiente).
 - **Envío de email y WhatsApp**: el **dominio** está (tipo de actividad
   EMAIL/WHATSAPP con `comm`, `logCommunication`, registro entrante y composición
   con plantillas), pero el **envío real** es un seam sin credenciales:

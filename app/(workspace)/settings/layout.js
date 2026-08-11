@@ -10,6 +10,7 @@ const SECTIONS = [
   { href: '/settings/webhooks', label: 'Webhooks' },
   { href: '/settings/automations', label: 'Automatizaciones' },
   { href: '/settings/templates', label: 'Plantillas' },
+  { href: '/settings/forms', label: 'Formularios' },
   { href: '/settings/leads', label: 'Entrada de leads' },
 ];
 

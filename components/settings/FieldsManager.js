@@ -103,6 +103,7 @@ export function FieldsManager({ object, objects }) {
   const [field, setField] = useState({ name: '', label: '', type: 'TEXT', isIndexed: false });
   const [options, setOptions] = useState([{ label: '', color: 'blue' }]);
   const [relationTarget, setRelationTarget] = useState('');
+  const [formula, setFormula] = useState('');
   const [indexingId, setIndexingId] = useState(null);
 
   // Edición de opciones de un campo existente.
@@ -116,6 +117,7 @@ export function FieldsManager({ object, objects }) {
     setField({ name: '', label: '', type: 'TEXT', isIndexed: false });
     setOptions([{ label: '', color: 'blue' }]);
     setRelationTarget('');
+    setFormula('');
     setOpen(false);
   }
 
@@ -144,6 +146,11 @@ export function FieldsManager({ object, objects }) {
     if (field.type === 'RELATION') {
       if (!relationTarget) return toast.error('Elige el objeto destino de la relación');
       payload.relation = { type: 'MANY_TO_ONE', targetObjectMetadataId: relationTarget };
+    }
+    if (field.type === 'FORMULA') {
+      if (!formula.trim()) return toast.error('Escribe una fórmula');
+      payload.settings = { formula: formula.trim() };
+      payload.isIndexed = false;
     }
     setSaving(true);
     const r = await createFieldAction(payload);
@@ -270,15 +277,34 @@ export function FieldsManager({ object, objects }) {
             </div>
           )}
 
-          <label className="text-secondary flex items-center gap-2 text-xs">
-            <input
-              type="checkbox"
-              checked={field.isIndexed}
-              onChange={(e) => setField({ ...field, isIndexed: e.target.checked })}
-              className="accent-accent size-3.5"
-            />
-            Indexar para filtrar y ordenar rápido
-          </label>
+          {field.type === 'FORMULA' && (
+            <div>
+              <Label htmlFor="formula">Fórmula</Label>
+              <Input
+                id="formula"
+                value={formula}
+                onChange={(e) => setFormula(e.target.value)}
+                placeholder="p. ej. amount * probability / 100"
+                className="font-mono"
+              />
+              <p className="text-tertiary mt-1 text-xs">
+                Usa los nombres de otros campos numéricos con <span className="font-mono">+ - * /</span>{' '}
+                y paréntesis. Es un campo de solo lectura.
+              </p>
+            </div>
+          )}
+
+          {field.type !== 'FORMULA' && (
+            <label className="text-secondary flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={field.isIndexed}
+                onChange={(e) => setField({ ...field, isIndexed: e.target.checked })}
+                className="accent-accent size-3.5"
+              />
+              Indexar para filtrar y ordenar rápido
+            </label>
+          )}
 
           <Button size="sm" type="submit" disabled={saving}>
             {saving ? 'Creando…' : 'Crear campo'}

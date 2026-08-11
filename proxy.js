@@ -7,7 +7,7 @@ import { decryptSession, SESSION_COOKIE } from '@/lib/auth/jwt';
  * cerca de los datos.
  */
 
-const PUBLIC_PREFIXES = ['/welcome', '/login', '/signup', '/invite'];
+const PUBLIC_PREFIXES = ['/welcome', '/login', '/signup', '/invite', '/forms'];
 const AUTH_ONLY = ['/welcome', '/login', '/signup']; // no accesibles si ya hay sesión
 
 /** @param {import('next/server').NextRequest} req */

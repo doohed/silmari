@@ -68,9 +68,16 @@ function CurrencyEdit({ value, onCommit, onCancel }) {
   );
 }
 
+/** Campo calculado (solo lectura): muestra el número que computa la fórmula. */
+function FormulaDisplay({ value }) {
+  return value == null ? empty : <span className="tabular-nums">{formatNumber(value)}</span>;
+}
+
 export const numberTypes = {
   NUMBER: { Display: NumberDisplay, Edit: NumberEdit },
   PERCENT: { Display: PercentDisplay, Edit: NumberEdit },
   RATING: { Display: RatingDisplay, Edit: NumberEdit },
   CURRENCY: { Display: CurrencyDisplay, Edit: CurrencyEdit },
+  // FORMULA no tiene Edit: es solo lectura (lo calcula el servidor).
+  FORMULA: { Display: FormulaDisplay },
 };

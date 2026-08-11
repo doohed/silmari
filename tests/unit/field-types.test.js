@@ -25,6 +25,7 @@ const EXPECTED = [
   'POSITION',
   'UUID',
   'MEMBER',
+  'FORMULA',
 ];
 
 describe('registry de tipos de campo', () => {

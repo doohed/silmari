@@ -44,9 +44,11 @@ const CASES = {
     invalid: 'x',
     search: '00000000-0000-0000-0000-000000000000',
   },
+  // Calculado: no se guarda (normalize → undefined), searchText vacío.
+  FORMULA: { meta: { settings: { formula: 'a + b' } }, valid: null, search: '' },
 };
 
-describe('cobertura de los 22 tipos de campo', () => {
+describe('cobertura de los tipos de campo', () => {
   it('todos los tipos tienen caso de prueba', () => {
     expect(Object.keys(CASES).sort()).toEqual([...FIELD_TYPES].sort());
   });
