@@ -181,7 +181,7 @@ export function RecordBoard({ objectSlug, object, view, views, activeViewId }) {
   return (
     <div className="flex h-full flex-col">
       {bar}
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
+      <DndContext id="record-board-dnd" sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
         <div className="flex min-h-0 flex-1 gap-5 overflow-x-auto p-5">
           {cols.map((col) => (
             <BoardColumn

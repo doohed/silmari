@@ -152,7 +152,7 @@ export function DashboardView({ dashboard, metrics }) {
             Este panel está vacío. Pulsa <span className="font-medium">Editar</span> y añade widgets.
           </p>
         ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <DndContext id="dashboard-view-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={widgets.map((w) => w.id)} strategy={rectSortingStrategy}>
               <div className="grid auto-rows-[7.5rem] grid-flow-dense grid-cols-2 gap-4 md:grid-cols-4">
                 {widgets.map((w) => (

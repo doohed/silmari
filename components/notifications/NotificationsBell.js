@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, CheckCheck } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
+import { formatRelative } from '@/lib/utils/relative-time';
 import {
   listNotificationsAction,
   unreadCountAction,
@@ -12,19 +13,6 @@ import {
 } from '@/app/(workspace)/notifications/actions';
 
 const POLL_MS = 45000;
-
-/** Tiempo relativo breve en español: "ahora", "hace 5 min", "hace 2 h", "hace 3 d". */
-function relativeTime(date) {
-  const secs = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 1000));
-  if (secs < 60) return 'ahora';
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return `hace ${mins} min`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `hace ${hours} h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `hace ${days} d`;
-  return new Date(date).toLocaleDateString('es');
-}
 
 /**
  * Campana de notificaciones del rail. Muestra el nº sin leer (sondeo periódico)
@@ -157,7 +145,7 @@ export function NotificationsBell() {
                       <span className="text-secondary block truncate text-xs">{n.body}</span>
                     )}
                     <span className="text-tertiary block text-[11px]">
-                      {relativeTime(n.createdAt)}
+                      {formatRelative(n.createdAt)}
                     </span>
                   </span>
                   {!n.readAt && (

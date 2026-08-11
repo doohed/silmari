@@ -196,7 +196,7 @@ export function DashboardList({ dashboards }) {
         </div>
 
         {/* Filas ordenables */}
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <DndContext id="dashboard-list-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={items.map((d) => d.id)} strategy={verticalListSortingStrategy}>
             {items.map((d) => (
               <DashboardRow

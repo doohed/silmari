@@ -81,7 +81,7 @@ export function FavoritesList() {
       <p className="text-tertiary px-2 py-1.5 text-[11px] font-medium tracking-wider uppercase">
         Favoritos
       </p>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <DndContext id="favorites-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           {items.map((fav) => (
             <FavItem key={fav.id} fav={fav} />
