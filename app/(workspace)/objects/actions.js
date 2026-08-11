@@ -31,7 +31,11 @@ import {
   toggleTask,
   addTarget,
   deleteActivity,
+  logCommunication,
 } from '@/lib/activities/service';
+import { sendEmail } from '@/lib/email/service';
+import { sendWhatsapp } from '@/lib/whatsapp/service';
+import { listTemplatesForCompose, renderForRecord } from '@/lib/templates/service';
 import {
   listForRecord as listAttachmentsForRecord,
   deleteAttachment,
@@ -198,6 +202,33 @@ export async function deleteActivityAction({ id }) {
 }
 export async function listTasksAction(input) {
   return withCtx((ctx) => listTasks(ctx, input));
+}
+
+// --- Comunicaciones (email / WhatsApp) ---
+
+/** Historial de comunicaciones (email + WhatsApp) de un registro. */
+export async function listCommunicationsAction({ recordId }) {
+  return withCtx((ctx) => listActivitiesForRecord(ctx, { recordId, type: ['EMAIL', 'WHATSAPP'] }));
+}
+/** Registra una comunicación (enviada o recibida) sin enviarla por un proveedor. */
+export async function logCommunicationAction(input) {
+  return withCtx((ctx) => logCommunication(ctx, input));
+}
+/** Envía un email (lanza aviso claro si no hay cuenta conectada). */
+export async function sendEmailAction(input) {
+  return withCtx((ctx) => sendEmail(ctx, input));
+}
+/** Envía un WhatsApp (lanza aviso claro si no hay número conectado). */
+export async function sendWhatsappAction(input) {
+  return withCtx((ctx) => sendWhatsapp(ctx, input));
+}
+/** Plantillas disponibles para redactar (solo lectura). */
+export async function listComposeTemplatesAction({ channel } = {}) {
+  return withCtx((ctx) => listTemplatesForCompose(ctx, { channel }));
+}
+/** Renderiza una plantilla contra un registro (para rellenar el redactor). */
+export async function renderTemplateAction(input) {
+  return withCtx((ctx) => renderForRecord(ctx, input));
 }
 
 // --- Adjuntos ---

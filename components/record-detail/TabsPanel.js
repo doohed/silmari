@@ -6,12 +6,14 @@ import { RelationSection } from './RelationSection';
 import { NotesTab } from '@/components/activities/NotesTab';
 import { TasksTab } from '@/components/activities/TasksTab';
 import { AttachmentsTab } from '@/components/activities/AttachmentsTab';
+import { CommunicationsTab } from '@/components/activities/CommunicationsTab';
 
 const TABS = [
   { id: 'timeline', label: 'Timeline' },
   { id: 'related', label: 'Relacionados' },
   { id: 'notes', label: 'Notas' },
   { id: 'tasks', label: 'Tareas' },
+  { id: 'comms', label: 'Comunicaciones' },
   { id: 'files', label: 'Archivos' },
 ];
 
@@ -62,6 +64,7 @@ export function TabsPanel({
         )}
         {tab === 'notes' && <NotesTab object={object} recordId={currentRecordId} />}
         {tab === 'tasks' && <TasksTab object={object} recordId={currentRecordId} />}
+        {tab === 'comms' && <CommunicationsTab object={object} recordId={currentRecordId} />}
         {tab === 'files' && <AttachmentsTab object={object} recordId={currentRecordId} />}
       </div>
     </div>

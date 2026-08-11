@@ -267,6 +267,14 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   ellas el botón sale deshabilitado. **Microsoft**: "próximamente".
 - **Pasarela de pago** (Stripe): el paso del onboarding es solo visual; seam en
   `lib/billing/`.
+- **Envío de email y WhatsApp**: el **dominio** está (tipo de actividad
+  EMAIL/WHATSAPP con `comm`, `logCommunication`, registro entrante y composición
+  con plantillas), pero el **envío real** es un seam sin credenciales:
+  `lib/email/provider.js` (`getEmailProvider` → `null`, requiere OAuth de
+  Gmail/Outlook) y `lib/whatsapp/provider.js` (WhatsApp Cloud API de Meta).
+  `sendEmail`/`sendWhatsapp` lanzan un error claro mientras no haya proveedor;
+  registrar comunicaciones a mano y las plantillas ya funcionan. Falta también la
+  UI: pestaña de comunicaciones en la ficha y el flujo de "conectar cuenta".
 
 ## Convenciones de código
 

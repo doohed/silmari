@@ -9,6 +9,7 @@ const SECTIONS = [
   { href: '/settings/api-keys', label: 'API keys' },
   { href: '/settings/webhooks', label: 'Webhooks' },
   { href: '/settings/automations', label: 'Automatizaciones' },
+  { href: '/settings/templates', label: 'Plantillas' },
   { href: '/settings/leads', label: 'Entrada de leads' },
 ];
 
