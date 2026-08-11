@@ -8,6 +8,7 @@ const SECTIONS = [
   { href: '/settings/data-model', label: 'Modelo de datos' },
   { href: '/settings/api-keys', label: 'API keys' },
   { href: '/settings/webhooks', label: 'Webhooks' },
+  { href: '/settings/leads', label: 'Entrada de leads' },
 ];
 
 export default async function SettingsLayout({ children }) {

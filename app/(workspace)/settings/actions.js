@@ -13,6 +13,12 @@ import { createObject, updateObject, deleteObject } from '@/lib/metadata/object-
 import { createField, updateField, deleteField } from '@/lib/metadata/field-service';
 import { createApiKey, listApiKeys, revokeApiKey } from '@/lib/auth/api-key';
 import { createWebhook, listWebhooks, deleteWebhook, retryDelivery } from '@/lib/webhooks/service';
+import {
+  createLeadIntake,
+  listLeadIntakes,
+  updateLeadIntake,
+  deleteLeadIntake,
+} from '@/lib/leads/service';
 
 async function withCtx(fn) {
   const ctx = await getContext();
@@ -108,4 +114,18 @@ export async function deleteWebhookAction({ id }) {
 }
 export async function retryDeliveryAction(input) {
   return withCtx((ctx) => retryDelivery(ctx, input));
+}
+
+// --- Entrada de leads (Meta Lead Ads vía Zapier/Make) ---
+export async function listLeadIntakesAction() {
+  return withCtx((ctx) => listLeadIntakes(ctx));
+}
+export async function createLeadIntakeAction(input) {
+  return withCtx((ctx) => createLeadIntake(ctx, input));
+}
+export async function updateLeadIntakeAction({ id, ...input }) {
+  return withCtx((ctx) => updateLeadIntake(ctx, id, input));
+}
+export async function deleteLeadIntakeAction({ id }) {
+  return withCtx((ctx) => deleteLeadIntake(ctx, id));
 }

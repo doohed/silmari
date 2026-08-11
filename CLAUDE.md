@@ -87,7 +87,8 @@ Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
   workspace (logo, **moneda de visualización**, zona horaria), miembros, **editor
   visual del modelo de datos** (crear objetos **con icono** / campos, **editar
   opciones/etapas de un SELECT**, **indexar campos**, **borrar objetos custom**),
-  **API keys** y **webhooks** (firma HMAC + reintento).
+  **API keys**, **webhooks** (firma HMAC + reintento) y **entrada de leads**
+  (formularios de Meta vía Zapier/Make).
 - **Chrome**: el sidebar es un **rail completo** (menú de usuario, buscador,
   nombre de workspace, navegación); no hay barra superior. Popovers/menús propios
   cierran al clic fuera (`hooks/useClickOutside`); confirmaciones con diálogo
@@ -118,6 +119,9 @@ Colecciones (todas con `workspaceId` en los datos y soft delete vía `deletedAt`
   responsables); `targets` polimórficos opcionales (tareas sueltas permitidas).
 - **attachments**, **timelineActivities** (log inmutable), **favorites**,
   **apiKeys** (solo `tokenHash`), **webhooks**.
+- **leadIntakes** — configuración de entrada de leads; único por
+  `(workspaceId, provider, formId)`. Objeto destino, `mappings`,
+  `dedupeFieldName`, contadores y log de las últimas entradas.
 
 ### Por qué una colección `records` única
 
@@ -219,6 +223,21 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   sumas del kanban.
 - **Webhooks**: despacho real en created/updated/deleted desde la capa de
   servicios, firma **HMAC**, log de entregas y reintento manual.
+- **Entrada de leads** (`lib/leads/`): `POST /api/v1/intake/meta` (API key con
+  scope `records:write`) recibe leads de **Meta Lead Ads** reenviados por
+  Zapier/Make. Es **entrante**, al revés que `lib/webhooks/` (saliente). El
+  `workspaceId` sale de la API key, nunca del payload; la config se elige por
+  `form_id` con una comodín (`formId: ''`) de reserva.
+  `normalize-payload.js` es **puro** y acepta las tres formas del lead (webhook
+  crudo `entry[].changes[].value`, `field_data` de la Graph API y el objeto
+  aplanado de Zapier), normalizando el nombre de cada pregunta (sin tildes,
+  signos ni mayúsculas). Los formularios mandan texto plano, así que el servicio
+  traduce a los tipos compuestos del CRM: `"Ana Ruiz"` → FULL_NAME, un email
+  suelto → EMAILS, y una etiqueta de SELECT → su `value`. La **deduplicación**
+  (`lib/leads/dedupe.js`, puro y compartido con el cliente) solo admite tipos
+  comparables de forma exacta y confirma la coincidencia en memoria: `EMAILS`
+  únicamente ofrece el operador `contains`, que es subcadena y casaría
+  `ana@x.com` con `juana@x.com`.
 - **Storage** de adjuntos: abstracción `lib/storage/` con driver de disco local
   (carpeta `storage/`, gitignored); listo para S3.
 - **Rate limiting** de `/api/v1`: en memoria por instancia (ventana fija por

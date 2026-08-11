@@ -105,6 +105,7 @@ muestra una única vez). Se envía como `Authorization: Bearer <token>`.
 | `GET`    | `/api/v1/:objectSlug/:recordId`       | Un registro                              |
 | `PATCH`  | `/api/v1/:objectSlug/:recordId`       | Actualiza (parcial)                      |
 | `DELETE` | `/api/v1/:objectSlug/:recordId`       | Borra (soft delete)                      |
+| `POST`   | `/api/v1/intake/meta`                 | Recibe un lead de Meta Lead Ads          |
 
 **Parámetros de listado**: `?filter=campo:operador:valor` (repetible),
 `?sort=campo:asc|desc`, `?cursor=<opaco>`, `?limit=`. Operadores según el tipo
@@ -127,6 +128,28 @@ curl -s "$API/companies?filter=employees:gte:10&sort=employees:asc&limit=50" -H 
 curl -s -X PATCH "$API/companies/<id>" -H "$AUTH" -H 'content-type: application/json' \
   -d '{"data":{"employees":99}}'
 curl -s -X DELETE "$API/companies/<id>" -H "$AUTH"
+```
+
+### Entrada de leads desde Meta (Facebook e Instagram)
+
+`POST /api/v1/intake/meta` convierte un lead de **Meta Lead Ads** en un registro.
+Se configura en **Ajustes → Entrada de leads**: por cada formulario (su `form_id`)
+eliges el objeto destino, la correspondencia entre preguntas y campos, y —
+opcionalmente — un **campo clave** para actualizar en vez de duplicar. Una
+configuración con el ID de formulario vacío actúa de comodín.
+
+No hace falta integración nativa con Meta: **Zapier o Make** ponen el trigger
+_New Lead_ (su app ya pasó el App Review de Meta) y reenvían el lead aquí con una
+acción _Webhooks → Custom Request_. El endpoint acepta el lead tal cual lo
+entrega la Graph API (`field_data`) o ya aplanado, y tolera diferencias de
+mayúsculas, tildes y signos en el nombre de las preguntas.
+
+```bash
+curl -s -X POST "$API/intake/meta" -H "$AUTH" -H 'content-type: application/json' \
+  -d '{"form_id":"123456","id":"99887766","field_data":[
+        {"name":"full_name","values":["Ana Ruiz"]},
+        {"name":"email","values":["ana@ejemplo.com"]}]}'
+# → { "data": { "action": "created", "recordId": "…", "mapped": [...], "ignored": [...] } }
 ```
 
 Los errores se devuelven como `{ "error": { "code", "message", "fieldErrors" } }`
