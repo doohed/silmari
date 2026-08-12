@@ -46,6 +46,12 @@ const CASES = {
   },
   // Calculado: no se guarda (normalize → undefined), searchText vacío.
   FORMULA: { meta: { settings: { formula: 'a + b' } }, valid: null, search: '' },
+  // Agregado calculado: tampoco se guarda; searchText vacío.
+  ROLLUP: {
+    meta: { settings: { rollup: { relationFieldId: 'x', operation: 'count' } } },
+    valid: null,
+    search: '',
+  },
 };
 
 describe('cobertura de los tipos de campo', () => {

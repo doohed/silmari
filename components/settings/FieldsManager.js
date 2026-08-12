@@ -13,10 +13,20 @@ import {
   createFieldAction,
   updateFieldAction,
   deleteFieldAction,
+  rollupSourcesAction,
 } from '@/app/(workspace)/settings/actions';
 
 const COLORS = ['gray', 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink'];
 const CHOICE = new Set(['SELECT', 'MULTI_SELECT']);
+const COMPUTED = new Set(['FORMULA', 'ROLLUP']);
+const SELECT_CLS = 'border-border bg-surface text-primary h-9 w-full rounded-md border px-2 text-sm';
+const ROLLUP_OPS = [
+  { value: 'count', label: 'Conteo' },
+  { value: 'sum', label: 'Suma' },
+  { value: 'avg', label: 'Media' },
+  { value: 'min', label: 'Mínimo' },
+  { value: 'max', label: 'Máximo' },
+];
 
 /**
  * Editor de opciones de un campo SELECT/MULTI_SELECT: renombrar, recolorear,
@@ -104,6 +114,8 @@ export function FieldsManager({ object, objects }) {
   const [options, setOptions] = useState([{ label: '', color: 'blue' }]);
   const [relationTarget, setRelationTarget] = useState('');
   const [formula, setFormula] = useState('');
+  const [rollup, setRollup] = useState({ relationFieldId: '', operation: 'count', aggregateFieldName: '' });
+  const [rollupSources, setRollupSources] = useState(null); // null = aún sin cargar
   const [indexingId, setIndexingId] = useState(null);
 
   // Edición de opciones de un campo existente.
@@ -118,7 +130,18 @@ export function FieldsManager({ object, objects }) {
     setOptions([{ label: '', color: 'blue' }]);
     setRelationTarget('');
     setFormula('');
+    setRollup({ relationFieldId: '', operation: 'count', aggregateFieldName: '' });
+    setRollupSources(null);
     setOpen(false);
+  }
+
+  /** Cambia el tipo; al elegir ROLLUP carga (una vez) las relaciones entrantes. */
+  async function changeType(type) {
+    setField({ ...field, type });
+    if (type === 'ROLLUP' && rollupSources === null) {
+      const r = await rollupSourcesAction({ objectMetadataId: object.id });
+      setRollupSources(r.ok ? r.data : []);
+    }
   }
 
   async function toggleIndex(f) {
@@ -150,6 +173,21 @@ export function FieldsManager({ object, objects }) {
     if (field.type === 'FORMULA') {
       if (!formula.trim()) return toast.error('Escribe una fórmula');
       payload.settings = { formula: formula.trim() };
+      payload.isIndexed = false;
+    }
+    if (field.type === 'ROLLUP') {
+      if (!rollup.relationFieldId) return toast.error('Elige la relación entrante');
+      if (rollup.operation !== 'count' && !rollup.aggregateFieldName)
+        return toast.error('Elige el campo numérico a agregar');
+      payload.settings = {
+        rollup: {
+          relationFieldId: rollup.relationFieldId,
+          operation: rollup.operation,
+          ...(rollup.operation !== 'count'
+            ? { aggregateFieldName: rollup.aggregateFieldName }
+            : {}),
+        },
+      };
       payload.isIndexed = false;
     }
     setSaving(true);
@@ -240,8 +278,8 @@ export function FieldsManager({ object, objects }) {
             <select
               id="ftype"
               value={field.type}
-              onChange={(e) => setField({ ...field, type: e.target.value })}
-              className="border-border bg-surface text-primary h-9 w-full rounded-md border px-2 text-sm"
+              onChange={(e) => changeType(e.target.value)}
+              className={SELECT_CLS}
             >
               {FIELD_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -294,7 +332,77 @@ export function FieldsManager({ object, objects }) {
             </div>
           )}
 
-          {field.type !== 'FORMULA' && (
+          {field.type === 'ROLLUP' && (
+            <div className="space-y-2">
+              <div>
+                <Label htmlFor="rollup-rel">Relación entrante</Label>
+                <select
+                  id="rollup-rel"
+                  value={rollup.relationFieldId}
+                  onChange={(e) =>
+                    setRollup({ ...rollup, relationFieldId: e.target.value, aggregateFieldName: '' })
+                  }
+                  className={SELECT_CLS}
+                >
+                  <option value="">
+                    {rollupSources === null ? 'Cargando…' : 'Elige una relación…'}
+                  </option>
+                  {(rollupSources ?? []).map((s) => (
+                    <option key={s.relationFieldId} value={s.relationFieldId}>
+                      {s.sourceObject.labelPlural} · {s.relationFieldLabel}
+                    </option>
+                  ))}
+                </select>
+                {rollupSources !== null && rollupSources.length === 0 && (
+                  <p className="text-tertiary mt-1 text-xs">
+                    Ningún objeto apunta a este todavía. Crea antes una relación (MANY_TO_ONE) hacia
+                    este objeto.
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="rollup-op">Operación</Label>
+                <select
+                  id="rollup-op"
+                  value={rollup.operation}
+                  onChange={(e) => setRollup({ ...rollup, operation: e.target.value })}
+                  className={SELECT_CLS}
+                >
+                  {ROLLUP_OPS.map((op) => (
+                    <option key={op.value} value={op.value}>
+                      {op.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {rollup.operation !== 'count' && (
+                <div>
+                  <Label htmlFor="rollup-field">Campo a agregar</Label>
+                  <select
+                    id="rollup-field"
+                    value={rollup.aggregateFieldName}
+                    onChange={(e) => setRollup({ ...rollup, aggregateFieldName: e.target.value })}
+                    className={SELECT_CLS}
+                  >
+                    <option value="">Elige un campo numérico…</option>
+                    {(
+                      rollupSources?.find((s) => s.relationFieldId === rollup.relationFieldId)
+                        ?.numericFields ?? []
+                    ).map((nf) => (
+                      <option key={nf.name} value={nf.name}>
+                        {nf.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <p className="text-tertiary text-xs">
+                Agrega los registros relacionados que apuntan a este. Es un campo de solo lectura.
+              </p>
+            </div>
+          )}
+
+          {!COMPUTED.has(field.type) && (
             <label className="text-secondary flex items-center gap-2 text-xs">
               <input
                 type="checkbox"

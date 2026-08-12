@@ -78,6 +78,7 @@ export const numberTypes = {
   PERCENT: { Display: PercentDisplay, Edit: NumberEdit },
   RATING: { Display: RatingDisplay, Edit: NumberEdit },
   CURRENCY: { Display: CurrencyDisplay, Edit: CurrencyEdit },
-  // FORMULA no tiene Edit: es solo lectura (lo calcula el servidor).
+  // FORMULA y ROLLUP no tienen Edit: son solo lectura (los calcula el servidor).
   FORMULA: { Display: FormulaDisplay },
+  ROLLUP: { Display: FormulaDisplay },
 };
