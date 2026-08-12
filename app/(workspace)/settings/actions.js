@@ -12,6 +12,7 @@ import { updateWorkspace } from '@/lib/workspaces/service';
 import { createObject, updateObject, deleteObject } from '@/lib/metadata/object-service';
 import { createField, updateField, deleteField } from '@/lib/metadata/field-service';
 import { listRollupSources } from '@/lib/relations/service';
+import { listPriceFields } from '@/lib/quotes/service';
 import { createApiKey, listApiKeys, revokeApiKey } from '@/lib/auth/api-key';
 import { createWebhook, listWebhooks, deleteWebhook, retryDelivery } from '@/lib/webhooks/service';
 import {
@@ -93,6 +94,9 @@ export async function deleteFieldAction({ id }) {
 }
 export async function rollupSourcesAction({ objectMetadataId }) {
   return withCtx((ctx) => listRollupSources(ctx, { objectMetadataId }));
+}
+export async function priceFieldsAction({ objectMetadataId }) {
+  return withCtx((ctx) => listPriceFields(ctx, { objectMetadataId }));
 }
 
 // --- API keys ---

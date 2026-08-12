@@ -37,6 +37,7 @@ export function FieldsPanel({ fields, record, onCommit, hideHeader = false }) {
               <div key={field.id} className="pt-1">
                 <p className="text-secondary mb-1 px-2 text-xs">{field.label}</p>
                 <LineItemsEditor
+                  field={field}
                   value={readFieldValue(record, field) ?? []}
                   onCommit={(v) => onCommit(field.name, v)}
                 />

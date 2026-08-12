@@ -14,11 +14,13 @@ import {
   updateFieldAction,
   deleteFieldAction,
   rollupSourcesAction,
+  priceFieldsAction,
 } from '@/app/(workspace)/settings/actions';
 
 const COLORS = ['gray', 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink'];
 const CHOICE = new Set(['SELECT', 'MULTI_SELECT']);
-const COMPUTED = new Set(['FORMULA', 'ROLLUP']);
+// Tipos sin índice de BD: calculados (FORMULA/ROLLUP) o compuestos (LINE_ITEMS).
+const NO_INDEX = new Set(['FORMULA', 'ROLLUP', 'LINE_ITEMS']);
 const SELECT_CLS = 'border-border bg-surface text-primary h-9 w-full rounded-md border px-2 text-sm';
 const ROLLUP_OPS = [
   { value: 'count', label: 'Conteo' },
@@ -116,6 +118,8 @@ export function FieldsManager({ object, objects }) {
   const [formula, setFormula] = useState('');
   const [rollup, setRollup] = useState({ relationFieldId: '', operation: 'count', aggregateFieldName: '' });
   const [rollupSources, setRollupSources] = useState(null); // null = aún sin cargar
+  const [lineItemsCfg, setLineItemsCfg] = useState({ productObjectSlug: '', priceFieldName: '' });
+  const [priceFields, setPriceFields] = useState([]);
   const [indexingId, setIndexingId] = useState(null);
 
   // Edición de opciones de un campo existente.
@@ -132,6 +136,8 @@ export function FieldsManager({ object, objects }) {
     setFormula('');
     setRollup({ relationFieldId: '', operation: 'count', aggregateFieldName: '' });
     setRollupSources(null);
+    setLineItemsCfg({ productObjectSlug: '', priceFieldName: '' });
+    setPriceFields([]);
     setOpen(false);
   }
 
@@ -141,6 +147,18 @@ export function FieldsManager({ object, objects }) {
     if (type === 'ROLLUP' && rollupSources === null) {
       const r = await rollupSourcesAction({ objectMetadataId: object.id });
       setRollupSources(r.ok ? r.data : []);
+    }
+  }
+
+  /** Elige el objeto-catálogo de un LINE_ITEMS y carga sus campos de precio. */
+  async function chooseCatalog(slug) {
+    setLineItemsCfg({ productObjectSlug: slug, priceFieldName: '' });
+    const obj = objects.find((o) => o.slug === slug);
+    if (obj) {
+      const r = await priceFieldsAction({ objectMetadataId: obj.id });
+      setPriceFields(r.ok ? r.data : []);
+    } else {
+      setPriceFields([]);
     }
   }
 
@@ -189,6 +207,19 @@ export function FieldsManager({ object, objects }) {
         },
       };
       payload.isIndexed = false;
+    }
+    if (field.type === 'LINE_ITEMS') {
+      payload.isIndexed = false;
+      if (lineItemsCfg.productObjectSlug) {
+        payload.settings = {
+          lineItems: {
+            productObjectSlug: lineItemsCfg.productObjectSlug,
+            ...(lineItemsCfg.priceFieldName
+              ? { priceFieldName: lineItemsCfg.priceFieldName }
+              : {}),
+          },
+        };
+      }
     }
     setSaving(true);
     const r = await createFieldAction(payload);
@@ -402,7 +433,52 @@ export function FieldsManager({ object, objects }) {
             </div>
           )}
 
-          {!COMPUTED.has(field.type) && (
+          {field.type === 'LINE_ITEMS' && (
+            <div className="space-y-2">
+              <div>
+                <Label htmlFor="li-catalog">Catálogo de productos (opcional)</Label>
+                <select
+                  id="li-catalog"
+                  value={lineItemsCfg.productObjectSlug}
+                  onChange={(e) => chooseCatalog(e.target.value)}
+                  className={SELECT_CLS}
+                >
+                  <option value="">Sin catálogo (líneas libres)</option>
+                  {targets.map((o) => (
+                    <option key={o.id} value={o.slug}>
+                      {o.labelPlural}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {lineItemsCfg.productObjectSlug && (
+                <div>
+                  <Label htmlFor="li-price">Campo de precio</Label>
+                  <select
+                    id="li-price"
+                    value={lineItemsCfg.priceFieldName}
+                    onChange={(e) =>
+                      setLineItemsCfg({ ...lineItemsCfg, priceFieldName: e.target.value })
+                    }
+                    className={SELECT_CLS}
+                  >
+                    <option value="">Sin autorrelleno de precio</option>
+                    {priceFields.map((pf) => (
+                      <option key={pf.name} value={pf.name}>
+                        {pf.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <p className="text-tertiary text-xs">
+                Las líneas se editan en la ficha. Con catálogo, cada línea puede elegir un producto
+                que autorellena descripción y precio.
+              </p>
+            </div>
+          )}
+
+          {!NO_INDEX.has(field.type) && (
             <label className="text-secondary flex items-center gap-2 text-xs">
               <input
                 type="checkbox"

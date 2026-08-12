@@ -22,6 +22,7 @@ import {
 import { updateView, createView, deleteView } from '@/lib/views/service';
 import { listObjects } from '@/lib/metadata/object-service';
 import { searchRelationOptions, getRelatedRecords } from '@/lib/relations/service';
+import { searchProducts } from '@/lib/quotes/service';
 import { listTimelineReadable } from '@/lib/timeline/readable';
 import {
   createActivity,
@@ -113,6 +114,11 @@ export async function deleteViewAction({ viewId }) {
 /** Busca opciones para un campo RELATION. */
 export async function searchRelationOptionsAction(input) {
   return withCtx((ctx) => searchRelationOptions(ctx, input));
+}
+
+/** Busca productos del catálogo para el selector de una línea (LINE_ITEMS). */
+export async function searchProductsAction(input) {
+  return withCtx((ctx) => searchProducts(ctx, input));
 }
 
 /** Miembros del workspace para el picker de campos MEMBER. */
