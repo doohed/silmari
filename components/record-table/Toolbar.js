@@ -1,10 +1,11 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Plus, Filter, Trash2, Download, Upload } from 'lucide-react';
+import { Plus, Filter, Trash2, Download, Upload, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { FilterEditor } from './FilterEditor';
+import { BulkEditPopover } from './BulkEditPopover';
 
 /**
  * Acciones de la tabla (se colocan a la derecha de `RecordViewBar`): filtrar,
@@ -18,12 +19,16 @@ export function Toolbar({
   onFiltersChange,
   onNewRecord,
   onDeleteSelected,
+  onEditSelected,
   onExport,
   onImport,
 }) {
   const [showFilter, setShowFilter] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const filterRef = useRef(null);
+  const editRef = useRef(null);
   useClickOutside(filterRef, () => setShowFilter(false), showFilter);
+  useClickOutside(editRef, () => setShowEdit(false), showEdit);
 
   if (selectedCount > 0) {
     return (
@@ -31,6 +36,20 @@ export function Toolbar({
         <span className="text-secondary mr-1 text-xs font-medium">
           {selectedCount} seleccionados
         </span>
+        <div ref={editRef} className="relative">
+          <Button size="sm" variant="ghost" onClick={() => setShowEdit((s) => !s)}>
+            <Pencil size={14} /> Editar
+          </Button>
+          {showEdit && (
+            <BulkEditPopover
+              fields={fields}
+              onApply={(fieldName, value) => {
+                setShowEdit(false);
+                onEditSelected(fieldName, value);
+              }}
+            />
+          )}
+        </div>
         <Button size="sm" variant="ghost" onClick={onExport}>
           <Download size={14} /> Exportar
         </Button>

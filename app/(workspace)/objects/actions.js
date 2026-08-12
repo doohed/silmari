@@ -6,6 +6,7 @@ import {
   listRecords,
   createRecord,
   updateRecord,
+  bulkUpdateRecords,
   softDeleteRecord,
   getRecord,
   searchRecords,
@@ -94,6 +95,11 @@ export async function bulkDeleteAction({ objectSlug, recordIds }) {
     }
     return { deleted: recordIds.length };
   });
+}
+
+/** Edición masiva: fija un campo en los registros seleccionados. */
+export async function bulkUpdateAction({ objectSlug, recordIds, fieldName, value }) {
+  return withCtx((ctx) => bulkUpdateRecords(ctx, { objectSlug, recordIds, fieldName, value }));
 }
 
 /** Actualiza la configuración de una vista (columnas, filtros, orden, nombre). */

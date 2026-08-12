@@ -23,6 +23,7 @@ import {
   createRecordAction,
   updateRecordAction,
   bulkDeleteAction,
+  bulkUpdateAction,
   updateViewAction,
   exportRecordsAction,
   moveRecordAction,
@@ -250,6 +251,25 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
     onError: (err) => toast.error(err.message),
   });
 
+  const updateManyM = useMutation({
+    mutationFn: async ({ fieldName, value }) => {
+      const r = await bulkUpdateAction({
+        objectSlug,
+        recordIds: [...selected],
+        fieldName,
+        value,
+      });
+      if (!r.ok) throw new Error(r.message);
+      return r.data;
+    },
+    onSuccess: (data) => {
+      setSelected(new Set());
+      qc.invalidateQueries({ queryKey });
+      toast.success(`${data.updated} actualizados`);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   function commitCell(recordId, fieldName, value) {
     setEditing(false);
     focusGrid();
@@ -434,6 +454,7 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
             onFiltersChange={applyFilters}
             onNewRecord={() => createM.mutate()}
             onDeleteSelected={() => deleteM.mutate([...selected])}
+            onEditSelected={(fieldName, value) => updateManyM.mutate({ fieldName, value })}
             onExport={exportCsv}
             onImport={() => setImportOpen(true)}
           />
