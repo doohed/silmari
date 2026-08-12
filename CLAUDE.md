@@ -264,8 +264,12 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
 - **A11y**: faltan roles de rejilla (`role="grid/row/gridcell"`) en tabla/kanban.
 - **Responsive**: escritorio sólido; falta la tabla→tarjetas en móvil.
 - **i18n**: cubre el chrome del sidebar; la extracción del resto es progresiva.
-- **Google OAuth** requiere credenciales del humano y registrar el callback; sin
-  ellas el botón sale deshabilitado. **Microsoft**: "próximamente".
+- **Google y Microsoft OAuth** están **implementados** (`lib/auth/oauth/`,
+  rutas `app/api/auth/{google,microsoft}/`). Requieren credenciales del humano y
+  registrar el callback (`{APP_URL}/api/auth/<proveedor>/callback`); sin
+  `*_CLIENT_ID`/`*_CLIENT_SECRET` el botón sale deshabilitado. Microsoft usa
+  `MICROSOFT_TENANT` ('common' por defecto). Un mismo email es una sola cuenta,
+  sea cual sea el proveedor.
 - **Pasarela de pago** (Stripe): el paso del onboarding es solo visual; seam en
   `lib/billing/`.
 - **Campos calculados (FORMULA)**: hechos (evaluador puro `lib/field-types/

@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     // Opcional: las cuentas OAuth (Google) no tienen contraseña.
     passwordHash: { type: String, default: null },
-    authProvider: { type: String, enum: ['email', 'google'], default: 'email' },
+    authProvider: { type: String, enum: ['email', 'google', 'microsoft'], default: 'email' },
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, default: '', trim: true },
     avatarUrl: { type: String, default: null },

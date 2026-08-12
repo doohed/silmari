@@ -1,6 +1,7 @@
 import { BrandMark } from '@/components/ui/BrandMark';
 import { WelcomeGate } from '@/components/auth/WelcomeGate';
 import { isGoogleConfigured } from '@/lib/auth/oauth/google';
+import { isMicrosoftConfigured } from '@/lib/auth/oauth/microsoft';
 import { appName } from '@/lib/config/app';
 
 export const metadata = { title: 'Bienvenido · Silmari' };
@@ -10,11 +11,16 @@ const ERRORS = {
   google_denied: 'Cancelaste el acceso con Google.',
   google_state: 'La sesión de Google caducó. Inténtalo de nuevo.',
   google_failed: 'No se pudo iniciar sesión con Google.',
+  microsoft_not_configured: 'Microsoft no está configurado en este entorno.',
+  microsoft_denied: 'Cancelaste el acceso con Microsoft.',
+  microsoft_state: 'La sesión de Microsoft caducó. Inténtalo de nuevo.',
+  microsoft_failed: 'No se pudo iniciar sesión con Microsoft.',
 };
 
 export default async function WelcomePage({ searchParams }) {
   const { error } = (await searchParams) ?? {};
   const googleReady = isGoogleConfigured();
+  const microsoftReady = isMicrosoftConfigured();
   const brand = appName();
 
   return (
@@ -31,7 +37,7 @@ export default async function WelcomePage({ searchParams }) {
           </p>
         )}
 
-        <WelcomeGate googleReady={googleReady} brand={brand} />
+        <WelcomeGate googleReady={googleReady} microsoftReady={microsoftReady} brand={brand} />
 
         <p className="text-tertiary mt-10 text-xs leading-relaxed">
           Al usar {brand} aceptas los Términos del servicio y el Acuerdo de tratamiento de datos.

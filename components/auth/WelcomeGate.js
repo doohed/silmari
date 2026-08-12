@@ -27,9 +27,9 @@ function redToast(message) {
 /**
  * Puerta de entrada progresiva estilo Twenty: proveedores → email → contraseña,
  * revelando cada campo con una animación de "salir desde detrás".
- * @param {{ googleReady: boolean, brand: string }} props
+ * @param {{ googleReady: boolean, microsoftReady: boolean, brand: string }} props
  */
-export function WelcomeGate({ googleReady, brand }) {
+export function WelcomeGate({ googleReady, microsoftReady, brand }) {
   const [stage, setStage] = useState('providers'); // 'providers' | 'email' | 'password'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -88,15 +88,24 @@ export function WelcomeGate({ googleReady, brand }) {
           </span>
         )}
 
-        <span
-          className={cn(
-            providerBtn,
-            'bg-surface border-border text-tertiary cursor-not-allowed opacity-60',
-          )}
-          title="Próximamente"
-        >
-          <MicrosoftIcon size={16} /> Continuar con Microsoft
-        </span>
+        {microsoftReady ? (
+          <a
+            href="/api/auth/microsoft"
+            className={cn(providerBtn, 'bg-surface border-border shadow-sm')}
+          >
+            <MicrosoftIcon size={16} /> Continuar con Microsoft
+          </a>
+        ) : (
+          <span
+            className={cn(
+              providerBtn,
+              'bg-surface border-border text-tertiary cursor-not-allowed opacity-60',
+            )}
+            title="Configura MICROSOFT_CLIENT_ID y MICROSOFT_CLIENT_SECRET"
+          >
+            <MicrosoftIcon size={16} /> Continuar con Microsoft
+          </span>
+        )}
 
         <div className="flex items-center gap-3 py-1">
           <span className="bg-border h-px flex-1" />
