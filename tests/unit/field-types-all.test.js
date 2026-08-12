@@ -52,6 +52,12 @@ const CASES = {
     valid: null,
     search: '',
   },
+  // Líneas: searchText junta las descripciones.
+  LINE_ITEMS: {
+    meta: {},
+    valid: [{ description: 'Servicio', quantity: 2, unitPrice: 10, discount: 0 }],
+    search: 'Servicio',
+  },
 };
 
 describe('cobertura de los tipos de campo', () => {

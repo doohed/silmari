@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { Chip } from './Chip';
 import { cellKeyDown, cellInputClass } from './cell-keys';
+import { quoteTotals } from '@/lib/quotes/calc';
+import { formatCurrency } from '@/lib/utils/format';
+import { useWorkspaceSettings } from '@/components/providers/WorkspaceProvider';
 
 const empty = <span className="text-tertiary">—</span>;
 
@@ -85,6 +88,18 @@ function LinksDisplay({ value }) {
   return <ChipList items={value.map((l) => l.label || l.url)} />;
 }
 
+/** Resumen compacto de líneas (la edición completa vive en la ficha). */
+function LineItemsDisplay({ value }) {
+  const { currency } = useWorkspaceSettings();
+  if (!Array.isArray(value) || value.length === 0) return empty;
+  const { count, total } = quoteTotals(value);
+  return (
+    <span className="tabular-nums">
+      {count} {count === 1 ? 'línea' : 'líneas'} · {formatCurrency(total, currency)}
+    </span>
+  );
+}
+
 export const compositeTypes = {
   EMAILS: {
     Display: ({ value }) => <ChipList items={Array.isArray(value) ? value : []} />,
@@ -103,4 +118,6 @@ export const compositeTypes = {
   },
   FULL_NAME: { Display: FullNameDisplay, Edit: FullNameEdit },
   ADDRESS: { Display: AddressDisplay },
+  // Sin Edit inline: se edita a ancho completo en la ficha (LineItemsEditor).
+  LINE_ITEMS: { Display: LineItemsDisplay },
 };

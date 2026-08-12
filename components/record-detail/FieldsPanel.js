@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { readFieldValue } from '@/lib/records/field-path';
 import { EditableValue } from './EditableValue';
+import { LineItemsEditor } from '@/components/fields/LineItemsEditor';
 
 /**
  * Panel de campos, agrupados y colapsables. Todos editables en sitio. Con
@@ -30,21 +31,32 @@ export function FieldsPanel({ fields, record, onCommit, hideHeader = false }) {
 
       {!collapsed && (
         <dl className="space-y-1.5">
-          {fields.map((field) => (
-            <div key={field.id} className="grid grid-cols-[120px_1fr] items-center gap-2">
-              <dt className="text-secondary truncate px-2 text-xs" title={field.label}>
-                {field.label}
-              </dt>
-              <dd className="min-w-0">
-                <EditableValue
-                  field={field}
-                  value={readFieldValue(record, field)}
-                  relation={record.relations?.[field.name]}
+          {fields.map((field) =>
+            field.type === 'LINE_ITEMS' ? (
+              // Ancho completo: no cabe en el grid compacto de dos columnas.
+              <div key={field.id} className="pt-1">
+                <p className="text-secondary mb-1 px-2 text-xs">{field.label}</p>
+                <LineItemsEditor
+                  value={readFieldValue(record, field) ?? []}
                   onCommit={(v) => onCommit(field.name, v)}
                 />
-              </dd>
-            </div>
-          ))}
+              </div>
+            ) : (
+              <div key={field.id} className="grid grid-cols-[120px_1fr] items-center gap-2">
+                <dt className="text-secondary truncate px-2 text-xs" title={field.label}>
+                  {field.label}
+                </dt>
+                <dd className="min-w-0">
+                  <EditableValue
+                    field={field}
+                    value={readFieldValue(record, field)}
+                    relation={record.relations?.[field.name]}
+                    onCommit={(v) => onCommit(field.name, v)}
+                  />
+                </dd>
+              </div>
+            ),
+          )}
         </dl>
       )}
     </div>
