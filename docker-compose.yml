@@ -56,11 +56,11 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
-    # Sin `ports`: la app NO se publica al host. El único camino de entrada es
-    # Caddy, por la red interna de compose. Así no se puede saltar el TLS ni el
-    # saneado de X-Forwarded-For llamando al 3000 directamente.
-    expose:
-      - '3000'
+    ports:
+      # Enlazado a 127.0.0.1 A PROPÓSITO: el reverse proxy del host (nginx) llega
+      # por loopback, pero desde internet NO se puede tocar el 3000 saltándose el
+      # TLS. Si pusieras '3000:3000' quedaría expuesto en la IP pública.
+      - '127.0.0.1:3000:3000'
     env_file:
       # AUTH_SECRET y demás secretos de runtime (crea .env.local a partir de
       # .env.example). MONGODB_URI de aquí se ignora: lo fija `environment`.
@@ -74,38 +74,6 @@ services:
     volumes:
       # Persiste las subidas (STORAGE_DIR=./storage dentro del contenedor).
       - app-storage:/app/storage
-    # El driver por defecto de Docker crece SIN LÍMITE hasta llenar el disco,
-    # que es el fallo más tonto y más común en un VPS de una sola máquina.
-    logging:
-      driver: 'json-file'
-      options:
-        max-size: '20m'
-        max-file: '5'
-
-  # Reverse proxy con TLS automático (Let's Encrypt). Mismo perfil que la app:
-  #   docker compose --profile app up -d --build
-  caddy:
-    image: caddy:2-alpine
-    container_name: silmari-caddy
-    restart: unless-stopped
-    profiles: ['app']
-    depends_on:
-      - app
-    ports:
-      - '80:80'
-      - '443:443'
-      - '443:443/udp' # HTTP/3
-    environment:
-      # Dominio del certificado. Con 'localhost' Caddy emite uno propio para
-      # poder probar el montaje completo sin DNS público.
-      APP_DOMAIN: ${APP_DOMAIN:-localhost}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      # Certificados y claves: SIN esto, cada reinicio vuelve a pedirlos y se
-      # agota el límite de emisión de Let's Encrypt.
-      - caddy-data:/data
-      - caddy-config:/config
-      - caddy-logs:/var/log/caddy
     # El driver por defecto de Docker crece SIN LÍMITE hasta llenar el disco,
     # que es el fallo más tonto y más común en un VPS de una sola máquina.
     logging:
@@ -155,6 +123,3 @@ services:
 volumes:
   mongo-data:
   app-storage:
-  caddy-data:
-  caddy-config:
-  caddy-logs:

@@ -259,16 +259,19 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   onboarding pasa `requireVerifiedEmail: false`; ocurre segundos después del alta
   y exigirlo lo dejaría inútil para todo el mundo, así que el riesgo se acota con
   el tope de 3 direcciones y el freno de altas por IP.
-- **Despliegue** (ver `RUNBOOK.md`): **Caddy** delante (TLS automático) → app en
-  `standalone` → Mongo, todo en el mismo compose bajo el perfil `app`. La app
-  **no publica puerto** al host: el único camino de entrada es Caddy, que además
-  **reescribe** `X-Forwarded-For` en vez de añadirlo — si lo dejara pasar,
-  cualquiera podría falsificar su IP y saltarse el freno de `lib/auth/throttle.js`.
-  Las cookies de sesión y de estado de OAuth llevan prefijo **`__Host-` solo en
-  producción** (exige `Secure`, que en localhost no viaja); el nombre se decide
-  **en build**, así que desplegarlo la primera vez cierra las sesiones abiertas.
-  **`NEXT_PUBLIC_APP_URL` se incrusta en el build**: la imagen queda atada a su
-  dominio y cambiarlo obliga a reconstruir, no basta con reiniciar.
+- **Despliegue** (ver `RUNBOOK.md`): **nginx en el host** (TLS con certbot) → app
+  en `standalone` (Docker) → Mongo (Docker). La app publica el 3000 **atado a
+  `127.0.0.1`**: nginx llega por loopback y desde internet no se puede tocar
+  saltándose el TLS. En la config de nginx, `X-Forwarded-For` debe fijarse con
+  `$remote_addr` y **no** con `$proxy_add_x_forwarded_for`, que lo añade en vez
+  de reemplazarlo y permitiría falsear la IP para saltarse
+  `lib/auth/throttle.js`. Ojo también con `client_max_body_size`: por defecto son
+  1 MB y los adjuntos fallarían con 413. Las cookies de sesión y de estado de
+  OAuth llevan prefijo **`__Host-` solo en producción** (exige `Secure`, que en
+  localhost no viaja); el nombre se decide **en build**, así que desplegarlo la
+  primera vez cierra las sesiones abiertas. **`NEXT_PUBLIC_APP_URL` se incrusta
+  en el build**: la imagen queda atada a su dominio y cambiarlo obliga a
+  reconstruir, no basta con reiniciar.
 - **Legal y RGPD**: los datos de la empresa viven en `lib/config/legal.js`, y
   mientras queden marcadores `[[...]]` las páginas `/legal/*` muestran un aviso
   de borrador (`legalIsDraft()`). **No hay banner de cookies a propósito**: las

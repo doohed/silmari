@@ -3,9 +3,12 @@
 Cómo se despliega Silmari y qué hacer cuando algo va mal. Escrito para poder
 seguirlo a las tres de la mañana sin pensar.
 
-Arquitectura de producción: **Caddy** (TLS automático) → **app** (Next en
-`standalone`) → **Mongo** (replica set de un nodo), los tres en el mismo
-`docker compose`, con una sola instancia de la app.
+Arquitectura de producción: **nginx en el host** (TLS con certbot) → **app**
+(Next en `standalone`, en Docker) → **Mongo** (Docker, replica set de un nodo),
+con una sola instancia de la app.
+
+El contenedor de la app publica el 3000 **solo en `127.0.0.1`**, así que nginx
+llega por loopback y desde internet no se puede tocar saltándose el TLS.
 
 ---
 
@@ -163,11 +166,11 @@ Objetivo: menos de 30 minutos siguiendo solo esta sección.
    ```
 
    Mongo (27017) **no** se publica: vive en la red interna de compose. La app
-   tampoco: solo la alcanza Caddy.
+   publica el 3000 pero atado a `127.0.0.1`, así que solo la alcanza nginx desde
+   la propia máquina.
 
 3. **DNS.** Un registro `A` del dominio apuntando a la IP del VPS. Hazlo antes
-   de levantar Caddy: sin DNS resuelto, Let's Encrypt no puede emitir el
-   certificado.
+   de pedir el certificado: sin DNS resuelto, Let's Encrypt no puede validarlo.
 
 4. **Código y secretos.**
 
@@ -177,27 +180,100 @@ Objetivo: menos de 30 minutos siguiendo solo esta sección.
    ```
 
    Rellena `.env.local`. Los que **no pueden faltar**: `AUTH_SECRET`,
-   `INTEGRATIONS_SECRET`, `APP_DOMAIN`, `APP_URL`, `RESEND_API_KEY`, `MAIL_FROM`
-   y las cuatro de Stripe. Genera los secretos con `openssl rand -base64 32` y
+   `INTEGRATIONS_SECRET`, `APP_URL`, `RESEND_API_KEY`, `MAIL_FROM` y las cuatro
+   de Stripe. Genera los secretos con `openssl rand -base64 32` y
    guárdalos también en tu gestor de contraseñas: **sin `AUTH_SECRET` un backup
    restaurado es inservible.**
 
-5. **Arrancar.**
+5. **Arrancar la app.**
 
    ```bash
    docker compose --profile app up -d --build
-   docker compose logs -f caddy   # confirma que emite el certificado
+   curl -sS localhost:3000/api/health   # debe responder por loopback
    ```
 
-6. **Comprobar.** `https://tudominio/api/health` responde 200, puedes registrarte
+6. **nginx y el certificado.** Ver la sección siguiente.
+
+7. **Comprobar.** `https://tudominio/api/health` responde 200, puedes registrarte
    y te llega el correo de confirmación.
 
-7. **Cron.** Backup y purga diarios (ver arriba).
+8. **Cron.** Backup y purga diarios (ver arriba).
 
 > **La imagen queda atada al dominio.** `NEXT_PUBLIC_APP_URL` se incrusta en el
 > build, no se lee en runtime. Si cambias de dominio hay que **reconstruir**;
 > reiniciar no basta. Si te la dejas en `localhost`, los enlaces de invitación y
 > de recuperación de contraseña saldrán apuntando a localhost en los correos.
+
+---
+
+## nginx y el certificado
+
+nginx vive **en el host**, no en Docker: así certbot puede recargarlo sin
+coordinar contenedores, que es donde ese montaje se complica.
+
+```bash
+apt-get install -y nginx certbot python3-certbot-nginx
+```
+
+`/etc/nginx/sites-available/silmari`:
+
+```nginx
+server {
+    listen 80;
+    server_name tudominio.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+
+        # CRÍTICO: $remote_addr, NO $proxy_add_x_forwarded_for. El segundo
+        # AÑADE la cabecera que mandó el cliente en vez de reemplazarla, así que
+        # cualquiera podría falsificar su IP y saltarse el freno por IP de
+        # `lib/auth/throttle.js`. Es el error más común de esta configuración.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $host;
+
+        # Streaming de React Server Components: sin esto la respuesta se
+        # bufferea y la navegación se siente lenta.
+        proxy_buffering off;
+    }
+
+    # Por defecto nginx corta en 1 MB y los adjuntos fallarían con un 413.
+    # 12 MB = los 10 del límite de la app más el margen del multipart.
+    client_max_body_size 12M;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+}
+```
+
+**No añadas cabeceras de seguridad aquí.** Las pone la app: las estáticas en
+`next.config.mjs` y la CSP con su nonce en `proxy.js`. Duplicarlas deja dos
+valores en la respuesta y, en el caso de la CSP, una sin nonce pisando a la buena.
+
+Activar y pedir el certificado:
+
+```bash
+ln -s /etc/nginx/sites-available/silmari /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+certbot --nginx -d tudominio.com
+```
+
+`certbot --nginx` reescribe el bloque para añadir el 443, el certificado y la
+redirección desde HTTP. A partir de ahí:
+
+```bash
+systemctl status certbot.timer   # la renovación automática ya viene puesta
+certbot renew --dry-run          # confirma que renovará sin intervención
+```
+
+> El **puerto 80 tiene que seguir abierto** aunque todo el tráfico vaya por
+> HTTPS: certbot lo necesita para validar en cada renovación. Y comprueba el
+> `--dry-run` al menos una vez; el fallo clásico es que el certificado se renueva
+> pero nginx no se recarga y sigue sirviendo el viejo hasta que alguien lo nota,
+> 90 días después.
 
 ---
 
@@ -209,7 +285,7 @@ En el servidor:
 ```bash
 cd /srv/silmari
 npm run backup                 # siempre antes de tocar nada
-git pull                       # trae Caddyfile y compose actualizados
+git pull                       # trae el compose actualizado
 docker compose --profile app pull
 docker compose --profile app up -d
 docker compose logs -f app
@@ -240,7 +316,7 @@ En este orden, que va de lo más probable a lo más raro:
 ```bash
 docker compose --profile app ps          # ¿están vivos los contenedores?
 docker compose --profile app logs --tail=100 app
-docker compose --profile app logs --tail=50 caddy
+journalctl -u nginx --no-pager -n 50    # el proxy vive en el host
 df -h                                    # ¿disco lleno? (logs, backups, storage)
 free -m                                  # ¿se lo comió el OOM killer?
 docker stats --no-stream
@@ -251,11 +327,14 @@ Interpretación rápida:
 
 - **503 en `/api/health`**: la app está levantada pero no llega a Mongo. Mira el
   contenedor `mongo` y que el replica set esté iniciado.
-- **502 desde Caddy**: la app no responde. Casi siempre es un arranque fallido
-  por una variable de entorno que falta; sale en los logs de `app`.
-- **Certificado caducado o no emitido**: revisa DNS y que el puerto 80 esté
-  abierto. Caddy necesita el 80 para renovar, no solo el 443.
-- **Disco lleno**: los sospechosos son `/var/log/caddy`, los backups locales y
+- **502 desde nginx**: la app no responde. Casi siempre es un arranque fallido
+  por una variable de entorno que falta; sale en los logs de `app`. Confirma con
+  `curl localhost:3000/api/health` desde el propio servidor.
+- **413 al subir un adjunto**: falta `client_max_body_size` en nginx (por defecto
+  son 1 MB).
+- **Certificado caducado**: `certbot renew --dry-run` y revisa que el puerto 80
+  siga abierto; se necesita para renovar, no solo el 443.
+- **Disco lleno**: los sospechosos son `/var/log/nginx`, los backups locales y
   `app-storage`. Los adjuntos crecen sin tope: es el aviso de que toca S3.
 
 ---
@@ -290,8 +369,8 @@ algo concreto, `LOG_LEVEL=debug`, pero **no lo dejes puesto**: crece rápido.
 
 Los logs de Docker están **limitados a 20 MB × 5 ficheros por servicio**. Sin ese
 tope, el driver por defecto crece sin límite hasta llenar el disco, que es la
-avería más habitual en un VPS de una sola máquina. Los de acceso de Caddy rotan
-aparte (`caddy-logs`, 20 MB × 10).
+avería más habitual en un VPS de una sola máquina. Los de nginx los rota
+`logrotate` del sistema, que en Debian/Ubuntu viene configurado de serie.
 
 > Este es el punto flaco de no tener rastreador de errores: si no entras a
 > mirar, no te enteras. El monitor externo de uptime sobre `/api/health` es lo

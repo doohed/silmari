@@ -203,17 +203,16 @@ plantilla de internet.
 
 ## Fase 5 — Operación del VPS · ~2 días
 
-> **Estado: fase completa.** `Caddyfile` con TLS automático, servicio `caddy` en
-> el compose, la app **deja de publicar el puerto 3000** (solo se llega por
-> Caddy), workflow `release.yml` que publica la imagen en GHCR al etiquetar
+> **Estado: fase completa.** La app publica el 3000 **solo en `127.0.0.1`**, con
+> **nginx en el host** haciendo de reverse proxy y certbot para el TLS (config
+> completa en el runbook), workflow `release.yml` que publica la imagen en GHCR al etiquetar
 > `v*`, y `RUNBOOK.md` con despliegue, vuelta atrás, diagnóstico, rotación de
 > secretos y umbrales de escalado.
 >
 > **Queda por hacer en el servidor** (no es código): contratar el VPS, apuntar el
 > DNS, rellenar `.env.local` y correr el primer despliegue siguiendo el runbook.
 
-- **Reverse proxy** delante del contenedor: Caddy (TLS automático, config de tres
-  líneas) o Traefik.
+- **Reverse proxy** delante del contenedor: **nginx + certbot** en el host.
 - **Despliegue**: CI construye y publica la imagen al taggear; en el VPS,
   `docker compose --profile app up -d`. Con una sola instancia habrá unos
   segundos de corte en cada despliegue: es aceptable, pero documéntalo.
