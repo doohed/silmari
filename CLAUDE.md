@@ -99,7 +99,7 @@ Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
   temático (`components/ui/ConfirmDialog`, `useConfirm`) en vez de `window.confirm`.
 - **Transversal**: multi-tenant estricto, soft delete + **papelera** (`/trash`),
   **tema claro/oscuro**, **i18n es/en**, 404/500 propias, **API pública**
-  `app/api/v1` (auth por API key; ver `README.md`).
+  `app/api/v1` (auth por API key; ver `docs/api.md`).
 
 ## Modelo de datos (resumen)
 
@@ -259,7 +259,7 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   onboarding pasa `requireVerifiedEmail: false`; ocurre segundos después del alta
   y exigirlo lo dejaría inútil para todo el mundo, así que el riesgo se acota con
   el tope de 3 direcciones y el freno de altas por IP.
-- **Despliegue** (ver `RUNBOOK.md`): **nginx en el host** (TLS con certbot) → app
+- **Despliegue** (ver `docs/runbook.md`): **nginx en el host** (TLS con certbot) → app
   en `standalone` (Docker) → Mongo (Docker). La app publica el 3000 **atado a
   `127.0.0.1`**: nginx llega por loopback y desde internet no se puede tocar
   saltándose el TLS. En la config de nginx, `X-Forwarded-For` debe fijarse con
@@ -363,8 +363,8 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
 ## Pendientes conocidos
 
 > **Puesta en producción:** el plan por fases (cuentas, endurecimiento, Stripe,
-> legal, operación) vive en **`PLAN-PRODUCCION.md`**, y los procedimientos de
-> backup y recuperación en **`RUNBOOK.md`**. Consúltalos antes de tocar
+> legal, operación) vive en **`docs/plan-produccion.md`**, y los procedimientos
+> de backup y recuperación en **`docs/runbook.md`**. Consúltalos antes de tocar
 > despliegue, auth o facturación.
 
 - **MANY_TO_MANY** completo (vincular/desvincular por UI).

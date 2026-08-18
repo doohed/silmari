@@ -10,7 +10,8 @@ CSS v4**, **MongoDB + Mongoose**. Sin TypeScript.
 ## Funcionalidades
 
 - **Motor de metadata**: define objetos y campos personalizados; la UI (tabla,
-  kanban, ficha, filtros) se genera desde la metadata. 22 tipos de campo.
+  kanban, ficha, filtros) se genera desde la metadata. 24 tipos de campo,
+  incluidos FORMULA y ROLLUP.
 - **Vista tabla**: virtualizada (miles de filas), edición inline, navegación por
   teclado, filtros, orden, columnas configurables, selección y borrado masivo,
   **reordenar filas arrastrando** e **import/export CSV**.
@@ -28,12 +29,19 @@ CSS v4**, **MongoDB + Mongoose**. Sin TypeScript.
   miembros e invitaciones, **editor del modelo de datos** (crear objetos con
   **icono** / campos, **personalizar opciones/etapas**, **indexar campos**,
   **borrar objetos custom**), API keys y **webhooks**.
-- **Cuenta**: auth propio con onboarding guiado y **Google OAuth**.
+- **Cuenta**: auth propio con onboarding guiado, **Google y Microsoft OAuth**,
+  recuperación de contraseña y verificación de email.
+- **Facturación**: planes con límites aplicados en servidor, Checkout y portal de
+  cliente de **Stripe**.
+- **Entrada de leads**: formularios de Meta (Facebook e Instagram) vía Zapier o
+  Make, con mapeo de campos y deduplicación configurables.
 - **Base sólida**: multi-tenant, soft delete + **papelera**, **tema claro/
-  oscuro**, **i18n es/en** y una **API REST pública** (`/api/v1`).
+  oscuro**, **i18n es/en**, páginas legales, exportación de datos y una
+  **API REST pública** (`/api/v1`).
 
 Detalles de arquitectura, modelo de datos y decisiones técnicas en
-[`CLAUDE.md`](./CLAUDE.md).
+[`CLAUDE.md`](./CLAUDE.md). El resto de la documentación, en
+[`docs/`](./docs/README.md).
 
 ## Requisitos
 
@@ -83,6 +91,11 @@ curl http://localhost:3000/api/health
 | `npm run format:check`     | Comprobar formato sin escribir                    |
 | `npm run db:up`            | Levantar MongoDB (Docker)                         |
 | `npm run db:down`          | Detener MongoDB (Docker)                          |
+| `npm run app:up`           | Levantar el stack de producción (Docker)          |
+| `npm run app:down`         | Detener el stack de producción                    |
+| `npm run backup`           | Volcado de MongoDB (ver runbook)                  |
+| `npm run restore`          | Restaurar un volcado                              |
+| `npm run purge`            | Borrado definitivo de la papelera (RGPD)          |
 
 > La primera vez que ejecutes los e2e necesitas el navegador de Playwright:
 > `npx playwright install chromium`.
@@ -91,71 +104,15 @@ curl http://localhost:3000/api/health
 > contactos y oportunidades con relaciones) e imprime su email y contraseña.
 > Los tests de integración usan `mongodb-memory-server` (no requieren Docker).
 
-## API pública (`/api/v1`)
-
-La API REST autentica por **API key** (créala en Ajustes → API keys; el token se
-muestra una única vez). Se envía como `Authorization: Bearer <token>`.
-
-| Método   | Ruta                                  | Descripción                              |
-| -------- | ------------------------------------- | ---------------------------------------- |
-| `GET`    | `/api/v1/metadata/objects`            | Lista los objetos del workspace          |
-| `GET`    | `/api/v1/metadata/objects/:id/fields` | Campos de un objeto                      |
-| `GET`    | `/api/v1/:objectSlug`                 | Lista registros (filtros, orden, cursor) |
-| `POST`   | `/api/v1/:objectSlug`                 | Crea un registro                         |
-| `GET`    | `/api/v1/:objectSlug/:recordId`       | Un registro                              |
-| `PATCH`  | `/api/v1/:objectSlug/:recordId`       | Actualiza (parcial)                      |
-| `DELETE` | `/api/v1/:objectSlug/:recordId`       | Borra (soft delete)                      |
-| `POST`   | `/api/v1/intake/meta`                 | Recibe un lead de Meta Lead Ads          |
-
-**Parámetros de listado**: `?filter=campo:operador:valor` (repetible),
-`?sort=campo:asc|desc`, `?cursor=<opaco>`, `?limit=`. Operadores según el tipo
-de campo (p. ej. `eq`, `contains`, `gte`, `is`, `isEmpty`). La respuesta incluye
-`{ data, nextCursor }`; pásale `nextCursor` como `cursor` para la siguiente
-página. Hay **rate limiting** por key.
-
-```bash
-API=http://localhost:3000/api/v1
-AUTH="Authorization: Bearer $TOKEN"
-
-# Crear
-curl -s -X POST "$API/companies" -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"data":{"name":"Acme","employees":25}}'
-
-# Listar con filtro, orden y paginación
-curl -s "$API/companies?filter=employees:gte:10&sort=employees:asc&limit=50" -H "$AUTH"
-
-# Actualizar / borrar
-curl -s -X PATCH "$API/companies/<id>" -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"data":{"employees":99}}'
-curl -s -X DELETE "$API/companies/<id>" -H "$AUTH"
-```
-
-### Entrada de leads desde Meta (Facebook e Instagram)
-
-`POST /api/v1/intake/meta` convierte un lead de **Meta Lead Ads** en un registro.
-Se configura en **Ajustes → Entrada de leads**: por cada formulario (su `form_id`)
-eliges el objeto destino, la correspondencia entre preguntas y campos, y —
-opcionalmente — un **campo clave** para actualizar en vez de duplicar. Una
-configuración con el ID de formulario vacío actúa de comodín.
-
-No hace falta integración nativa con Meta: **Zapier o Make** ponen el trigger
-_New Lead_ (su app ya pasó el App Review de Meta) y reenvían el lead aquí con una
-acción _Webhooks → Custom Request_. El endpoint acepta el lead tal cual lo
-entrega la Graph API (`field_data`) o ya aplanado, y tolera diferencias de
-mayúsculas, tildes y signos en el nombre de las preguntas.
-
-```bash
-curl -s -X POST "$API/intake/meta" -H "$AUTH" -H 'content-type: application/json' \
-  -d '{"form_id":"123456","id":"99887766","field_data":[
-        {"name":"full_name","values":["Ana Ruiz"]},
-        {"name":"email","values":["ana@ejemplo.com"]}]}'
-# → { "data": { "action": "created", "recordId": "…", "mapped": [...], "ignored": [...] } }
-```
-
-Los errores se devuelven como `{ "error": { "code", "message", "fieldErrors" } }`
-con el código HTTP correspondiente (400/401/403/404/409/429).
-
 ## Documentación
 
-- [`CLAUDE.md`](./CLAUDE.md) — funcionalidad, arquitectura, modelo de datos,
-  decisiones técnicas, convenciones y guía para extender el sistema.
+- [`docs/`](./docs/README.md) — índice completo.
+  - [API pública](./docs/api.md) — referencia de `/api/v1`.
+  - [Runbook de operación](./docs/runbook.md) — despliegue, backup, incidencias.
+  - [Plan de puesta en producción](./docs/plan-produccion.md) — qué falta para lanzar.
+- [`CLAUDE.md`](./CLAUDE.md) — arquitectura, modelo de datos, decisiones técnicas
+  y convenciones. Se queda en la raíz porque es donde lo carga Claude Code.
+
+## Licencia
+
+Privado. Todos los derechos reservados.

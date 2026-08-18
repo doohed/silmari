@@ -409,4 +409,4 @@ Señales para plantearse la segunda réplica, por orden de aparición:
 
 Antes de la segunda instancia hay **tres deudas que dejan de ser opcionales**:
 storage en S3, rate limit compartido (hoy en memoria por proceso) y despliegue
-sin corte. Están recogidas en la Fase 6 de `PLAN-PRODUCCION.md`.
+sin corte. Están recogidas en la Fase 6 de [`plan-produccion.md`](./plan-produccion.md).

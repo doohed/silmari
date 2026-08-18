@@ -2,7 +2,7 @@ name: Release
 
 # Publica la imagen de producción en GitHub Container Registry al crear una
 # etiqueta `v*`. El despliegue en el VPS es un `docker compose pull && up -d`
-# (ver RUNBOOK.md): así lo que se despliega es exactamente lo que pasó por CI,
+# (ver docs/runbook.md): así lo que se despliega es exactamente lo que pasó por CI,
 # sin volver a compilar en el servidor.
 on:
   push:

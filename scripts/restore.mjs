@@ -11,7 +11,7 @@
  *   RESTORE_DROP  'true' para borrar las colecciones antes de restaurar.
  *
  * Pensado para el ensayo periódico de recuperación: restaura en una base local
- * y arranca la app contra ella. Ver el RUNBOOK.
+ * y arranca la app contra ella. Ver docs/runbook.md.
  */
 
 import { spawn } from 'node:child_process';

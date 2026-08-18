@@ -17,7 +17,7 @@
  * para no atarse a S3, R2 o Backblaze.
  *
  * Un backup que no se ha restaurado nunca no es un backup: ver `scripts/restore.mjs`
- * y el apartado de recuperación del RUNBOOK.
+ * y el apartado de recuperación de docs/runbook.md.
  */
 
 import { spawn } from 'node:child_process';

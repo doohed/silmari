@@ -21,13 +21,13 @@ Son órdenes de magnitud, no compromisos.
 Va primero porque protege todo lo que viene después. Sin esto, cada fase
 siguiente se despliega a ciegas.
 
-| #   | Tarea                                                                                                                                           | Dónde                                   |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| 0.1 | CI en GitHub Actions: `lint` + `test` + `test:integration` + `build` en cada push y PR. Los e2e de Playwright, en nightly (tardan y son flaky). | `.github/workflows/ci.yml`              |
-| 0.2 | Backup automático de Mongo: `mongodump` diario a almacenamiento externo (R2/S3/Backblaze), retención 30 días, cifrado en reposo.                | `scripts/backup.mjs` + cron en el host  |
-| 0.3 | **Ensayo de restauración**: restaurar el backup de ayer en local y comprobar que la app arranca contra él. Documentar los pasos.                | `PLAN-PRODUCCION.md` → runbook (Fase 5) |
-| 0.4 | ~~Sentry~~ **Descartado por decisión**: el diagnóstico se hace leyendo los logs del servidor. Ver «Leer los logs» en el runbook.                | `lib/utils/logger.js`                   |
-| 0.5 | Monitor externo de uptime sobre `/api/health` con aviso a tu móvil.                                                                             | UptimeRobot / BetterStack               |
+| #   | Tarea                                                                                                                                           | Dónde                                  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| 0.1 | CI en GitHub Actions: `lint` + `test` + `test:integration` + `build` en cada push y PR. Los e2e de Playwright, en nightly (tardan y son flaky). | `.github/workflows/ci.yml`             |
+| 0.2 | Backup automático de Mongo: `mongodump` diario a almacenamiento externo (R2/S3/Backblaze), retención 30 días, cifrado en reposo.                | `scripts/backup.mjs` + cron en el host |
+| 0.3 | **Ensayo de restauración**: restaurar el backup de ayer en local y comprobar que la app arranca contra él. Documentar los pasos.                | `docs/runbook.md` (Fase 5)             |
+| 0.4 | ~~Sentry~~ **Descartado por decisión**: el diagnóstico se hace leyendo los logs del servidor. Ver «Leer los logs» en el runbook.                | `lib/utils/logger.js`                  |
+| 0.5 | Monitor externo de uptime sobre `/api/health` con aviso a tu móvil.                                                                             | UptimeRobot / BetterStack              |
 
 **Terminado cuando:** un PR con los tests en rojo no se puede mergear, y existe
 un backup de ayer que has restaurado con éxito al menos una vez.
@@ -206,7 +206,7 @@ plantilla de internet.
 > **Estado: fase completa.** La app publica el 3000 **solo en `127.0.0.1`**, con
 > **nginx en el host** haciendo de reverse proxy y certbot para el TLS (config
 > completa en el runbook), workflow `release.yml` que publica la imagen en GHCR al etiquetar
-> `v*`, y `RUNBOOK.md` con despliegue, vuelta atrás, diagnóstico, rotación de
+> `v*`, y [`runbook.md`](./runbook.md) con despliegue, vuelta atrás, diagnóstico, rotación de
 > secretos y umbrales de escalado.
 >
 > **Queda por hacer en el servidor** (no es código): contratar el VPS, apuntar el
