@@ -15,6 +15,8 @@ import { listRollupSources } from '@/lib/relations/service';
 import { listPriceFields } from '@/lib/quotes/service';
 import { createApiKey, listApiKeys, revokeApiKey } from '@/lib/auth/api-key';
 import { createWebhook, listWebhooks, deleteWebhook, retryDelivery } from '@/lib/webhooks/service';
+import { getSubscription, createCheckoutSession, createPortalSession } from '@/lib/billing/service';
+import { currentUsage } from '@/lib/billing/limits';
 import {
   createLeadIntake,
   listLeadIntakes,
@@ -136,4 +138,20 @@ export async function updateLeadIntakeAction({ id, ...input }) {
 }
 export async function deleteLeadIntakeAction({ id }) {
   return withCtx((ctx) => deleteLeadIntake(ctx, id));
+}
+
+// --- Facturación (Stripe) ---
+export async function getSubscriptionAction() {
+  return withCtx((ctx) => getSubscription(ctx));
+}
+export async function getUsageAction() {
+  return withCtx((ctx) => currentUsage(ctx));
+}
+/** Devuelve la URL del Checkout; la redirección la hace el cliente. */
+export async function createCheckoutAction({ plan }) {
+  return withCtx((ctx) => createCheckoutSession(ctx, { plan }));
+}
+/** Devuelve la URL del portal de cliente de Stripe. */
+export async function createPortalAction() {
+  return withCtx((ctx) => createPortalSession(ctx));
 }

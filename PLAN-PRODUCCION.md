@@ -124,8 +124,17 @@ que recorre el ciclo completo.
 
 ## Fase 3 — Facturación con Stripe · ~5-8 días
 
-La fase más larga. El seam ya existe en `lib/billing/`; el paso PLAN del
-onboarding hoy es solo visual.
+> **Estado: base hecha, falta la prueba de punta a punta.** Están el modelo
+> `Subscription`, los planes con sus límites aplicados en la capa de servicios,
+> el webhook idempotente, el Checkout, el portal de cliente y la página
+> `/settings/billing`. **Queda**: crear productos y precios en el panel de
+> Stripe, poner `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+> `STRIPE_PRICE_PRO` y `STRIPE_PRICE_BUSINESS`, activar **Stripe Tax**, y probar
+> el ciclo completo con tarjetas de prueba, reenviando los eventos con
+> `stripe listen`. También sigue pendiente conectar el paso PLAN del onboarding
+> al Checkout real.
+
+La fase más larga. El paso PLAN del onboarding hoy es solo visual.
 
 - **Modelo `Subscription`** por workspace: plan, estado, `stripeCustomerId`,
   `stripeSubscriptionId`, periodo actual.

@@ -13,6 +13,7 @@ const SECTIONS = [
   { href: '/settings/integrations', label: 'Integraciones' },
   { href: '/settings/forms', label: 'Formularios' },
   { href: '/settings/leads', label: 'Entrada de leads' },
+  { href: '/settings/billing', label: 'Facturación' },
 ];
 
 export default async function SettingsLayout({ children }) {

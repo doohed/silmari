@@ -111,6 +111,11 @@ Colecciones (todas con `workspaceId` en los datos y soft delete vía `deletedAt`
   de 1 h con índice `expireAfterSeconds`, `usedAt` para que valga una sola vez.
 - **emailVerifications** — igual, pero TTL de 3 días y con el `email` al que se
   emitió: si la cuenta cambia de dirección, el token deja de valer.
+- **subscriptions** — espejo local de Stripe, único por `workspaceId`. Solo lo
+  escribe el webhook. Sin documento = plan Gratis (no se crea fila hasta el
+  primer pago).
+- **stripeEvents** — `_id` = `event.id` de Stripe; la clave primaria hace de
+  guardia de idempotencia. TTL de 30 días.
 - **objectMetadata** — definición de objetos; `(workspaceId, slug)` único
   **parcial** (`deletedAt: null`), para que un objeto borrado no bloquee reusar el
   slug. `createObject` añade el identificador `name` (indexado) y el campo de
@@ -254,6 +259,22 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   onboarding pasa `requireVerifiedEmail: false`; ocurre segundos después del alta
   y exigirlo lo dejaría inútil para todo el mundo, así que el riesgo se acota con
   el tope de 3 direcciones y el freno de altas por IP.
+- **Facturación** (`lib/billing/`): **los límites viven en código**
+  (`plans.js`, puro) y Stripe solo dice _qué ha pagado_ el workspace, no _qué
+  puede hacer_; así un cambio en el panel de Stripe no altera en silencio lo que
+  la app permite. `assertWithinPlan` se aplica en la **capa de servicios** (API
+  keys, webhooks, miembros, entradas de leads y `createRecord`), no en la UI,
+  porque la API pública comparte esos servicios. `past_due` **conserva** el plan:
+  un cobro fallido no corta el servicio antes de que Stripe agote sus reintentos;
+  `canceled`/`unpaid` degradan a Gratis. El webhook
+  (`app/api/stripe/webhook/route.js`) lee el **cuerpo crudo** (la firma va sobre
+  los bytes), es **idempotente** por `event.id` (`models/StripeEvent.js`, con TTL
+  de 30 días) y responde 200 ante un fallo de procesado: un 500 solo provoca
+  reintentos que no arreglan un fallo permanente. Aquí sí se usa el **SDK
+  oficial**, al revés que en `lib/mailer/`: verificar la firma con tolerancia
+  temporal y comparación en tiempo constante es fácil de hacer mal y esto mueve
+  dinero. Sin `STRIPE_SECRET_KEY` la app arranca igual y la UI esconde los
+  botones de contratar.
 - **Cabeceras de seguridad** (`lib/http/security-headers.js`, puro y testeado):
   las estáticas (HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy`,
   `X-Frame-Options`) se declaran en `next.config.mjs`; la **CSP se emite desde
