@@ -1,7 +1,11 @@
 # Runbook de operación
 
-Qué hacer cuando algo va mal en producción. Se irá completando en la Fase 5 de
-`PLAN-PRODUCCION.md`; hoy cubre backup y recuperación.
+Cómo se despliega Silmari y qué hacer cuando algo va mal. Escrito para poder
+seguirlo a las tres de la mañana sin pensar.
+
+Arquitectura de producción: **Caddy** (TLS automático) → **app** (Next en
+`standalone`) → **Mongo** (replica set de un nodo), los tres en el mismo
+`docker compose`, con una sola instancia de la app.
 
 ---
 
@@ -142,9 +146,149 @@ tienen `deletedAt` propio y cuelgan del registro por id.
 
 ---
 
-## Pendiente de escribir (Fase 5)
+## Primer despliegue en un VPS limpio
 
-- Procedimiento de despliegue y de vuelta atrás.
-- Qué mirar cuando la app no responde (contenedor, Mongo, disco, memoria).
-- Rotación de cada secreto, con su efecto colateral.
-- Escalado del VPS y umbrales para plantearse una segunda instancia.
+Objetivo: menos de 30 minutos siguiendo solo esta sección.
+
+1. **Servidor.** Cualquier VPS con 2 vCPU y 4 GB llega de sobra para empezar.
+   Instala Docker y el plugin de compose. Crea un usuario sin privilegios y
+   deshabilita el acceso SSH por contraseña.
+
+2. **Firewall.** Solo tres puertos abiertos:
+
+   ```bash
+   ufw default deny incoming && ufw default allow outgoing
+   ufw allow 22/tcp && ufw allow 80/tcp && ufw allow 443/tcp
+   ufw enable
+   ```
+
+   Mongo (27017) **no** se publica: vive en la red interna de compose. La app
+   tampoco: solo la alcanza Caddy.
+
+3. **DNS.** Un registro `A` del dominio apuntando a la IP del VPS. Hazlo antes
+   de levantar Caddy: sin DNS resuelto, Let's Encrypt no puede emitir el
+   certificado.
+
+4. **Código y secretos.**
+
+   ```bash
+   git clone <repo> /srv/silmari && cd /srv/silmari
+   cp .env.example .env.local
+   ```
+
+   Rellena `.env.local`. Los que **no pueden faltar**: `AUTH_SECRET`,
+   `INTEGRATIONS_SECRET`, `APP_DOMAIN`, `APP_URL`, `RESEND_API_KEY`, `MAIL_FROM`
+   y las cuatro de Stripe. Genera los secretos con `openssl rand -base64 32` y
+   guárdalos también en tu gestor de contraseñas: **sin `AUTH_SECRET` un backup
+   restaurado es inservible.**
+
+5. **Arrancar.**
+
+   ```bash
+   docker compose --profile app up -d --build
+   docker compose logs -f caddy   # confirma que emite el certificado
+   ```
+
+6. **Comprobar.** `https://tudominio/api/health` responde 200, puedes registrarte
+   y te llega el correo de confirmación.
+
+7. **Cron.** Backup y purga diarios (ver arriba).
+
+> **La imagen queda atada al dominio.** `NEXT_PUBLIC_APP_URL` se incrusta en el
+> build, no se lee en runtime. Si cambias de dominio hay que **reconstruir**;
+> reiniciar no basta. Si te la dejas en `localhost`, los enlaces de invitación y
+> de recuperación de contraseña saldrán apuntando a localhost en los correos.
+
+---
+
+## Desplegar una versión nueva
+
+CI publica la imagen al crear una etiqueta `v*` (`.github/workflows/release.yml`).
+En el servidor:
+
+```bash
+cd /srv/silmari
+npm run backup                 # siempre antes de tocar nada
+git pull                       # trae Caddyfile y compose actualizados
+docker compose --profile app pull
+docker compose --profile app up -d
+docker compose logs -f app
+```
+
+Con una sola instancia hay **unos segundos de corte** mientras el contenedor se
+reemplaza. Es asumible; si algún día no lo es, hará falta una segunda réplica y,
+con ella, storage en S3 y rate limit compartido.
+
+### Volver atrás
+
+```bash
+docker compose --profile app down
+# Fija la etiqueta anterior en el compose (o `docker tag` a mano) y levanta.
+docker compose --profile app up -d
+```
+
+Volver a una versión anterior **no deshace las migraciones de datos**. Si la
+versión nueva ejecutó un script de `scripts/`, revisa si es reversible antes de
+retroceder; si no lo es, restaura el backup.
+
+---
+
+## La app no responde
+
+En este orden, que va de lo más probable a lo más raro:
+
+```bash
+docker compose --profile app ps          # ¿están vivos los contenedores?
+docker compose --profile app logs --tail=100 app
+docker compose --profile app logs --tail=50 caddy
+df -h                                    # ¿disco lleno? (logs, backups, storage)
+free -m                                  # ¿se lo comió el OOM killer?
+docker stats --no-stream
+curl -sS localhost/api/health            # 503 = la app vive pero Mongo no
+```
+
+Interpretación rápida:
+
+- **503 en `/api/health`**: la app está levantada pero no llega a Mongo. Mira el
+  contenedor `mongo` y que el replica set esté iniciado.
+- **502 desde Caddy**: la app no responde. Casi siempre es un arranque fallido
+  por una variable de entorno que falta; sale en los logs de `app`.
+- **Certificado caducado o no emitido**: revisa DNS y que el puerto 80 esté
+  abierto. Caddy necesita el 80 para renovar, no solo el 443.
+- **Disco lleno**: los sospechosos son `/var/log/caddy`, los backups locales y
+  `app-storage`. Los adjuntos crecen sin tope: es el aviso de que toca S3.
+
+---
+
+## Rotar secretos
+
+Cada uno tiene su efecto colateral. Ninguno es indoloro.
+
+| Secreto                 | Efecto al rotarlo                                                                                          |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `AUTH_SECRET`           | Cierra **todas** las sesiones. Los usuarios vuelven a entrar.                                              |
+| `INTEGRATIONS_SECRET`   | Deja ilegibles los secretos de integraciones si no ejecutas antes `scripts/rotate-integration-secret.mjs`. |
+| `RESEND_API_KEY`        | Sin efecto para los usuarios; los correos en vuelo pueden fallar.                                          |
+| `STRIPE_SECRET_KEY`     | El Checkout y el portal dejan de funcionar hasta reiniciar.                                                |
+| `STRIPE_WEBHOOK_SECRET` | Los webhooks empiezan a rechazarse con 400. Cámbialo en el panel de Stripe y en el `.env.local` a la vez.  |
+
+Tras cambiar cualquiera: `docker compose --profile app up -d` para que el
+contenedor recoja el entorno nuevo.
+
+> `AUTH_SECRET` e `INTEGRATIONS_SECRET` están separados precisamente para poder
+> rotar el primero sin arrastrar el segundo. No los vuelvas a unificar.
+
+---
+
+## Cuándo dejará de bastar una instancia
+
+Señales para plantearse la segunda réplica, por orden de aparición:
+
+- El corte de unos segundos en cada despliegue empieza a molestar a clientes.
+- `app-storage` crece hasta hacer incómodo el backup del disco → toca **driver S3**.
+- La memoria del contenedor roza el límite de forma sostenida.
+- Necesitas despliegues sin corte o tolerancia a fallo del nodo.
+
+Antes de la segunda instancia hay **tres deudas que dejan de ser opcionales**:
+storage en S3, rate limit compartido (hoy en memoria por proceso) y despliegue
+sin corte. Están recogidas en la Fase 6 de `PLAN-PRODUCCION.md`.

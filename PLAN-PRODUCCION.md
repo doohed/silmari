@@ -102,12 +102,12 @@ que recorre el ciclo completo.
 
 ## Fase 2 — Endurecimiento · ~2-3 días
 
-> **Estado: 2.1, 2.2, 2.4, 2.5 y 2.6 hechos.** Queda **2.3** (prefijo `__Host-`
-> en la cookie de sesión), que conviene hacer ya con el TLS puesto: `__Host-`
-> exige `Secure`, y en local sin HTTPS rompería el login. Verificado contra el
-> build de producción: las seis cabeceras salen y los 14 scripts de la página
-> llevan nonce. Falta la comprobación externa en el dominio real
-> (securityheaders.com) cuando esté desplegado.
+> **Estado: fase completa.** El 2.3 se cerró junto con la Fase 5: la cookie de
+> sesión y las de estado de OAuth llevan el prefijo `__Host-` **solo en
+> producción**, porque exige `Secure` y en `http://localhost` rompería el login.
+> Verificado contra el build de producción: las seis cabeceras salen, los 14
+> scripts de la página llevan nonce y el prefijo está en el bundle. Falta la
+> comprobación externa en el dominio real (securityheaders.com) al desplegar.
 
 | #   | Tarea                                                                                                                                            |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -194,6 +194,15 @@ plantilla de internet.
 ---
 
 ## Fase 5 — Operación del VPS · ~2 días
+
+> **Estado: fase completa.** `Caddyfile` con TLS automático, servicio `caddy` en
+> el compose, la app **deja de publicar el puerto 3000** (solo se llega por
+> Caddy), workflow `release.yml` que publica la imagen en GHCR al etiquetar
+> `v*`, y `RUNBOOK.md` con despliegue, vuelta atrás, diagnóstico, rotación de
+> secretos y umbrales de escalado.
+>
+> **Queda por hacer en el servidor** (no es código): contratar el VPS, apuntar el
+> DNS, rellenar `.env.local` y correr el primer despliegue siguiendo el runbook.
 
 - **Reverse proxy** delante del contenedor: Caddy (TLS automático, config de tres
   líneas) o Traefik.

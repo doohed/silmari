@@ -1,0 +1,42 @@
+# Reverse proxy delante de la app. Caddy pide y renueva el certificado de
+# Let's Encrypt solo, sin cron ni certbot.
+#
+# El dominio se inyecta desde el compose (variable APP_DOMAIN); en local se puede
+# usar `localhost`, para lo que Caddy emite un certificado propio.
+
+{$APP_DOMAIN} {
+	# `app` es el nombre del servicio en la red de compose.
+	reverse_proxy app:3000 {
+		# CRÍTICO: se REESCRIBEN, no se añaden. Si dejáramos pasar la cabecera
+		# entrante, cualquiera podría falsificar su IP mandando un
+		# X-Forwarded-For a mano y saltarse el freno por IP de
+		# `lib/auth/throttle.js`.
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up Host {host}
+	}
+
+	# Las cabeceras de seguridad las pone la app (`next.config.mjs` y `proxy.js`,
+	# que emite la CSP con nonce). Aquí solo se quita la que delata el servidor.
+	header {
+		-Server
+	}
+
+	# Comprime lo que se pueda antes de mandarlo.
+	encode zstd gzip
+
+	# Tope de subida coherente con el de la app (10 MB en
+	# `lib/attachments/limits.js`) más margen para el resto del multipart.
+	request_body {
+		max_size 12MB
+	}
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 20MB
+			roll_keep 10
+		}
+		format json
+	}
+}

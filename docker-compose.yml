@@ -37,16 +37,23 @@ services:
     build:
       context: .
       args:
-        # NEXT_PUBLIC_* se hornean en build; ajusta si cambias de dominio/URL.
-        NEXT_PUBLIC_APP_URL: 'http://localhost:3000'
+        # ATENCIÓN: las NEXT_PUBLIC_* se **incrustan en el build**, no se leen en
+        # runtime. La imagen queda atada a este dominio: si lo cambias, hay que
+        # reconstruir, no basta con reiniciar. Y si te la dejas en localhost, los
+        # enlaces de invitación y de recuperar contraseña saldrán apuntando a
+        # localhost en los correos.
+        NEXT_PUBLIC_APP_URL: ${APP_URL:-http://localhost:3000}
     container_name: silmari-app
     restart: unless-stopped
     profiles: ['app']
     depends_on:
       mongo:
         condition: service_healthy
-    ports:
-      - '3000:3000'
+    # Sin `ports`: la app NO se publica al host. El único camino de entrada es
+    # Caddy, por la red interna de compose. Así no se puede saltar el TLS ni el
+    # saneado de X-Forwarded-For llamando al 3000 directamente.
+    expose:
+      - '3000'
     env_file:
       # AUTH_SECRET y demás secretos de runtime (crea .env.local a partir de
       # .env.example). MONGODB_URI de aquí se ignora: lo fija `environment`.
@@ -60,6 +67,31 @@ services:
     volumes:
       # Persiste las subidas (STORAGE_DIR=./storage dentro del contenedor).
       - app-storage:/app/storage
+
+  # Reverse proxy con TLS automático (Let's Encrypt). Mismo perfil que la app:
+  #   docker compose --profile app up -d --build
+  caddy:
+    image: caddy:2-alpine
+    container_name: silmari-caddy
+    restart: unless-stopped
+    profiles: ['app']
+    depends_on:
+      - app
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp' # HTTP/3
+    environment:
+      # Dominio del certificado. Con 'localhost' Caddy emite uno propio para
+      # poder probar el montaje completo sin DNS público.
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificados y claves: SIN esto, cada reinicio vuelve a pedirlos y se
+      # agota el límite de emisión de Let's Encrypt.
+      - caddy-data:/data
+      - caddy-config:/config
+      - caddy-logs:/var/log/caddy
 
   # App Next en DESARROLLO (hot reload) dentro de un contenedor. Bajo el perfil
   # `dev`. Monta el código del host como volumen; `next dev` recompila al guardar.
@@ -102,3 +134,6 @@ services:
 volumes:
   mongo-data:
   app-storage:
+  caddy-data:
+  caddy-config:
+  caddy-logs:
