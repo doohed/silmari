@@ -1,20 +1,26 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Calendar, Check } from 'lucide-react';
+import { Check, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
-import { completePlanAction, onboardingLogoutAction } from '@/app/onboarding/actions';
+import { completePlanAction, onboardingCheckoutAction } from '@/app/onboarding/actions';
+import { RESOURCE_LABELS } from '@/lib/billing/plans';
 import { StepFrame } from './StepFrame';
 import { Button } from '@/components/ui/Button';
 
 /**
- * Paso 4 del onboarding: pantalla de "mejora tu prueba" SOLO visual. No captura
- * ni envía datos de tarjeta (los inputs son de solo lectura). La integración
- * real con Stripe se hará detrás de `lib/billing/` en una fase posterior.
+ * Paso 4 del onboarding: elegir plan.
+ *
+ * Antes era una pantalla decorativa con campos de tarjeta falsos. Se quitaron a
+ * propósito: un formulario de tarjeta que no cobra invita a teclear un número
+ * real en un input que no cifra nada. Ahora, o se sigue en el plan gratuito, o
+ * se abre el Checkout de Stripe, que es quien toca la tarjeta.
+ *
+ * @param {{ plans: Array<object>, currentPlan: string, configured: boolean, paymentState?: string }} props
  */
-export function PlanStep() {
-  const [plan, setPlan] = useState('upgraded');
+export function PlanStep({ plans, currentPlan, configured, paymentState }) {
   const [pending, startTransition] = useTransition();
+  const [opening, setOpening] = useState('');
 
   function cont() {
     startTransition(async () => {
@@ -23,96 +29,102 @@ export function PlanStep() {
     });
   }
 
+  async function checkout(plan) {
+    setOpening(plan);
+    const r = await onboardingCheckoutAction({ plan });
+    setOpening('');
+    if (!r.ok) return toast.error(r.message);
+    window.location.assign(r.data.url);
+  }
+
+  const paid = plans.filter((p) => p.key !== 'FREE');
+  const free = plans.find((p) => p.key === 'FREE');
+
   return (
     <StepFrame
-      title="Mejora tu prueba gratuita"
-      subtitle="Añade tus datos de facturación para 30 días de prueba"
+      title="Elige tu plan"
+      subtitle="Puedes empezar gratis y cambiarlo cuando quieras desde Ajustes"
     >
-      <div className="mb-6 flex flex-wrap gap-2">
-        <span className="bg-chip-green text-chip-green-fg flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium">
-          <Calendar size={13} /> Prueba ampliada de 30 días
-        </span>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setPlan('upgraded')}
-        className={`w-full rounded-lg border p-4 text-left transition-shadow ${
-          plan === 'upgraded'
-            ? 'border-accent bg-surface shadow-sm'
-            : 'border-border bg-surface hover:border-border-strong'
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <p className="text-primary text-sm font-semibold">
-            Mejorado <span className="text-tertiary font-normal">· GRATIS</span>
-          </p>
-          <RadioDot active={plan === 'upgraded'} />
-        </div>
-        <p className="text-tertiary mt-1 text-xs">
-          No se realizará ningún cargo. Recibirás un aviso 7 días antes de que termine.
+      {paymentState === 'ok' && (
+        <p className="border-border bg-chip-green text-primary mb-4 rounded-lg border px-3 py-2 text-xs">
+          Pago confirmado. Si el plan todavía aparece como gratuito, dale unos segundos: lo confirma
+          Stripe por su cuenta.
         </p>
+      )}
+      {paymentState === 'cancelado' && (
+        <p className="border-border bg-chip-gray text-secondary mb-4 rounded-lg border px-3 py-2 text-xs">
+          No se ha completado el pago. Puedes seguir con el plan gratuito.
+        </p>
+      )}
 
-        <div className="mt-4 space-y-3" aria-hidden="true">
-          <FakeField label="Número de tarjeta" placeholder="1234 1234 1234 1234" />
-          <div className="grid grid-cols-2 gap-3">
-            <FakeField label="Caducidad" placeholder="MM / AA" />
-            <FakeField label="CVC" placeholder="CVC" />
+      {free && (
+        <div className="border-border bg-surface rounded-lg border p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-primary text-sm font-semibold">
+              {free.label} <span className="text-tertiary font-normal">· sin tarjeta</span>
+            </p>
+            {currentPlan === 'FREE' && <span className="text-tertiary text-xs">Plan actual</span>}
           </div>
-          <FakeField label="País" placeholder="España" />
+          <ul className="mt-3 space-y-1">
+            {Object.entries(free.limits).map(([resource, max]) => (
+              <li key={resource} className="text-secondary flex items-center gap-1.5 text-xs">
+                <Check size={12} className="text-accent shrink-0" />
+                {max === null ? 'Sin límite de ' : `${max} `}
+                {RESOURCE_LABELS[resource] ?? resource}
+              </li>
+            ))}
+          </ul>
         </div>
-      </button>
+      )}
 
-      <button
+      {configured && (
+        <div className="mt-3 space-y-3">
+          {paid.map((plan) => (
+            <div key={plan.key} className="border-border bg-surface rounded-lg border p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-primary text-sm font-semibold">{plan.label}</p>
+                  <p className="text-tertiary text-xs">
+                    {plan.priceMonthly} € al mes · impuestos aparte
+                  </p>
+                </div>
+                {currentPlan === plan.key ? (
+                  <span className="text-tertiary shrink-0 text-xs">Plan actual</span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => checkout(plan.key)}
+                    disabled={Boolean(opening) || pending}
+                  >
+                    <CreditCard size={13} />
+                    {opening === plan.key ? 'Abriendo…' : 'Contratar'}
+                  </Button>
+                )}
+              </div>
+              <ul className="mt-3 space-y-1">
+                {Object.entries(plan.limits).map(([resource, max]) => (
+                  <li key={resource} className="text-secondary flex items-center gap-1.5 text-xs">
+                    <Check size={12} className="text-accent shrink-0" />
+                    {max === null ? 'Sin límite de ' : `${max} `}
+                    {RESOURCE_LABELS[resource] ?? resource}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Button
         type="button"
-        onClick={() => setPlan('basic')}
-        className={`mt-3 flex w-full items-center justify-between rounded-lg border p-4 transition-shadow ${
-          plan === 'basic' ? 'border-accent bg-surface shadow-sm' : 'border-border bg-surface'
-        }`}
+        onClick={cont}
+        disabled={pending || Boolean(opening)}
+        className="mt-6 w-full"
       >
-        <p className="text-primary text-sm">
-          <span className="font-semibold">Básico</span>{' '}
-          <span className="text-tertiary">sin tarjeta</span>
-        </p>
-        <span className="flex items-center gap-2">
-          <span className="text-tertiary text-xs">7 días</span>
-          <RadioDot active={plan === 'basic'} />
-        </span>
-      </button>
-
-      <Button type="button" onClick={cont} disabled={pending} className="mt-6 w-full">
-        {pending ? 'Continuando…' : 'Continuar'}
+        {pending ? 'Continuando…' : currentPlan === 'FREE' ? 'Continuar gratis' : 'Continuar'}
       </Button>
-
-      <form action={onboardingLogoutAction} className="mt-4 text-center">
-        <button type="submit" className="press text-tertiary hover:text-secondary text-xs">
-          Cerrar sesión
-        </button>
-      </form>
     </StepFrame>
-  );
-}
-
-function RadioDot({ active }) {
-  return (
-    <span
-      className={`flex size-4 items-center justify-center rounded-full border ${
-        active ? 'border-accent bg-accent text-accent-fg' : 'border-border-strong'
-      }`}
-    >
-      {active && <Check size={11} strokeWidth={3} />}
-    </span>
-  );
-}
-
-function FakeField({ label, placeholder }) {
-  return (
-    <div>
-      <p className="text-secondary mb-1 text-xs">{label}</p>
-      <div className="border-border bg-bg text-tertiary flex h-9 items-center rounded-lg border px-3 text-sm">
-        {placeholder}
-      </div>
-    </div>
   );
 }
 

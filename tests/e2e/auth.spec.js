@@ -29,9 +29,10 @@ test('alta por email → onboarding → entra al workspace y cierra sesión', as
   await expect(page.getByRole('heading', { name: 'Invita a tu equipo' })).toBeVisible();
   await page.getByRole('button', { name: 'Saltar' }).click();
 
-  // Paso 4 — Plan (visual).
-  await expect(page.getByRole('heading', { name: 'Mejora tu prueba gratuita' })).toBeVisible();
-  await page.getByRole('button', { name: 'Continuar' }).click();
+  // Paso 4 — Plan. Sin claves de Stripe solo se ofrece el plan gratuito, así que
+  // el botón es "Continuar gratis".
+  await expect(page.getByRole('heading', { name: 'Elige tu plan' })).toBeVisible();
+  await page.getByRole('button', { name: /Continuar/ }).click();
 
   // Paso 5 — Bienvenida.
   await expect(page.getByRole('heading', { name: /Todo listo/ })).toBeVisible();

@@ -295,7 +295,10 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   oficial**, al revés que en `lib/mailer/`: verificar la firma con tolerancia
   temporal y comparación en tiempo constante es fácil de hacer mal y esto mueve
   dinero. Sin `STRIPE_SECRET_KEY` la app arranca igual y la UI esconde los
-  botones de contratar.
+  botones de contratar. El **paso PLAN del onboarding** abre el mismo Checkout y
+  vuelve a `/onboarding`; el destino de retorno sale de una **lista blanca
+  cerrada** (`RETURN_PATHS`), porque aceptar una URL del cliente sería una
+  redirección abierta servida desde el dominio de Stripe.
 - **Cabeceras de seguridad** (`lib/http/security-headers.js`, puro y testeado):
   las estáticas (HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy`,
   `X-Frame-Options`) se declaran en `next.config.mjs`; la **CSP se emite desde

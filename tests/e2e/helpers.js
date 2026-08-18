@@ -34,9 +34,10 @@ export async function signup(page, { name = 'Test', workspace = 'Acme' } = {}) {
   // Paso 3 — Invitar (saltar).
   await page.getByRole('button', { name: 'Saltar' }).click();
 
-  // Paso 4 — Plan (visual).
-  await expect(page.getByRole('heading', { name: 'Mejora tu prueba gratuita' })).toBeVisible();
-  await page.getByRole('button', { name: 'Continuar' }).click();
+  // Paso 4 — Plan. Sin claves de Stripe solo se ofrece el plan gratuito, así que
+  // el botón es "Continuar gratis".
+  await expect(page.getByRole('heading', { name: 'Elige tu plan' })).toBeVisible();
+  await page.getByRole('button', { name: /Continuar/ }).click();
 
   // Paso 5 — Bienvenida.
   await page.getByRole('button', { name: /Entrar a/ }).click();

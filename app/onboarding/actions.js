@@ -20,6 +20,7 @@ import {
   inviteUrl,
 } from '@/lib/onboarding/service';
 import { createInvitation } from '@/lib/invitations/service';
+import { createCheckoutSession } from '@/lib/billing/service';
 import { toActionError } from '@/lib/errors/to-response';
 
 /** Paso 1 — Crear workspace. */
@@ -91,7 +92,22 @@ export async function createInviteLinkAction(input) {
   }
 }
 
-/** Paso 4 — Plan (visual). Avanza a la bienvenida. */
+/**
+ * Paso 4 — Abre el Checkout de Stripe para contratar un plan durante el alta.
+ * Devuelve la URL; la redirección la hace el cliente. Al volver, Stripe deja al
+ * usuario otra vez en `/onboarding`, no en Ajustes: el alta todavía no ha
+ * terminado.
+ */
+export async function onboardingCheckoutAction({ plan }) {
+  try {
+    const ctx = await requireContext();
+    return { ok: true, data: await createCheckoutSession(ctx, { plan, returnTo: '/onboarding' }) };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+/** Paso 4 — Continuar sin contratar (o tras volver del pago). Avanza al final. */
 export async function completePlanAction() {
   try {
     const ctx = await requireContext();

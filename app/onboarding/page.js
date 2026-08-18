@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { requireContext } from '@/lib/auth/dal';
 import { getOnboardingState } from '@/lib/onboarding/service';
+import { getSubscription, listPlans } from '@/lib/billing/service';
 import { appName } from '@/lib/config/app';
 import { WorkspaceStep } from '@/components/onboarding/WorkspaceStep';
 import { ProfileStep } from '@/components/onboarding/ProfileStep';
@@ -12,21 +13,26 @@ export const metadata = { title: 'Configura tu cuenta · Silmari' };
 
 const PROGRESS = ['WORKSPACE', 'PROFILE', 'INVITE', 'PLAN'];
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({ searchParams }) {
   const ctx = await requireContext();
   const state = await getOnboardingState(ctx);
 
   if (state.step === 'DONE') redirect('/');
 
+  // El paso del plan necesita saber qué se ha contratado ya: Stripe devuelve
+  // aquí al usuario tras el Checkout, con `?estado=ok`.
+  const billing = state.step === 'PLAN' ? await getSubscription(ctx) : null;
+  const { estado } = (await searchParams) ?? {};
+
   return (
     <div className="w-full">
       {PROGRESS.includes(state.step) && <StepDots step={state.step} />}
-      {renderStep(state)}
+      {renderStep(state, { billing, paymentState: estado })}
     </div>
   );
 }
 
-function renderStep(state) {
+function renderStep(state, { billing, paymentState }) {
   switch (state.step) {
     case 'WORKSPACE':
       return <WorkspaceStep initial={state.workspace} appDomain={state.appDomain} />;
@@ -35,7 +41,14 @@ function renderStep(state) {
     case 'INVITE':
       return <InviteStep />;
     case 'PLAN':
-      return <PlanStep />;
+      return (
+        <PlanStep
+          plans={listPlans()}
+          currentPlan={billing.plan}
+          configured={billing.configured}
+          paymentState={paymentState}
+        />
+      );
     case 'WELCOME':
       return <WelcomeStep firstName={state.user.firstName} brand={appName()} />;
     default:

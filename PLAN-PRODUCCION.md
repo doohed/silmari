@@ -137,8 +137,10 @@ que recorre el ciclo completo.
 > Stripe, poner `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
 > `STRIPE_PRICE_PRO` y `STRIPE_PRICE_BUSINESS`, activar **Stripe Tax**, y probar
 > el ciclo completo con tarjetas de prueba, reenviando los eventos con
-> `stripe listen`. También sigue pendiente conectar el paso PLAN del onboarding
-> al Checkout real.
+> `stripe listen`.
+>
+> El paso PLAN del onboarding **ya está conectado** al Checkout real: sin claves
+> solo ofrece el plan gratuito, y con ellas abre Stripe y vuelve a `/onboarding`.
 
 La fase más larga. El paso PLAN del onboarding hoy es solo visual.
 
@@ -154,7 +156,7 @@ La fase más larga. El paso PLAN del onboarding hoy es solo visual.
   nº de registros, miembros, API keys, webhooks, configuraciones de leads.
 - **Stripe Tax** para el IVA de España/UE, más facturas descargables. Vendiendo a
   consumidores y empresas de la UE esto no es opcional.
-- Conectar el paso PLAN del onboarding al checkout real.
+- ~~Conectar el paso PLAN del onboarding al checkout real.~~ Hecho.
 
 **Terminado cuando:** con tarjetas de prueba puedes suscribirte, ver la factura,
 superar un límite y recibir el aviso, cancelar, y que el workspace baje de plan
