@@ -254,6 +254,21 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   onboarding pasa `requireVerifiedEmail: false`; ocurre segundos después del alta
   y exigirlo lo dejaría inútil para todo el mundo, así que el riesgo se acota con
   el tope de 3 direcciones y el freno de altas por IP.
+- **Cabeceras de seguridad** (`lib/http/security-headers.js`, puro y testeado):
+  las estáticas (HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy`,
+  `X-Frame-Options`) se declaran en `next.config.mjs`; la **CSP se emite desde
+  `proxy.js`** porque lleva un **nonce por respuesta**, que no cabe en la config
+  estática. El nonce viaja en la cabecera de petición y Next firma con él sus
+  scripts en línea de RSC, así que `script-src` **no necesita `unsafe-inline`**.
+  `style-src` sí lo lleva y hoy no se puede quitar: hay atributos `style`
+  calculados en runtime (anchos de columna, posiciones del kanban) que un nonce
+  no cubre. `img-src` admite `data:`/`blob:` por los avatares y logos.
+- **Adjuntos** (`lib/attachments/limits.js`): **lista blanca** de MIME y tope de
+  10 MB, validados **antes** de escribir en el storage. `text/html` y
+  `image/svg+xml` quedan fuera porque el navegador los ejecutaría como documento
+  desde nuestro propio origen; por lo mismo, `/api/files/:id` solo sirve
+  `inline` los tipos inofensivos y fuerza `attachment` para el resto, con
+  `nosniff` y `Cache-Control: private, no-store`.
 - **Freno de autenticación** (`lib/auth/throttle.js`): las server actions de auth
   no pasan por `api-context`, así que llaman a `throttleAuth(flow, { email })`,
   que consume cupo **por email y por IP** a la vez. Hereda la limitación de

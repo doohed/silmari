@@ -4,6 +4,16 @@ import { authenticate } from '@/lib/accounts/authenticate';
 import { listMembers, inviteMember } from '@/lib/members/service';
 import { getCurrentWorkspace } from '@/lib/workspaces/service';
 import { getMembershipRole } from '@/lib/workspaces/service';
+import { getObjectBySlug } from '@/lib/metadata/object-service';
+import { listRecords } from '@/lib/records/service';
+import {
+  createLeadIntake,
+  listLeadIntakes,
+  deleteLeadIntake,
+  ingestLead,
+} from '@/lib/leads/service';
+import { createDashboard, listDashboards, getDashboard } from '@/lib/dashboards/service';
+import { saveEmailConnection, getEmailConnection } from '@/lib/integrations/service';
 
 /** Crea una cuenta y devuelve su ctx OWNER. */
 async function makeAccount(suffix) {
@@ -72,5 +82,72 @@ describe('multi-tenancy: aislamiento entre workspaces', () => {
     await expect(inviteMember(broken, { email: 'x@test.dev', role: 'MEMBER' })).rejects.toThrow(
       /tenant/i,
     );
+  });
+});
+
+/**
+ * Servicios añadidos después del núcleo original. Cada uno se comprueba en dos
+ * ejes: no ver lo del vecino, y no poder tocarlo aun conociendo su id.
+ *
+ * Van agrupados en pocos tests a propósito: el harness limpia las colecciones
+ * antes de cada `it`, así que cada test tiene que crear sus cuentas, y crear una
+ * cuenta siembra los objetos estándar y sus índices. Un test por servicio
+ * encarecía la suite sin añadir cobertura.
+ */
+describe('multi-tenancy: servicios posteriores', () => {
+  it('la entrada de leads está aislada: ni se ve, ni se borra, ni recibe leads de otro', async () => {
+    const ctxA = await makeAccount('SvcA');
+    const ctxB = await makeAccount('SvcB');
+
+    const people = await getObjectBySlug(ctxA, 'people');
+    const intake = await createLeadIntake(ctxA, {
+      name: 'Campaña A',
+      formId: '111',
+      objectMetadataId: people.id,
+      mappings: [{ source: 'email', fieldName: 'emails' }],
+    });
+
+    expect(await listLeadIntakes(ctxA)).toHaveLength(1);
+    expect(await listLeadIntakes(ctxB)).toHaveLength(0);
+
+    // B conoce el id de A y aun así no puede borrarlo.
+    await expect(deleteLeadIntake(ctxB, intake.id)).rejects.toThrow(/no encontrada/i);
+    expect(await listLeadIntakes(ctxA)).toHaveLength(1);
+
+    // B manda un lead con el MISMO form_id que A: el form_id jamás debe servir
+    // para escribir en el workspace de otro.
+    await expect(ingestLead(ctxB, { form_id: '111', email: 'intruso@test.dev' })).rejects.toThrow(
+      /configuración de entrada/i,
+    );
+    const { records } = await listRecords(ctxA, { objectSlug: 'people' });
+    expect(records).toHaveLength(0);
+  });
+
+  it('paneles y conexiones de integración están aislados', async () => {
+    const ctxA = await makeAccount('SvcC');
+    const ctxB = await makeAccount('SvcD');
+
+    const dash = await createDashboard(ctxA, { name: 'Ventas A' });
+    expect((await listDashboards(ctxB)).map((d) => d.id)).not.toContain(dash.id);
+    await expect(getDashboard(ctxB, { id: dash.id })).rejects.toThrow();
+
+    await saveEmailConnection(ctxA, {
+      host: 'smtp.test.dev',
+      port: 587,
+      user: 'ana@test.dev',
+      password: 'secreto-de-A',
+      fromName: 'Ana',
+    });
+
+    const connA = await getEmailConnection(ctxA);
+    const connB = await getEmailConnection(ctxB);
+
+    expect(connA.connected).toBe(true);
+    expect(connA.host).toBe('smtp.test.dev');
+
+    // B no solo no está conectado: no ve ni un dato de la conexión de A.
+    expect(connB.connected).toBe(false);
+    expect(JSON.stringify(connB)).not.toContain('smtp.test.dev');
+    expect(JSON.stringify(connB)).not.toContain('ana@test.dev');
   });
 });

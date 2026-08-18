@@ -1,6 +1,7 @@
 import { getContext } from '@/lib/auth/dal';
 import { getStorage } from '@/lib/storage';
 import { createAttachment } from '@/lib/attachments/service';
+import { validateUpload } from '@/lib/attachments/limits';
 import { errorResponse } from '@/lib/errors/to-response';
 import { UnauthorizedError, ValidationError } from '@/lib/errors/domain-errors';
 
@@ -24,6 +25,11 @@ export async function POST(request) {
     } catch {
       throw new ValidationError('Targets no válidos');
     }
+
+    // Tamaño y tipo se validan ANTES de escribir en disco: no queremos que un
+    // archivo rechazado llegue a tocar el storage.
+    const check = validateUpload({ size: file.size, mimeType: file.type });
+    if (!check.ok) throw new ValidationError(check.message);
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const { key, size } = await getStorage().put({

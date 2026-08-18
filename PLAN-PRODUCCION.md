@@ -102,6 +102,13 @@ que recorre el ciclo completo.
 
 ## Fase 2 — Endurecimiento · ~2-3 días
 
+> **Estado: 2.1, 2.2, 2.4, 2.5 y 2.6 hechos.** Queda **2.3** (prefijo `__Host-`
+> en la cookie de sesión), que conviene hacer ya con el TLS puesto: `__Host-`
+> exige `Secure`, y en local sin HTTPS rompería el login. Verificado contra el
+> build de producción: las seis cabeceras salen y los 14 scripts de la página
+> llevan nonce. Falta la comprobación externa en el dominio real
+> (securityheaders.com) cuando esté desplegado.
+
 | #   | Tarea                                                                                                                                            |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2.1 | Cabeceras en `next.config.mjs`: CSP, HSTS, `frame-ancestors 'none'`, `Referrer-Policy`, `X-Content-Type-Options`, `Permissions-Policy`.          |
