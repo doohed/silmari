@@ -79,7 +79,12 @@ export async function createInviteLinkAction(input) {
   try {
     const ctx = await requireContext();
     const { email } = parseOrThrow(emailSignupSchema.pick({ email: true }), input);
-    const { token } = await createInvitation(ctx, { email, role: 'MEMBER' });
+    // Mismo criterio que `saveInviteStep`: el onboarding pasa sin confirmar.
+    const { token } = await createInvitation(
+      ctx,
+      { email, role: 'MEMBER' },
+      { requireVerifiedEmail: false },
+    );
     return { ok: true, url: inviteUrl(token) };
   } catch (err) {
     return toActionError(err);

@@ -10,6 +10,7 @@ import mongoose from 'mongoose';
  * @property {string} firstName
  * @property {string} lastName
  * @property {string} [avatarUrl]
+ * @property {Date} [emailVerifiedAt] Null mientras no se confirma la dirección.
  * @property {OnboardingStep} onboardingStep
  * @property {Date} [lastActiveAt]
  */
@@ -25,6 +26,10 @@ const userSchema = new mongoose.Schema(
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, default: '', trim: true },
     avatarUrl: { type: String, default: null },
+    // Fecha en que se confirmó la dirección. Null = sin confirmar. Las cuentas
+    // OAuth y las creadas al aceptar una invitación nacen confirmadas: en ambos
+    // casos ya se ha demostrado el control del buzón.
+    emailVerifiedAt: { type: Date, default: null },
     // Paso del onboarding. Default DONE para no atrapar cuentas ya existentes
     // ni las creadas por invitación; el alta nueva lo pone en WORKSPACE.
     onboardingStep: { type: String, enum: ONBOARDING_STEPS, default: 'DONE' },

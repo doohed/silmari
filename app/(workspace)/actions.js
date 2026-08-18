@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { getSession, getContext, requireContext } from '@/lib/auth/dal';
+import { resendEmailVerification } from '@/lib/accounts/email-verification';
 import { createSessionCookie, destroySessionCookie } from '@/lib/auth/session';
 import { getMembershipRole } from '@/lib/workspaces/service';
 import { inviteMember, removeMember } from '@/lib/members/service';
@@ -38,8 +39,8 @@ export async function switchWorkspaceAction(workspaceId) {
 }
 
 /**
- * Invita a un miembro. En dev no hay envío de email: devolvemos el enlace de
- * aceptación para copiarlo.
+ * Invita a un miembro. El correo lo manda `createInvitation`; el enlace se
+ * devuelve igualmente para poder copiarlo (respaldo si el correo no llega).
  * @param {{ email: string, role: 'ADMIN'|'MEMBER' }} input
  * @returns {Promise<{ ok: true, link: string } | import('@/lib/errors/to-response').ActionError>}
  */
@@ -72,6 +73,16 @@ export async function removeMemberAction(targetUserId) {
     await removeMember(ctx, targetUserId);
     revalidatePath('/');
     return { ok: true };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+/** Reenvía el correo de confirmación de email al usuario de la sesión. */
+export async function resendVerificationAction() {
+  try {
+    const ctx = await requireContext();
+    return { ok: true, data: await resendEmailVerification(ctx) };
   } catch (err) {
     return toActionError(err);
   }

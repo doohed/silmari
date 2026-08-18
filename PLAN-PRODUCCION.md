@@ -39,10 +39,9 @@ un backup de ayer que has restaurado con éxito al menos una vez.
 El bloque más importante: hoy un usuario que olvide su contraseña se queda fuera
 para siempre y las invitaciones se pasan a mano.
 
-> **Estado:** 1.1, 1.2, 1.3, 1.5 y 1.6 **hechos**. Queda **1.4 (verificación de
-> email en el alta)**. Para enviar de verdad hay que dar de alta el dominio en
-> Resend y poner `RESEND_API_KEY` y `MAIL_FROM`; sin ellas el driver `console`
-> escribe el enlace en el log y el flujo funciona igual en local.
+> **Estado: fase completa** (1.1 a 1.6). Para enviar de verdad hay que dar de
+> alta el dominio en Resend y poner `RESEND_API_KEY` y `MAIL_FROM`; sin ellas el
+> driver `console` escribe el enlace en el log y el flujo funciona igual en local.
 
 ### 1.1 Remitente de sistema (habilita 1.2, 1.3 y 1.4)
 

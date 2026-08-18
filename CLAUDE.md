@@ -109,6 +109,8 @@ Colecciones (todas con `workspaceId` en los datos y soft delete vía `deletedAt`
   **invitations**.
 - **passwordResets** — token de recuperación: solo el `tokenHash` (sha256), TTL
   de 1 h con índice `expireAfterSeconds`, `usedAt` para que valga una sola vez.
+- **emailVerifications** — igual, pero TTL de 3 días y con el `email` al que se
+  emitió: si la cuenta cambia de dirección, el token deja de valer.
 - **objectMetadata** — definición de objetos; `(workspaceId, slug)` único
   **parcial** (`deletedAt: null`), para que un objeto borrado no bloquee reusar el
   slug. `createObject` añade el identificador `name` (indexado) y el campo de
@@ -241,6 +243,17 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   cuentas registradas); pedir un enlace nuevo invalida el anterior, y cambiar la
   contraseña desde Ajustes invalida los pendientes. No inicia sesión al terminar:
   manda al login.
+- **Verificación de email** (`lib/accounts/email-verification.js`): solo el alta
+  pública (`createEmailAccount`) nace sin confirmar. `provisionAccount` acepta
+  `emailVerified` con **default `true`**, para que OAuth, seeds, scripts y tests
+  no arrastren el bloqueo; aceptar una invitación también confirma (el token
+  solo estaba en ese buzón). `assertEmailVerified` bloquea **invitar, API keys y
+  webhooks**, que es donde una cuenta falsa haría daño; consulta la BD y no el
+  `ctx`, porque el JWT pudo emitirse antes de confirmar, y deja pasar a las API
+  keys (no tienen buzón). **Excepción deliberada**: el paso de invitar del
+  onboarding pasa `requireVerifiedEmail: false`; ocurre segundos después del alta
+  y exigirlo lo dejaría inútil para todo el mundo, así que el riesgo se acota con
+  el tope de 3 direcciones y el freno de altas por IP.
 - **Freno de autenticación** (`lib/auth/throttle.js`): las server actions de auth
   no pasan por `api-context`, así que llaman a `throttleAuth(flow, { email })`,
   que consume cupo **por email y por IP** a la vez. Hereda la limitación de

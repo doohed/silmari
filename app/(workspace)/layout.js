@@ -7,6 +7,7 @@ import { QueryProvider } from '@/components/providers/QueryProvider';
 import { WorkspaceProvider } from '@/components/providers/WorkspaceProvider';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
 import { AppShortcuts } from '@/components/command-menu/AppShortcuts';
+import { VerifyEmailBanner } from '@/components/auth/VerifyEmailBanner';
 
 export default async function WorkspaceLayout({ children }) {
   const ctx = await requireOnboarded();
@@ -35,7 +36,10 @@ export default async function WorkspaceLayout({ children }) {
                 user={user}
               />
             </ResizableSidebar>
-            <main className="min-w-0 flex-1 overflow-hidden">{children}</main>
+            <div className="flex min-w-0 flex-1 flex-col">
+              {user && !user.emailVerified && <VerifyEmailBanner email={user.email} />}
+              <main className="min-w-0 flex-1 overflow-hidden">{children}</main>
+            </div>
           </div>
         </ConfirmProvider>
       </WorkspaceProvider>
