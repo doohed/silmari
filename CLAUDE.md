@@ -11,7 +11,7 @@ sencillo".
 
 | Paquete               | Versión | Notas                                          |
 | --------------------- | ------- | ---------------------------------------------- |
-| next                  | 16.2.12 | App Router, **JavaScript puro (sin TS)**       |
+| next                  | 16.3.1  | App Router, **JavaScript puro (sin TS)**       |
 | react / react-dom     | 19.2.4  |                                                |
 | tailwindcss           | ^4      | CSS-first con `@theme` (ver `app/globals.css`) |
 | @tailwindcss/postcss  | ^4      |                                                |
