@@ -260,6 +260,45 @@ Interpretación rápida:
 
 ---
 
+## Leer los logs
+
+No hay rastreador de errores externo: el diagnóstico se hace leyendo los logs del
+servidor. Están pensados para eso — **un evento por línea**, con marca de tiempo
+propia y el contexto serializado compacto, para que `grep` funcione.
+
+```bash
+# En vivo, solo la app.
+docker compose --profile app logs -f app
+
+# Últimas 200 líneas de todo, con la marca de tiempo de Docker.
+docker compose --profile app logs -t --tail=200
+
+# Solo errores.
+docker compose --profile app logs --tail=1000 app | grep '\[error\]'
+
+# Rastrear a un usuario o workspace concreto por un incidente.
+docker compose --profile app logs --tail=5000 app | grep '<workspaceId>'
+
+# Desde una hora concreta.
+docker compose --profile app logs --since 2026-08-17T09:00:00 app
+```
+
+En producción el nivel por defecto es `info`, así que se ven las altas, los
+correos enviados, los cobros procesados y los leads entrantes. Para bajar el
+ruido temporalmente, `LOG_LEVEL=warn` en `.env.local` y `up -d`. Para depurar
+algo concreto, `LOG_LEVEL=debug`, pero **no lo dejes puesto**: crece rápido.
+
+Los logs de Docker están **limitados a 20 MB × 5 ficheros por servicio**. Sin ese
+tope, el driver por defecto crece sin límite hasta llenar el disco, que es la
+avería más habitual en un VPS de una sola máquina. Los de acceso de Caddy rotan
+aparte (`caddy-logs`, 20 MB × 10).
+
+> Este es el punto flaco de no tener rastreador de errores: si no entras a
+> mirar, no te enteras. El monitor externo de uptime sobre `/api/health` es lo
+> que te avisa de que hay algo que mirar; con logs a mano, es imprescindible.
+
+---
+
 ## Rotar secretos
 
 Cada uno tiene su efecto colateral. Ninguno es indoloro.

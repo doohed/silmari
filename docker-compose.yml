@@ -29,6 +29,13 @@ services:
       timeout: 10s
       start_period: 20s
       retries: 10
+    # El driver por defecto de Docker crece SIN LÍMITE hasta llenar el disco,
+    # que es el fallo más tonto y más común en un VPS de una sola máquina.
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '20m'
+        max-file: '5'
 
   # App Next en producción. Bajo el perfil `app` para NO arrancar con el flujo de
   # desarrollo (`npm run db:up` sigue levantando solo Mongo). Levanta el stack
@@ -67,6 +74,13 @@ services:
     volumes:
       # Persiste las subidas (STORAGE_DIR=./storage dentro del contenedor).
       - app-storage:/app/storage
+    # El driver por defecto de Docker crece SIN LÍMITE hasta llenar el disco,
+    # que es el fallo más tonto y más común en un VPS de una sola máquina.
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '20m'
+        max-file: '5'
 
   # Reverse proxy con TLS automático (Let's Encrypt). Mismo perfil que la app:
   #   docker compose --profile app up -d --build
@@ -92,6 +106,13 @@ services:
       - caddy-data:/data
       - caddy-config:/config
       - caddy-logs:/var/log/caddy
+    # El driver por defecto de Docker crece SIN LÍMITE hasta llenar el disco,
+    # que es el fallo más tonto y más común en un VPS de una sola máquina.
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '20m'
+        max-file: '5'
 
   # App Next en DESARROLLO (hot reload) dentro de un contenedor. Bajo el perfil
   # `dev`. Monta el código del host como volumen; `next dev` recompila al guardar.
