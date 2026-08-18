@@ -48,7 +48,7 @@ export function Select({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="press border-border bg-surface text-primary hover:border-border-strong flex h-10 w-full items-center justify-between gap-2 rounded-lg border px-3.5 text-sm"
+        className="press mac-focus border-border-strong bg-surface text-primary hover:bg-sunken flex h-8 w-full items-center justify-between gap-2 rounded-lg border bg-linear-to-b from-white/12 to-transparent px-2.5 text-[13px] shadow-xs"
       >
         <span className={cn('truncate', !selected && 'text-tertiary')}>
           {selected?.label ?? placeholder}
@@ -57,7 +57,7 @@ export function Select({
       </button>
 
       {open && (
-        <div className="anim-pop border-border bg-elevated absolute top-full left-0 z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border p-1 shadow-lg">
+        <div className="anim-pop mac-menu absolute top-full left-0 z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border p-1 shadow-lg">
           {searchable && (
             <div className="bg-elevated sticky top-0 flex items-center gap-2 px-2 py-1.5">
               <Search size={13} className="text-tertiary shrink-0" />
@@ -83,12 +83,15 @@ export function Select({
                 setQuery('');
               }}
               className={cn(
-                'hover:bg-chip-gray flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm',
-                o.value === value && 'bg-accent-subtle',
+                'flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-[13px]',
+                // Fila elegida rellena de acento, como los menús del sistema.
+                o.value === value
+                  ? 'bg-accent text-accent-fg'
+                  : 'text-primary hover:bg-primary/[0.06]',
               )}
             >
               <span className="truncate">{o.label}</span>
-              {o.value === value && <Check size={14} className="text-accent shrink-0" />}
+              {o.value === value && <Check size={14} className="text-accent-fg shrink-0" />}
             </button>
           ))}
         </div>

@@ -18,7 +18,7 @@ export function BulkEditPopover({ fields, onApply }) {
   const Edit = field ? getFieldComponents(field.type).Edit : null;
 
   return (
-    <div className="border-border bg-elevated absolute top-full right-0 z-30 mt-1 w-64 rounded-lg border p-3 shadow-lg">
+    <div className="mac-menu absolute top-full right-0 z-30 mt-1 w-64 rounded-lg border p-3 shadow-lg">
       <p className="text-secondary mb-2 text-xs font-medium">Editar campo en la selección</p>
       <select
         value={name}

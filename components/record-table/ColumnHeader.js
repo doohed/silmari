@@ -45,7 +45,7 @@ export function ColumnHeader({
         </button>
 
         {menu && (
-          <div className="border-border bg-elevated absolute top-full right-0 z-40 mt-1 w-40 rounded-md border p-1 text-left shadow-lg">
+          <div className="mac-menu absolute top-full right-0 z-40 mt-1 w-40 rounded-md border p-1 text-left shadow-lg">
             {[
               ['Ocultar', onHide],
               ['Mover a la izquierda', onMoveLeft],

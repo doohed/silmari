@@ -6,22 +6,39 @@
 
 /* ============================================================================
    Tokens de diseño (CSS variables)
-   Estética "minimal monocromo" (vibe Linear/Vercel): neutros fríos (zinc),
-   mucho blanco, bordes hairline, sombras muy suaves y un acento naranja usado
-   con moderación (acciones primarias y estados activos). La jerarquía la dan el
-   espacio y el contraste, no el color. Ningún componente hardcodea colores:
-   todos consumen estas variables vía las utilidades de Tailwind (@theme abajo).
+   Estética "macOS": el fondo de la app es gris (la ventana), el contenido vive
+   en LÁMINAS blancas redondeadas que flotan encima, y el rail lateral es
+   translúcido sobre ese gris (vibrancy). Radios generosos, separadores hairline
+   en vez de cajas, sombras difusas y un acento naranja usado con moderación
+   (acciones primarias y selección). La jerarquía la dan el espacio, la lámina y
+   el contraste; no el color. Ningún componente hardcodea colores: todos
+   consumen estas variables vía las utilidades de Tailwind (@theme abajo).
    ========================================================================== */
 
 :root {
   color-scheme: light;
 
   /* Superficies y bordes */
-  --bg: #fafafa; /* fondo de la app */
-  --surface: #ffffff; /* tarjetas, filas, paneles */
+  --bg: #ebebee; /* fondo de la ventana: gris, para que la lámina destaque */
+  --surface: #ffffff; /* láminas, tarjetas, filas, paneles */
+  --sunken: #f4f4f6; /* tarjeta ANIDADA dentro de otra: separa sin borde */
   --elevated: #ffffff; /* popovers, dropdowns, diálogos */
-  --border: #e9e9ec; /* borde hairline por defecto */
-  --border-strong: #d4d4d8; /* borde de énfasis / foco de celda */
+  --border: #e6e6ea; /* separador hairline por defecto */
+  --border-strong: #d0d0d6; /* borde de énfasis / foco de celda */
+
+  /* Rail lateral: el MISMO gris que el fondo de la ventana. El rail no es una
+     superficie aparte, es el hueco alrededor de la lámina; darle su propio tono
+     le dibujaba un borde que no existe. Sigue siendo un token propio porque es
+     opaco a propósito (ver `.mac-vibrancy`) y la barra móvil lo comparte. */
+  --sidebar: var(--bg);
+  --sidebar-border: rgb(0 0 0 / 0.07);
+  /* Halo de foco: en macOS el anillo es ancho y difuso, no un borde de 1px. */
+  --focus-ring: color-mix(in oklab, var(--accent) 35%, transparent);
+
+  /* Acción primaria: casi negro. Separado de --accent (que marca lo activo y
+     los enlaces) para poder cambiar el color de marca sin tocar los botones. */
+  --primary: #18181b;
+  --primary-fg: #ffffff;
 
   /* Texto en tres niveles (zinc) */
   --text-primary: #18181b;
@@ -65,11 +82,16 @@
   --viz-7: #4a3aa7;
   --viz-8: #e34948;
 
-  /* Elevaciones (modo claro): muy suaves; en minimal manda el borde hairline */
+  /* Elevaciones (modo claro). La lámina y los popovers de macOS proyectan una
+     sombra ancha y difusa; el borde hairline solo remata el canto. */
   --elev-xs: 0 1px 1px rgb(24 24 27 / 0.04);
   --elev-sm: 0 1px 2px rgb(24 24 27 / 0.06);
   --elev-md: 0 2px 8px rgb(24 24 27 / 0.06), 0 1px 2px rgb(24 24 27 / 0.04);
-  --elev-lg: 0 8px 24px rgb(24 24 27 / 0.1), 0 2px 6px rgb(24 24 27 / 0.05);
+  --elev-lg: 0 12px 32px rgb(24 24 27 / 0.12), 0 3px 8px rgb(24 24 27 / 0.06);
+  /* Lámina de contenido. La sombra va CORTA a propósito: el hueco alrededor de
+     la lámina son 8 px, y un difuminado ancho lo teñía entero, dejando el rail
+     y el marco con tonos distintos aunque ambos sean --bg. */
+  --elev-sheet: 0 0 0 0.5px rgb(24 24 27 / 0.07), 0 1px 4px rgb(24 24 27 / 0.05);
 }
 
 .dark {
@@ -77,11 +99,22 @@
      el cuadrado de selección deja de verse blanco. */
   color-scheme: dark;
 
-  --bg: #0b0b0c;
-  --surface: #121214;
-  --elevated: #1a1a1d;
-  --border: #242427;
-  --border-strong: #35353a;
+  /* Oscuro de macOS: gris muy oscuro, no negro puro; si no, la lámina no se
+     distingue del fondo de la ventana. */
+  --bg: #1a1a1c;
+  --surface: #242427;
+  --sunken: #2b2b2f;
+  --elevated: #2e2e33;
+  --border: #35353a;
+  --border-strong: #4a4a51;
+
+  --sidebar: var(--bg);
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --focus-ring: color-mix(in oklab, var(--accent) 45%, transparent);
+
+  /* En oscuro el "casi negro" no contrasta: la acción primaria se invierte. */
+  --primary: #fafafa;
+  --primary-fg: #18181b;
 
   /* Texto primario gris (no blanco puro) para no contrastar tanto con el fondo. */
   --text-primary: #d4d4d8;
@@ -126,7 +159,8 @@
   --elev-xs: 0 1px 2px rgb(0 0 0 / 0.35);
   --elev-sm: 0 1px 2px rgb(0 0 0 / 0.4);
   --elev-md: 0 2px 10px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.35);
-  --elev-lg: 0 10px 30px rgb(0 0 0 / 0.55), 0 3px 8px rgb(0 0 0 / 0.35);
+  --elev-lg: 0 14px 40px rgb(0 0 0 / 0.6), 0 4px 10px rgb(0 0 0 / 0.4);
+  --elev-sheet: 0 0 0 0.5px rgb(255 255 255 / 0.08), 0 1px 4px rgb(0 0 0 / 0.3);
 }
 
 /* Mapeo de tokens a utilidades de Tailwind v4:
@@ -134,6 +168,11 @@
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  /* `action`, no `primary`: `--color-primary` ya está tomado por el color de
+     TEXTO principal (`text-primary`) y redefinirlo lo rompería todo. */
+  --color-action: var(--primary);
+  --color-action-fg: var(--primary-fg);
   --color-elevated: var(--elevated);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
@@ -166,14 +205,26 @@
   --color-chip-pink: var(--chip-pink-bg);
   --color-chip-pink-fg: var(--chip-pink-fg);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-border: var(--sidebar-border);
 
-  /* Radios apretados y consistentes (minimal) */
-  --radius-sm: 5px;
-  --radius-md: 7px;
-  --radius-lg: 10px;
+  /* La cara del sistema va primero: en un Mac esto resuelve a SF Pro, que es la
+     mitad de la sensación "app nativa". Geist queda de red por si el sistema no
+     ofrece nada (Linux sin fuentes, capturas en CI). */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', var(--font-geist-sans),
+    system-ui, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, var(--font-geist-mono), monospace;
+
+  /* Radios de macOS: bastante más redondos que el minimal anterior. La escala
+     sube entera para que un control dentro de una lámina no se vea más
+     cuadrado que ella. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 11px;
   --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --radius-3xl: 22px; /* la lámina de contenido (canto de ventana) */
 
   /* Sombras suaves en capas: la profundidad viene de aquí, no de los bordes.
      Los valores reales viven en :root/.dark (--elev-*) para variar por tema. */
@@ -181,6 +232,7 @@
   --shadow-sm: var(--elev-sm);
   --shadow-md: var(--elev-md);
   --shadow-lg: var(--elev-lg);
+  --shadow-sheet: var(--elev-sheet);
 
   /* Easing: spring juguetón para press/entradas, soft para movimientos amplios */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -199,11 +251,12 @@ body {
   min-height: 100%;
   background: var(--bg);
   color: var(--text-primary);
-  font-family: var(--font-sans), system-ui, sans-serif;
-  /* Compacto y moderno: 13px de base con tracking ligeramente apretado */
+  font-family: var(--font-sans);
+  /* 13px es justo el cuerpo de las apps de macOS. SF ya viene con su propio
+     tracking óptico, así que aquí no se aprieta tanto como con Geist. */
   font-size: 13px;
   line-height: 1.5;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -215,6 +268,88 @@ h3 {
   letter-spacing: -0.02em;
 }
 
+/* ---------------------------------------------------------------------------
+   Primitivas de la estética macOS
+   -------------------------------------------------------------------------- */
+
+/* Lámina de contenido: la hoja blanca redondeada que flota sobre el gris de la
+   ventana. Es el elemento que más define el look, junto con el rail translúcido.
+   El `0.5px` del borde imita el canto de retina de una ventana del sistema. */
+/* Ojo con el orden de capas: estas clases van SIN `@layer`, así que ganan a
+   cualquier utilidad de Tailwind aunque se escriba después en el className. Por
+   eso el "a sangre" del móvil se resuelve aquí con un media query y no con un
+   `max-md:rounded-none`, que no llegaría a aplicarse. */
+.mac-sheet {
+  background: var(--surface);
+}
+@media (min-width: 48rem) {
+  .mac-sheet {
+    border-radius: var(--radius-3xl);
+    box-shadow: var(--elev-sheet);
+  }
+}
+
+/* Material de menú: lo que comparten popovers, desplegables y menús
+   contextuales. Canto de 0.5px y sombra difusa, en una sola clase para no
+   repetir la receta en los veintitantos sitios que la usan.
+   Fondo **opaco**: los menús del sistema son densos, y aquí además se anclan
+   sobre la tabla y sobre el rail, donde cualquier resto de transparencia deja
+   ver texto y anillos de foco a través del menú. La sensación de material la
+   dan el radio, el canto fino y la sombra, no el ver a través. */
+.mac-menu {
+  background: var(--elevated);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-lg);
+}
+
+/* Rail y barras de navegación.
+   OJO: aquí NO va `backdrop-filter`, aunque la tentación sea grande. Un
+   `backdrop-filter` crea un *backdrop root*: los descendientes que lleven el
+   suyo propio dejan de filtrar y se quedan solo en transparentes. El menú de
+   usuario y el de notificaciones cuelgan de este rail, y con vibrancy aquí se
+   leía el sidebar a través de ellos. Además no se pierde nada: detrás del rail
+   solo hay `--bg` plano, no hay contenido que difuminar. */
+.mac-vibrancy {
+  background: var(--sidebar);
+}
+
+/* Control segmentado: carril hundido y el segmento elegido como una pastilla
+   blanca en relieve. Es al revés que un grupo de pestañas web (donde lo activo
+   se hunde), y ese contraste es lo que lo hace reconocible.
+   El estado se lee de `aria-pressed`/`data-active`, así que el marcado no
+   necesita duplicar clases condicionales. */
+.mac-segment {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-lg);
+  background: var(--sunken);
+  box-shadow: inset 0 0 0 0.5px var(--border-strong);
+}
+.mac-segment > * {
+  border-radius: calc(var(--radius-lg) - 3px);
+  color: var(--text-secondary);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.mac-segment > [aria-pressed='true'],
+.mac-segment > [data-active='true'] {
+  background: var(--surface);
+  box-shadow: var(--elev-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Foco del sistema: halo ancho alrededor del control, no un borde de 1px. */
+.mac-focus:focus-visible,
+.mac-focus:has(:focus-visible) {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
 /* Checkbox propio: consistente en claro/oscuro y entre navegadores (Safari no
    repinta bien el checkbox nativo con color-scheme/accent-color). Respeta el
    tamaño que fije Tailwind (size-3.5, size-4, …). */
@@ -224,7 +359,7 @@ input[type='checkbox'] {
   position: relative;
   flex-shrink: 0;
   border: 1.5px solid var(--border-strong);
-  border-radius: 4px;
+  border-radius: 4.5px;
   background: var(--surface);
   cursor: pointer;
   transition:
@@ -254,8 +389,8 @@ input[type='checkbox']:checked::after {
   opacity: 1;
 }
 input[type='checkbox']:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--accent) 45%, transparent);
-  outline-offset: 1px;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -308,7 +443,7 @@ input[type='checkbox']:focus-visible {
 [cmdk-overlay] {
   position: fixed;
   inset: 0;
-  background: rgb(0 0 0 / 40%);
+  background: rgb(0 0 0 / 28%);
   z-index: 50;
 }
 .cmdk-dialog {
@@ -318,10 +453,12 @@ input[type='checkbox']:focus-visible {
   transform: translateX(-50%);
   width: 92%;
   max-width: 560px;
-  background: var(--elevated);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 16px 48px rgb(0 0 0 / 25%);
+  background: color-mix(in srgb, var(--elevated) 88%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--elev-lg);
   z-index: 51;
   overflow: hidden;
 }
@@ -330,7 +467,7 @@ input[type='checkbox']:focus-visible {
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem 0.6rem;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.85rem;
   color: var(--text-primary);
   cursor: pointer;
@@ -340,7 +477,11 @@ input[type='checkbox']:focus-visible {
   flex-shrink: 0;
 }
 .cmdk-item[data-selected='true'] {
-  background: var(--accent-subtle);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.cmdk-item[data-selected='true'] svg {
+  color: var(--accent-fg);
 }
 [cmdk-group-heading] {
   padding: 0.4rem 0.6rem 0.2rem;

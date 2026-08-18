@@ -36,6 +36,15 @@ import {
   Trash2,
   LayoutDashboard,
   Circle,
+  // Rail de Ajustes (no entran en OBJECT_ICONS: no son iconos de objeto).
+  KeyRound,
+  Webhook,
+  Puzzle,
+  Database,
+  Bot,
+  ClipboardList,
+  Inbox,
+  Building,
 } from 'lucide-react';
 
 const MAP = {
@@ -74,6 +83,14 @@ const MAP = {
   Trash2,
   LayoutDashboard,
   Circle,
+  KeyRound,
+  Webhook,
+  Puzzle,
+  Database,
+  Bot,
+  ClipboardList,
+  Inbox,
+  Building,
 };
 
 /** Iconos ofrecidos al crear un objeto (subconjunto curado del catálogo). */

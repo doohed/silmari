@@ -18,19 +18,19 @@ export function NavItem({ href, label, icon }) {
       href={href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'press relative flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px]',
+        'press relative flex h-7 items-center gap-2.5 rounded-lg px-2 text-[13px]',
+        // Selección rellena de color, como la barra lateral de macOS: la fila
+        // activa se ve de un vistazo sin tener que comparar grises. Sustituye a
+        // la marca lateral fina, que ahí sobra.
         active
-          ? 'bg-chip-gray text-primary font-medium'
-          : 'text-secondary hover:bg-chip-gray/60 hover:text-primary',
+          ? 'bg-accent text-accent-fg font-medium shadow-xs'
+          : 'text-secondary hover:bg-primary/[0.05] hover:text-primary',
       )}
     >
-      {active && (
-        <span className="bg-accent absolute top-1/2 left-0 h-4 w-0.5 -translate-y-1/2 rounded-full" />
-      )}
       <Icon
         name={icon}
         size={15}
-        className={cn('shrink-0', active ? 'text-primary' : 'text-tertiary')}
+        className={cn('shrink-0', active ? 'text-accent-fg' : 'text-tertiary')}
       />
       <span className="truncate">{label}</span>
     </Link>

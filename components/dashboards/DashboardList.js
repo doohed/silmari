@@ -163,7 +163,7 @@ export function DashboardList({ dashboards }) {
       <div className="relative flex-1 overflow-auto">
         {/* Cabecera */}
         <div
-          className="border-border bg-surface sticky top-0 z-10 flex border-b"
+          className="border-border bg-sunken/80 sticky top-0 z-10 flex border-b backdrop-blur-md"
           style={{ width: TOTAL_WIDTH }}
         >
           <div className="flex shrink-0 items-center gap-1 pl-2" style={{ width: GUTTER }}>
@@ -181,7 +181,7 @@ export function DashboardList({ dashboards }) {
           {COLS.map((c) => (
             <div
               key={c.key}
-              className="border-border text-tertiary flex h-9 shrink-0 items-center border-l pr-1 pl-2 text-xs font-medium tracking-wide uppercase select-none"
+              className="text-tertiary flex h-8 shrink-0 items-center pr-1 pl-2 text-xs font-medium tracking-wide uppercase select-none"
               style={{ width: c.width }}
             >
               <span className="truncate">{c.label}</span>
@@ -259,7 +259,7 @@ function DashboardRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group border-border hover:bg-chip-gray/40 relative flex border-b transition-colors ${
+      className={`group border-border hover:bg-primary/[0.035] relative flex border-b transition-colors ${
         isDragging ? 'bg-surface shadow-md' : ''
       }`}
     >
@@ -292,8 +292,8 @@ function DashboardRow({
       {/* Título (celda primaria, editable en línea) */}
       <div
         onDoubleClick={onStartEdit}
-        className={`border-border shrink-0 border-l ${
-          editing ? 'ring-accent relative z-10 ring-2 ring-inset' : ''
+        className={`shrink-0 ${
+          editing ? 'ring-accent relative z-10 rounded-md ring-2 ring-inset' : ''
         }`}
         style={{ width: COLS[0].width, height: ROW_H }}
       >
@@ -332,10 +332,7 @@ function DashboardRow({
       </div>
 
       {/* Creado por */}
-      <div
-        className="border-border shrink-0 border-l"
-        style={{ width: COLS[1].width, height: ROW_H }}
-      >
+      <div className="shrink-0" style={{ width: COLS[1].width, height: ROW_H }}>
         <div className="flex h-full w-full items-center gap-1.5 truncate px-3 text-sm">
           <Avatar name={d.createdBy.name} src={d.createdBy.avatarUrl} size={18} />
           <span className="text-primary truncate">{d.createdBy.name}</span>
@@ -343,20 +340,14 @@ function DashboardRow({
       </div>
 
       {/* Creación */}
-      <div
-        className="border-border shrink-0 border-l"
-        style={{ width: COLS[2].width, height: ROW_H }}
-      >
+      <div className="shrink-0" style={{ width: COLS[2].width, height: ROW_H }}>
         <div className="text-secondary flex h-full w-full items-center truncate px-3 text-sm">
           {formatRelative(d.createdAt) || <span className="text-tertiary">—</span>}
         </div>
       </div>
 
       {/* Última actualización */}
-      <div
-        className="border-border shrink-0 border-l"
-        style={{ width: COLS[3].width, height: ROW_H }}
-      >
+      <div className="shrink-0" style={{ width: COLS[3].width, height: ROW_H }}>
         <div className="text-secondary flex h-full w-full items-center truncate px-3 text-sm">
           {formatRelative(d.updatedAt) || <span className="text-tertiary">—</span>}
         </div>

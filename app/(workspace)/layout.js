@@ -29,7 +29,7 @@ export default async function WorkspaceLayout({ children }) {
           <AppShortcuts />
           {/* En móvil la barra del menú va arriba y el contenido debajo; en
             escritorio, el rail a la izquierda. De ahí el cambio de dirección. */}
-          <div className="flex h-screen flex-col md:flex-row">
+          <div className="bg-bg flex h-screen flex-col md:flex-row">
             <SidebarShell workspaceName={workspace.name}>
               <Sidebar
                 objects={objects}
@@ -38,9 +38,15 @@ export default async function WorkspaceLayout({ children }) {
                 user={user}
               />
             </SidebarShell>
-            <div className="flex min-w-0 flex-1 flex-col">
-              {user && !user.emailVerified && <VerifyEmailBanner email={user.email} />}
-              <main className="min-w-0 flex-1 overflow-hidden">{children}</main>
+            {/* El contenido es una LÁMINA que flota sobre el gris de la ventana,
+              como el panel derecho de Ajustes del Sistema: de ahí el hueco de
+              8 px alrededor y las esquinas redondeadas. En móvil va a sangre,
+              que ahí un marco solo roba ancho. */}
+            <div className="flex min-w-0 flex-1 flex-col md:min-h-0 md:py-2 md:pr-2">
+              <div className="mac-sheet flex min-h-0 flex-1 flex-col overflow-hidden">
+                {user && !user.emailVerified && <VerifyEmailBanner email={user.email} />}
+                <main className="min-w-0 flex-1 overflow-hidden">{children}</main>
+              </div>
             </div>
           </div>
         </ConfirmProvider>

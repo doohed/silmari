@@ -30,18 +30,14 @@ export function LanguageSection() {
   }
 
   return (
-    <div className="border-border inline-flex rounded-md border p-0.5">
+    <div className="mac-segment">
       {LOCALES.map((l) => (
         <button
           key={l.value}
           type="button"
           onClick={() => pick(l.value)}
           aria-pressed={locale === l.value}
-          className={
-            locale === l.value
-              ? 'bg-chip-gray text-primary rounded px-3 py-1 text-[13px] font-medium'
-              : 'text-secondary hover:text-primary rounded px-3 py-1 text-[13px]'
-          }
+          className="px-3 py-1 text-[13px]"
         >
           {l.label}
         </button>

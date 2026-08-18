@@ -49,7 +49,7 @@ export function ConfirmProvider({ children }) {
       >
         <Dialog.Portal>
           <Dialog.Overlay className="anim-overlay fixed inset-0 z-50 bg-black/40" />
-          <Dialog.Content className="anim-dialog border-border bg-elevated fixed top-1/2 left-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg border p-5 shadow-lg">
+          <Dialog.Content className="anim-dialog mac-menu fixed top-1/2 left-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border p-5 shadow-lg">
             <Dialog.Title className={title ? 'text-primary mb-1 text-sm font-semibold' : 'sr-only'}>
               {title ?? 'Confirmar'}
             </Dialog.Title>

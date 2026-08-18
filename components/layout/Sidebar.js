@@ -21,7 +21,7 @@ export async function Sidebar({ objects, workspaces, activeId, user }) {
   const locale = await getLocale();
 
   return (
-    <aside className="border-border bg-surface flex h-full w-full flex-col border-r">
+    <aside className="mac-vibrancy flex h-full w-full flex-col">
       <div className="flex items-center gap-1 p-2">
         <div className="min-w-0 flex-1">
           <UserMenu user={user} />
@@ -35,7 +35,7 @@ export async function Sidebar({ objects, workspaces, activeId, user }) {
         <WorkspaceSwitcher workspaces={workspaces} activeId={activeId} />
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2.5 pb-3">
+      <nav className="flex-1 space-y-px overflow-y-auto px-2.5 pb-3">
         <FavoritesList />
 
         <NavItem href="/dashboards" label={t(locale, 'nav.dashboards')} icon="LayoutDashboard" />
@@ -43,7 +43,7 @@ export async function Sidebar({ objects, workspaces, activeId, user }) {
           <NavItem key={o.id} href={`/objects/${o.slug}`} label={o.labelPlural} icon={o.icon} />
         ))}
 
-        <div className="border-border my-2 border-t" />
+        <div className="border-sidebar-border mx-2.5 my-2 border-t" />
 
         <NavItem href="/notes" label={t(locale, 'nav.notes')} icon="StickyNote" />
         <NavItem href="/tasks" label={t(locale, 'nav.tasks')} icon="CheckSquare" />

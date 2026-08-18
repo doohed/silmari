@@ -60,7 +60,7 @@ export function AssigneePicker({ value = [], onChange }) {
       </button>
 
       {open && (
-        <div className="anim-pop border-border bg-elevated absolute top-full left-0 z-40 mt-1 max-h-60 w-56 overflow-auto rounded-md border p-1 shadow-md">
+        <div className="anim-pop mac-menu absolute top-full left-0 z-40 mt-1 max-h-60 w-56 overflow-auto rounded-md border p-1 shadow-md">
           {members.length === 0 && <p className="text-tertiary px-2 py-1 text-xs">Sin miembros</p>}
           {members.map((m) => {
             const on = value.includes(m.id);

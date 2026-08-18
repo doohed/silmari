@@ -38,7 +38,7 @@ const dayKey = (d) => format(new Date(d), 'yyyy-MM-dd');
 /** Guarda la fecha al mediodía local para evitar saltos de día por zona horaria. */
 const toDue = (ymd) => (ymd ? new Date(`${ymd}T12:00:00`).toISOString() : null);
 const inputClass =
-  'border-border bg-surface text-primary h-8 rounded-md border px-2 text-xs focus:border-accent focus:outline-none';
+  'border-border-strong bg-surface text-primary mac-focus shadow-xs h-8 rounded-lg border px-2 text-xs';
 
 export function TasksInbox({ currentUserId }) {
   const emptyDraft = () => ({
@@ -140,7 +140,7 @@ export function TasksInbox({ currentUserId }) {
     <div className="mx-auto w-full max-w-3xl px-6 py-8">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-primary text-xl font-semibold tracking-tight">Tareas</h1>
-        <div className="border-border inline-flex rounded-md border p-0.5">
+        <div className="mac-segment">
           {[
             ['list', 'Lista', List],
             ['calendar', 'Calendario', CalendarIcon],
@@ -149,11 +149,8 @@ export function TasksInbox({ currentUserId }) {
               key={id}
               type="button"
               onClick={() => setView(id)}
-              className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-[13px] ${
-                view === id
-                  ? 'bg-chip-gray text-primary font-medium'
-                  : 'text-secondary hover:text-primary'
-              }`}
+              data-active={view === id}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[13px]"
             >
               <Ico size={13} /> {label}
             </button>
@@ -162,7 +159,7 @@ export function TasksInbox({ currentUserId }) {
       </div>
 
       {/* Compositor: título + fecha + responsables */}
-      <div className="border-border bg-surface mb-4 flex flex-wrap items-center gap-2 rounded-lg border p-2">
+      <div className="bg-sunken mb-4 flex flex-wrap items-center gap-2 rounded-xl p-2">
         <Input
           ref={titleRef}
           placeholder="Nueva tarea…"
@@ -189,17 +186,14 @@ export function TasksInbox({ currentUserId }) {
 
       {view === 'list' ? (
         <>
-          <div className="mb-3 flex gap-1">
+          <div className="mac-segment mb-3">
             {SCOPES.map((s) => (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => setScope(s.id)}
-                className={`rounded-md px-3 py-1 text-sm transition-colors ${
-                  scope === s.id
-                    ? 'bg-accent-subtle text-primary font-medium'
-                    : 'text-secondary hover:bg-chip-gray'
-                }`}
+                data-active={scope === s.id}
+                className="px-3 py-1 text-[13px]"
               >
                 {s.label}
               </button>

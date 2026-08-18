@@ -81,7 +81,7 @@ export function ImportDialog({ open, onOpenChange, objectSlug, fields, onImporte
     >
       <Dialog.Portal>
         <Dialog.Overlay className="anim-overlay fixed inset-0 z-50 bg-black/40" />
-        <Dialog.Content className="anim-dialog border-border bg-elevated fixed top-1/2 left-1/2 z-50 max-h-[85vh] w-[92%] max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-lg border p-5 shadow-xl">
+        <Dialog.Content className="anim-dialog mac-menu fixed top-1/2 left-1/2 z-50 max-h-[85vh] w-[92%] max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-lg border p-5 shadow-xl">
           <Dialog.Title className="text-primary mb-3 text-sm font-semibold">
             Importar CSV
           </Dialog.Title>

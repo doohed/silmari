@@ -50,7 +50,7 @@ function ProductCell({ description, objectSlug, priceFieldName, money, onText, o
         }}
       />
       {open && opts.length > 0 && (
-        <div className="border-border bg-elevated absolute top-full left-0 z-20 mt-1 max-h-56 w-72 overflow-auto rounded-md border p-1 shadow-lg">
+        <div className="mac-menu absolute top-full left-0 z-20 mt-1 max-h-56 w-72 overflow-auto rounded-md border p-1 shadow-lg">
           {opts.map((o) => (
             <button
               key={o.id}

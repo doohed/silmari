@@ -500,7 +500,7 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
 
             {/* Cabecera (z-30 para que el menú de columna quede sobre las filas) */}
             <div
-              className="border-border bg-surface sticky top-0 z-30 hidden h-9 border-b md:flex"
+              className="border-border bg-sunken/80 sticky top-0 z-30 hidden h-8 border-b backdrop-blur-md md:flex"
               style={{ width: totalWidth + GUTTER }}
             >
               <div className="flex shrink-0 items-center gap-1 pl-2" style={{ width: GUTTER }}>
@@ -517,11 +517,7 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
               {table.getFlatHeaders().map((header) => {
                 const field = header.column.columnDef.meta.field;
                 return (
-                  <div
-                    key={header.id}
-                    className="border-border shrink-0 border-l"
-                    style={{ width: header.getSize() }}
-                  >
+                  <div key={header.id} className="shrink-0" style={{ width: header.getSize() }}>
                     <ColumnHeader
                       label={field.label}
                       sortDir={sortDir(field.name)}
@@ -669,7 +665,7 @@ function RecordRow({
       ref={setNodeRef}
       style={style}
       data-testid="record-row"
-      className={`group border-border hover:bg-chip-gray/40 absolute left-0 flex border-b transition-colors ${
+      className={`group border-border hover:bg-primary/[0.035] absolute left-0 flex border-b transition-colors ${
         isDragging ? 'bg-surface shadow-md' : ''
       }`}
     >
@@ -707,7 +703,7 @@ function RecordRow({
             key={cell.id}
             onMouseDown={() => onActivateCell(colIndex)}
             onDoubleClick={onStartEdit}
-            className={`border-border shrink-0 overflow-visible border-l ${isActiveCell ? 'ring-accent relative z-10 ring-2 ring-inset' : ''}`}
+            className={`shrink-0 overflow-visible ${isActiveCell ? 'ring-accent relative z-10 rounded-md ring-2 ring-inset' : ''}`}
             style={{ width: cell.column.getSize(), height: ROW_H }}
           >
             <CellContent

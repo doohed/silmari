@@ -19,7 +19,7 @@ import { Table, Columns } from 'lucide-react';
 export function RecordViewBar({ objectSlug, views, activeViewId, count, children }) {
   return (
     <div className="border-border flex h-11 shrink-0 items-center justify-between gap-3 border-b px-3">
-      <div className="flex min-w-0 items-center gap-0.5">
+      <div className="flex min-w-0 items-center gap-0.5 overflow-hidden">
         {views.map((v) => {
           const active = v.id === activeViewId;
           const Icon = v.type === 'KANBAN' ? Columns : Table;
@@ -30,8 +30,8 @@ export function RecordViewBar({ objectSlug, views, activeViewId, count, children
               aria-current={active ? 'page' : undefined}
               className={
                 active
-                  ? 'bg-chip-gray text-primary flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium'
-                  : 'text-secondary hover:bg-chip-gray/60 hover:text-primary flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[13px]'
+                  ? 'bg-chip-gray text-primary flex h-7 min-w-0 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium'
+                  : 'text-secondary hover:bg-chip-gray/60 hover:text-primary flex h-7 min-w-0 items-center gap-1.5 rounded-lg px-2.5 text-[13px]'
               }
             >
               <Icon size={13} className={active ? 'text-primary' : 'text-tertiary'} />

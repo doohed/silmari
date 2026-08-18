@@ -36,6 +36,12 @@ sencillo".
 - `npm test` — Vitest (una pasada) · `npm run test:watch` — watch
 - `npm run test:e2e` — Playwright
 - `npm run format` / `npm run format:check` — Prettier
+- `npm run shots [rutas…]` — capturas de la UI en claro y oscuro (`.ui-shots/`),
+  para revisar el front sin abrir el navegador. Necesita el dev server y la
+  cuenta demo (`npm run seed`); credenciales por `SHOT_EMAIL`/`SHOT_PASSWORD`,
+  tema con `THEME=dark`, viewport con `W`/`H`. Guarda la sesión en
+  `.ui-shots/.session.json` porque el freno anti-fuerza bruta solo deja 5 logins
+  por email cada 15 min.
 - `npm run db:up` / `npm run db:down` — MongoDB con Docker
 
 ## Estructura de carpetas
@@ -407,6 +413,27 @@ formula-eval.js`, cálculo en `hydrate`, config en `settings.formula`, editor en
 - **Ningún color hardcodeado** en componentes: consúmelos desde los tokens CSS de
   `app/globals.css` vía utilidades de Tailwind (`bg-surface`, `text-secondary`,
   `border-border`, `bg-chip-blue`…).
+- **Estética macOS.** El fondo de la app es gris (`--bg`, la "ventana") y el
+  contenido vive en una lámina blanca redondeada que flota encima; el rail
+  lateral **comparte ese mismo gris** (`--sidebar: var(--bg)`): no es una
+  superficie aparte, es el hueco alrededor de la lámina. Por lo mismo la sombra
+  de la lámina (`--elev-sheet`) va **corta**: el hueco son 8 px y un difuminado
+  ancho lo teñía entero, haciendo que el marco y el rail parecieran de tonos
+  distintos aunque el token sea el mismo. Las primitivas están en `globals.css` y
+  se usan por clase, no repitiendo la receta:
+  - `.mac-sheet` — la lámina de contenido (solo redondea en `md+`).
+  - `.mac-vibrancy` — fondo del rail y de las barras de navegación.
+  - `.mac-menu` — material de popovers, desplegables y diálogos.
+  - `.mac-segment` — control segmentado; el estado se lee de `aria-pressed` o
+    `data-active`, sin clases condicionales en el marcado.
+  - `.mac-focus` — halo ancho de foco (no un borde de 1 px).
+    ⚠️ Estas clases van **sin `@layer`**, así que ganan a cualquier utilidad de
+    Tailwind aunque se escriba después en el `className` (un `max-md:rounded-none`
+    junto a `.mac-sheet` no haría nada). Lo responsive se resuelve dentro de la
+    propia clase con un media query.
+- **Sin rejilla vertical en las listas** (tabla de registros y de paneles): solo
+  separadores horizontales, como las listas del sistema. La columna se distingue
+  por el ancho y la alineación.
 - Textos de interfaz **en español**, voz activa, frase capitalizada, sin punto
   final en botones/etiquetas.
 - Sin `console.log` en producción: logger propio con niveles.

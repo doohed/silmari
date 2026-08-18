@@ -233,7 +233,7 @@ function AddMenu({ onAdd, onClose }) {
   return (
     <>
       <div className="fixed inset-0 z-30" onClick={onClose} />
-      <div className="anim-pop border-border bg-elevated absolute top-full right-0 z-40 mt-1 max-h-80 w-64 overflow-auto rounded-xl border p-1 shadow-lg">
+      <div className="anim-pop mac-menu absolute top-full right-0 z-40 mt-1 max-h-80 w-64 overflow-auto rounded-xl border p-1 shadow-lg">
         {WIDGETS.map((w) => (
           <button
             key={w.type}

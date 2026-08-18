@@ -53,7 +53,7 @@ export function FilterEditor({ fields, filters, onChange }) {
   }
 
   return (
-    <div className="border-border bg-elevated absolute top-full left-0 z-30 mt-1 w-80 rounded-md border p-3 shadow-lg">
+    <div className="mac-menu absolute top-full left-0 z-30 mt-1 w-80 rounded-md border p-3 shadow-lg">
       {filters.length > 0 && (
         <ul className="mb-2 space-y-1">
           {filters.map((f, i) => {

@@ -67,7 +67,7 @@ export function UserMenu({ user }) {
       {open && (
         <div
           role="menu"
-          className="anim-pop border-border bg-elevated absolute top-full left-0 z-40 mt-1 w-56 rounded-lg border p-1 shadow-md"
+          className="anim-pop mac-menu absolute top-full left-0 z-40 mt-1 w-56 rounded-lg border p-1 shadow-md"
         >
           <div className="px-2 py-1.5">
             <p className="text-primary truncate text-[13px] font-medium">{name}</p>

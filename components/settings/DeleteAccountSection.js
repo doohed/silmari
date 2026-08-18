@@ -25,7 +25,7 @@ export function DeleteAccountSection() {
   return (
     <>
       <Button variant="danger" size="sm" onClick={() => setOpen(true)}>
-        Eliminar cuenta
+        Eliminar…
       </Button>
 
       {open && (
@@ -34,7 +34,7 @@ export function DeleteAccountSection() {
             className="anim-overlay absolute inset-0 bg-black/40"
             onClick={() => !pending && setOpen(false)}
           />
-          <div className="anim-dialog bg-elevated border-border relative w-full max-w-md rounded-2xl border p-6 shadow-lg">
+          <div className="anim-dialog mac-menu relative w-full max-w-md rounded-2xl border p-6 shadow-lg">
             <h2 className="text-primary text-base font-semibold">Eliminar cuenta</h2>
             <p className="text-secondary mt-2 text-sm">
               Esta acción es irreversible: perderás el acceso y tu cuenta quedará eliminada. Escribe{' '}

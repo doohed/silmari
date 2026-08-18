@@ -18,7 +18,7 @@ export function ShortcutsSheet({ open, onOpenChange }) {
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="anim-overlay fixed inset-0 z-50 bg-black/40" />
-        <Dialog.Content className="anim-dialog border-border bg-elevated fixed top-1/2 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border p-5 shadow-xl">
+        <Dialog.Content className="anim-dialog mac-menu fixed top-1/2 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border p-5 shadow-xl">
           <Dialog.Title className="text-primary mb-3 text-sm font-semibold">
             Atajos de teclado
           </Dialog.Title>

@@ -11,8 +11,10 @@ export function Input({ className, ref, ...props }) {
     <input
       ref={ref}
       className={cn(
-        'bg-surface text-primary placeholder:text-tertiary h-9 w-full rounded-md border px-3 text-[13px]',
-        'border-border focus:border-accent focus:ring-accent/15 focus:ring-2 focus:outline-none',
+        'bg-surface text-primary placeholder:text-tertiary h-8 w-full rounded-lg border px-2.5 text-[13px]',
+        // El campo de macOS lleva borde de énfasis (no hairline) y al enfocar
+        // se rodea de un halo ancho del color de acento, no de un borde grueso.
+        'border-border-strong mac-focus shadow-xs',
         'transition-[border-color,box-shadow] duration-150',
         className,
       )}

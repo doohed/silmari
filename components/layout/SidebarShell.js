@@ -47,7 +47,7 @@ export function SidebarShell({ children, workspaceName }) {
   return (
     <>
       {/* Barra superior, solo en móvil. */}
-      <div className="border-border bg-surface flex h-12 shrink-0 items-center gap-3 border-b px-3 md:hidden">
+      <div className="border-sidebar-border mac-vibrancy flex h-12 shrink-0 items-center gap-3 border-b px-3 md:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -69,7 +69,7 @@ export function SidebarShell({ children, workspaceName }) {
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-black/40"
           />
-          <div className="bg-surface border-border absolute inset-y-0 left-0 flex w-64 flex-col border-r shadow-lg">
+          <div className="bg-bg border-sidebar-border absolute inset-y-0 left-0 flex w-64 flex-col border-r shadow-lg">
             <div className="flex justify-end p-2">
               <button
                 type="button"

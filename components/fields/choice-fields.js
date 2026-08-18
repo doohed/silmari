@@ -24,7 +24,7 @@ function Dropdown({ children, onCancel }) {
   return (
     <div
       ref={ref}
-      className="border-border bg-elevated absolute top-full left-0 z-20 mt-1 max-h-60 w-56 overflow-auto rounded-md border p-1 shadow-lg"
+      className="mac-menu absolute top-full left-0 z-20 mt-1 max-h-60 w-56 overflow-auto rounded-md border p-1 shadow-lg"
       tabIndex={-1}
       onKeyDown={(e) => {
         if (e.key === 'Escape') {
