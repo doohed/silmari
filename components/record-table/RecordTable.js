@@ -517,7 +517,12 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
             </div>
 
             {/* Cuerpo virtualizado (filas ordenables por arrastre) */}
-            <DndContext id="record-table-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <DndContext
+              id="record-table-dnd"
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onDragEnd}
+            >
               <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
                 <div
                   style={{

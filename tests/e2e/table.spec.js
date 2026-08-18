@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { signup } from './helpers';
 
-
 test('crear registro y editar una celda inline (persistente)', async ({ page }) => {
   await signup(page);
 

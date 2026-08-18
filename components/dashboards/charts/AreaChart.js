@@ -64,7 +64,14 @@ export function AreaChart({ data, format }) {
             vectorEffect="non-scaling-stroke"
           />
           {pts.map(([px, py], i) => (
-            <circle key={i} cx={px} cy={py} r="4" fill="var(--accent)" vectorEffect="non-scaling-stroke">
+            <circle
+              key={i}
+              cx={px}
+              cy={py}
+              r="4"
+              fill="var(--accent)"
+              vectorEffect="non-scaling-stroke"
+            >
               <title>{`${rows[i].label}: ${format(rows[i].value)}`}</title>
             </circle>
           ))}

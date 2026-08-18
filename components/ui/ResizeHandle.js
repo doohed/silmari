@@ -25,7 +25,7 @@ export function ResizeHandle({ side, onPointerDown, active = false }) {
       <span
         className={cn(
           'h-full w-px transition-colors',
-          active ? 'bg-accent' : 'bg-transparent group-hover:bg-accent/50',
+          active ? 'bg-accent' : 'group-hover:bg-accent/50 bg-transparent',
         )}
       />
     </div>

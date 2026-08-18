@@ -64,16 +64,17 @@ export function WelcomeGate({ googleReady, microsoftReady, brand }) {
     }
   }
 
-  const signupHref = email.trim()
-    ? `/signup?email=${encodeURIComponent(email.trim())}`
-    : '/signup';
+  const signupHref = email.trim() ? `/signup?email=${encodeURIComponent(email.trim())}` : '/signup';
 
   return (
     <div className="w-full">
       {/* Proveedores OAuth (siempre visibles) */}
       <div className="stagger space-y-3">
         {googleReady ? (
-          <a href="/api/auth/google" className={cn(providerBtn, 'bg-surface border-border shadow-sm')}>
+          <a
+            href="/api/auth/google"
+            className={cn(providerBtn, 'bg-surface border-border shadow-sm')}
+          >
             <GoogleIcon size={18} /> Continuar con Google
           </a>
         ) : (

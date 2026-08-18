@@ -11,7 +11,13 @@ import { fileToSquareDataUrl } from '@/lib/utils/image';
  * un data URL vía onChange. Sin infra de almacenamiento.
  * @param {{ value: string|null, onChange: (v: string|null)=>void, name?: string, shape?: 'full'|'xl', label?: string }} props
  */
-export function ImagePicker({ value, onChange, name = '', shape = 'full', label = 'Subir imagen' }) {
+export function ImagePicker({
+  value,
+  onChange,
+  name = '',
+  shape = 'full',
+  label = 'Subir imagen',
+}) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
 
@@ -41,7 +47,7 @@ export function ImagePicker({ value, onChange, name = '', shape = 'full', label 
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={busy}
-        className="press border-border bg-surface text-primary hover:border-border-strong hover:shadow-xs flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-medium disabled:opacity-50"
+        className="press border-border bg-surface text-primary hover:border-border-strong flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-medium hover:shadow-xs disabled:opacity-50"
       >
         <Upload size={14} /> {busy ? 'Procesando…' : label}
       </button>

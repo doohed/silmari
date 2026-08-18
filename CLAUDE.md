@@ -259,6 +259,11 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
 
 ## Pendientes conocidos
 
+> **Puesta en producción:** el plan por fases (cuentas, endurecimiento, Stripe,
+> legal, operación) vive en **`PLAN-PRODUCCION.md`**, y los procedimientos de
+> backup y recuperación en **`RUNBOOK.md`**. Consúltalos antes de tocar
+> despliegue, auth o facturación.
+
 - **MANY_TO_MANY** completo (vincular/desvincular por UI).
 - **Rate limit** compartido entre instancias (hoy en memoria).
 - **A11y**: faltan roles de rejilla (`role="grid/row/gridcell"`) en tabla/kanban.
@@ -273,7 +278,7 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
 - **Pasarela de pago** (Stripe): el paso del onboarding es solo visual; seam en
   `lib/billing/`.
 - **Campos calculados (FORMULA)**: hechos (evaluador puro `lib/field-types/
-  formula-eval.js`, cálculo en `hydrate`, config en `settings.formula`, editor en
+formula-eval.js`, cálculo en `hydrate`, config en `settings.formula`, editor en
   el modelo de datos). Son **solo lectura y no filtrables ni ordenables en BD**
   (el valor no se persiste). Falta **ROLLUP** (agregados sobre registros
   relacionados) y **productos/cotizaciones con líneas** (Fase 4 pendiente).

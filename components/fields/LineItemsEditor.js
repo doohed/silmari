@@ -112,7 +112,10 @@ export function LineItemsEditor({ field, value, onCommit }) {
             <span />
           </div>
           {rows.map((row, i) => (
-            <div key={i} className="grid grid-cols-[1fr_64px_88px_56px_88px_28px] items-center gap-2">
+            <div
+              key={i}
+              className="grid grid-cols-[1fr_64px_88px_56px_88px_28px] items-center gap-2"
+            >
               {catalog?.productObjectSlug ? (
                 <ProductCell
                   description={row.description}

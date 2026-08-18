@@ -33,6 +33,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# …salvo la plantilla, que sí debe viajar con el repo: es la documentación de
+# qué variables hacen falta para arrancar.
+!.env.example
 
 # vercel
 .vercel
@@ -43,3 +46,10 @@ next-env.d.ts
 
 # uploads (storage local de dev)
 /storage
+
+# volcados de mongodump (scripts/backup.mjs)
+/backups
+
+# reportes de Playwright
+/playwright-report
+/test-results

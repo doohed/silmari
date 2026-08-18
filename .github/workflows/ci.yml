@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  # Un push nuevo sobre la misma rama cancela la ejecución anterior.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, tests y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Misma major que en local y que la imagen de producción (Dockerfile).
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Formato (Prettier)
+        run: npm run format:check
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Tests unitarios
+        run: npm test
+
+      # Levantan un mongodb-memory-server con replica set: no hacen falta
+      # servicios ni Docker en el runner.
+      - name: Tests de integración
+        run: npm run test:integration
+
+      - name: Build de producción
+        env:
+          # Valores ficticios: el build no se conecta a nada, pero los módulos
+          # que leen el entorno al importarse necesitan que existan.
+          AUTH_SECRET: build-only-secret-no-usado-en-runtime
+          MONGODB_URI: mongodb://localhost:27017/silmari-build
+        run: npm run build
+
+  audit:
+    name: Auditoría de dependencias
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Informativo: avisa sin bloquear el merge. Las vulnerabilidades de
+    # dependencias transitivas de dev no deben frenar un despliegue.
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high

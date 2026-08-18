@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  subscribe,
-  emitDomainEvent,
-  _resetSubscribers,
-  _subscriberNames,
-} from '@/lib/events/bus';
+import { subscribe, emitDomainEvent, _resetSubscribers, _subscriberNames } from '@/lib/events/bus';
 import { recordEvent } from '@/lib/events/types';
 
 const ctx = { workspaceId: 'ws1', userId: 'u1', role: 'OWNER' };

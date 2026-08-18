@@ -21,7 +21,11 @@ const createdBySchema = new mongoose.Schema(
   {
     userId: { type: String, default: null },
     name: { type: String, default: '' },
-    source: { type: String, enum: ['MANUAL', 'API', 'IMPORT', 'SYSTEM', 'FORM'], default: 'MANUAL' },
+    source: {
+      type: String,
+      enum: ['MANUAL', 'API', 'IMPORT', 'SYSTEM', 'FORM'],
+      default: 'MANUAL',
+    },
   },
   { _id: false },
 );

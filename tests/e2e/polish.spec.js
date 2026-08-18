@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { signup } from './helpers';
 
-
 test('cambiar de tema aplica la clase dark', async ({ page }) => {
   await signup(page);
   await expect(page.locator('html')).not.toHaveClass(/dark/);

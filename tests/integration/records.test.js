@@ -65,7 +65,10 @@ describe('capa genérica de registros', () => {
   it('proyección: ordena/pagina por un campo oculto (viaja para el cursor)', async () => {
     const ctx = await owner();
     for (const n of [1, 2, 3]) {
-      await createRecord(ctx, { objectSlug: 'companies', data: { name: `P${n}`, employees: n * 10 } });
+      await createRecord(ctx, {
+        objectSlug: 'companies',
+        data: { name: `P${n}`, employees: n * 10 },
+      });
     }
     const args = {
       objectSlug: 'companies',

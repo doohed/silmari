@@ -2,19 +2,8 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  rectSortingStrategy,
-  useSortable,
-  arrayMove,
-} from '@dnd-kit/sortable';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Plus, X, GripVertical, Pencil, Check, Scaling, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -149,12 +138,18 @@ export function DashboardView({ dashboard, metrics }) {
       <div className="min-h-0 flex-1 overflow-auto p-6">
         {widgets.length === 0 ? (
           <p className="text-tertiary text-sm">
-            Este panel está vacío. Pulsa <span className="font-medium">Editar</span> y añade widgets.
+            Este panel está vacío. Pulsa <span className="font-medium">Editar</span> y añade
+            widgets.
           </p>
         ) : (
-          <DndContext id="dashboard-view-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <DndContext
+            id="dashboard-view-dnd"
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+          >
             <SortableContext items={widgets.map((w) => w.id)} strategy={rectSortingStrategy}>
-              <div className="grid auto-rows-[7.5rem] grid-flow-dense grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="grid grid-flow-dense auto-rows-[7.5rem] grid-cols-2 gap-4 md:grid-cols-4">
                 {widgets.map((w) => (
                   <SortableCard
                     key={w.id}

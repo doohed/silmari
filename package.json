@@ -15,6 +15,8 @@
     "format:check": "prettier --check .",
     "seed": "node --no-warnings --loader ./scripts/alias-loader.mjs scripts/seed.js",
     "migrate:created-by": "node --no-warnings --loader ./scripts/alias-loader.mjs scripts/add-created-by.mjs",
+    "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "app:up": "docker compose --profile app up -d --build",

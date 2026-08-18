@@ -4,7 +4,11 @@ import { redirect } from 'next/navigation';
 import { requireContext } from '@/lib/auth/dal';
 import { destroySessionCookie } from '@/lib/auth/session';
 import { parseOrThrow } from '@/lib/validation/zod-helpers';
-import { workspaceStepSchema, profileStepSchema, inviteStepSchema } from '@/lib/validation/onboarding';
+import {
+  workspaceStepSchema,
+  profileStepSchema,
+  inviteStepSchema,
+} from '@/lib/validation/onboarding';
 import { emailSignupSchema } from '@/lib/validation/auth';
 import {
   saveWorkspaceStep,

@@ -31,9 +31,7 @@ describe('plantillas · CRUD y permisos', () => {
     const ctx = await owner();
     const mem = { ...ctx, role: 'MEMBER' };
     await expect(listTemplates(mem)).rejects.toThrow();
-    await expect(
-      createTemplate(mem, { name: 'x', body: 'hola' }),
-    ).rejects.toThrow();
+    await expect(createTemplate(mem, { name: 'x', body: 'hola' })).rejects.toThrow();
   });
 
   it('exige nombre y cuerpo', async () => {

@@ -86,7 +86,12 @@ export function NotesInbox() {
 
       {composing && (
         <div className="border-border bg-surface anim-fade-up mb-6 space-y-3 rounded-xl border p-4 shadow-sm">
-          <Input placeholder="Título" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Input
+            placeholder="Título"
+            autoFocus
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
           <NoteEditor key={editorKey} onChange={setBody} />
           <div className="flex gap-2">
             <Button size="sm" onClick={create}>

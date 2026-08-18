@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/Label';
 function inputType(fieldType) {
   if (fieldType === 'EMAILS') return 'email';
   if (fieldType === 'PHONES') return 'tel';
-  if (fieldType === 'NUMBER' || fieldType === 'CURRENCY' || fieldType === 'PERCENT') return 'number';
+  if (fieldType === 'NUMBER' || fieldType === 'CURRENCY' || fieldType === 'PERCENT')
+    return 'number';
   return 'text';
 }
 

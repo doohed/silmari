@@ -22,9 +22,7 @@ describe('Microsoft OAuth · configuración y URLs', () => {
   });
 
   it('la URL de consentimiento lleva client_id, scope, state y redirect_uri', () => {
-    const url = new URL(
-      microsoftConsentUrl({ state: 'abc123', redirectUri: 'https://a/cb' }),
-    );
+    const url = new URL(microsoftConsentUrl({ state: 'abc123', redirectUri: 'https://a/cb' }));
     expect(url.origin).toBe('https://login.microsoftonline.com');
     expect(url.searchParams.get('client_id')).toBe('test-client');
     expect(url.searchParams.get('state')).toBe('abc123');

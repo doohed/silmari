@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  parseFormula,
-  formulaDependencies,
-  evaluateFormula,
-} from '@/lib/field-types/formula-eval';
+import { parseFormula, formulaDependencies, evaluateFormula } from '@/lib/field-types/formula-eval';
 
 describe('parseFormula', () => {
   it('acepta expresiones válidas', () => {

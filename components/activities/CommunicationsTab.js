@@ -90,7 +90,9 @@ export function CommunicationsTab({ object, recordId }) {
     setBusy(true);
     const action = channel === 'EMAIL' ? sendEmailAction : sendWhatsappAction;
     const input =
-      channel === 'EMAIL' ? { to: contact, subject, body, targets } : { to: contact, body, targets };
+      channel === 'EMAIL'
+        ? { to: contact, subject, body, targets }
+        : { to: contact, body, targets };
     const r = await action(input);
     setBusy(false);
     if (!r.ok) return toast.error(r.message);
@@ -196,7 +198,12 @@ export function CommunicationsTab({ object, recordId }) {
                 <Send size={13} /> Enviar
               </Button>
             )}
-            <Button size="sm" variant={direction === 'OUTBOUND' ? 'ghost' : 'primary'} onClick={logOnly} disabled={busy}>
+            <Button
+              size="sm"
+              variant={direction === 'OUTBOUND' ? 'ghost' : 'primary'}
+              onClick={logOnly}
+              disabled={busy}
+            >
               {direction === 'OUTBOUND' ? 'Registrar sin enviar' : 'Registrar'}
             </Button>
             <Button size="sm" variant="ghost" onClick={resetForm} disabled={busy}>
@@ -213,7 +220,9 @@ export function CommunicationsTab({ object, recordId }) {
       )}
 
       <ul className="space-y-2.5">
-        {comms.length === 0 && <li className="text-tertiary text-sm">Sin comunicaciones todavía</li>}
+        {comms.length === 0 && (
+          <li className="text-tertiary text-sm">Sin comunicaciones todavía</li>
+        )}
         {comms.map((c) => (
           <li key={c.id} className="border-border bg-surface rounded-lg border p-3">
             <div className="flex items-start justify-between gap-2">

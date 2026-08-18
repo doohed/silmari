@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { signup } from './helpers';
 
-
 // El arrastre en sí (cambio de etapa + posición + timeline) se verifica en
 // tests/integration/kanban.test.js; dnd-kit no registra bien el gesto del ratón
 // de Playwright (PointerSensor). Aquí verificamos el render del kanban.

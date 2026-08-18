@@ -29,10 +29,7 @@ export async function POST(request, ctx) {
 
     const body = await request.json().catch(() => ({}));
     const result = await submitPublicForm(slug, body?.values ?? {}, { honeypot: body?._hp });
-    return Response.json(
-      { data: result },
-      { status: result.action === 'created' ? 201 : 200 },
-    );
+    return Response.json({ data: result }, { status: result.action === 'created' ? 201 : 200 });
   } catch (err) {
     return errorResponse(err);
   }

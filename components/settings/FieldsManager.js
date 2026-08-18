@@ -21,7 +21,8 @@ const COLORS = ['gray', 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'p
 const CHOICE = new Set(['SELECT', 'MULTI_SELECT']);
 // Tipos sin índice de BD: calculados (FORMULA/ROLLUP) o compuestos (LINE_ITEMS).
 const NO_INDEX = new Set(['FORMULA', 'ROLLUP', 'LINE_ITEMS']);
-const SELECT_CLS = 'border-border bg-surface text-primary h-9 w-full rounded-md border px-2 text-sm';
+const SELECT_CLS =
+  'border-border bg-surface text-primary h-9 w-full rounded-md border px-2 text-sm';
 const ROLLUP_OPS = [
   { value: 'count', label: 'Conteo' },
   { value: 'sum', label: 'Suma' },
@@ -116,7 +117,11 @@ export function FieldsManager({ object, objects }) {
   const [options, setOptions] = useState([{ label: '', color: 'blue' }]);
   const [relationTarget, setRelationTarget] = useState('');
   const [formula, setFormula] = useState('');
-  const [rollup, setRollup] = useState({ relationFieldId: '', operation: 'count', aggregateFieldName: '' });
+  const [rollup, setRollup] = useState({
+    relationFieldId: '',
+    operation: 'count',
+    aggregateFieldName: '',
+  });
   const [rollupSources, setRollupSources] = useState(null); // null = aún sin cargar
   const [lineItemsCfg, setLineItemsCfg] = useState({ productObjectSlug: '', priceFieldName: '' });
   const [priceFields, setPriceFields] = useState([]);
@@ -214,9 +219,7 @@ export function FieldsManager({ object, objects }) {
         payload.settings = {
           lineItems: {
             productObjectSlug: lineItemsCfg.productObjectSlug,
-            ...(lineItemsCfg.priceFieldName
-              ? { priceFieldName: lineItemsCfg.priceFieldName }
-              : {}),
+            ...(lineItemsCfg.priceFieldName ? { priceFieldName: lineItemsCfg.priceFieldName } : {}),
           },
         };
       }
@@ -357,8 +360,9 @@ export function FieldsManager({ object, objects }) {
                 className="font-mono"
               />
               <p className="text-tertiary mt-1 text-xs">
-                Usa los nombres de otros campos numéricos con <span className="font-mono">+ - * /</span>{' '}
-                y paréntesis. Es un campo de solo lectura.
+                Usa los nombres de otros campos numéricos con{' '}
+                <span className="font-mono">+ - * /</span> y paréntesis. Es un campo de solo
+                lectura.
               </p>
             </div>
           )}
@@ -371,7 +375,11 @@ export function FieldsManager({ object, objects }) {
                   id="rollup-rel"
                   value={rollup.relationFieldId}
                   onChange={(e) =>
-                    setRollup({ ...rollup, relationFieldId: e.target.value, aggregateFieldName: '' })
+                    setRollup({
+                      ...rollup,
+                      relationFieldId: e.target.value,
+                      aggregateFieldName: '',
+                    })
                   }
                   className={SELECT_CLS}
                 >
@@ -535,7 +543,9 @@ export function FieldsManager({ object, objects }) {
                   <button
                     type="button"
                     onClick={() => (editingId === f.id ? setEditingId(null) : startEdit(f))}
-                    className={editingId === f.id ? 'text-accent' : 'text-tertiary hover:text-primary'}
+                    className={
+                      editingId === f.id ? 'text-accent' : 'text-tertiary hover:text-primary'
+                    }
                     aria-label="Editar opciones"
                     title="Editar opciones"
                   >

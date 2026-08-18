@@ -105,7 +105,9 @@ export function RecordDetail({
       ) : (
         // Página completa: los campos van en una columna lateral (hay espacio).
         <div className="flex min-h-0 flex-1">
-          <aside className="border-border w-72 shrink-0 overflow-auto border-r">{fieldsPanel}</aside>
+          <aside className="border-border w-72 shrink-0 overflow-auto border-r">
+            {fieldsPanel}
+          </aside>
           <div className="min-w-0 flex-1 overflow-auto">
             <TabsPanel
               object={object}

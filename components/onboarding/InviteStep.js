@@ -3,7 +3,11 @@
 import { useState, useTransition } from 'react';
 import { X, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { saveInviteAction, skipInviteAction, createInviteLinkAction } from '@/app/onboarding/actions';
+import {
+  saveInviteAction,
+  skipInviteAction,
+  createInviteLinkAction,
+} from '@/app/onboarding/actions';
 import { StepFrame } from './StepFrame';
 import { Button } from '@/components/ui/Button';
 

@@ -2,13 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -196,7 +190,12 @@ export function DashboardList({ dashboards }) {
         </div>
 
         {/* Filas ordenables */}
-        <DndContext id="dashboard-list-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <DndContext
+          id="dashboard-list-dnd"
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+        >
           <SortableContext items={items.map((d) => d.id)} strategy={verticalListSortingStrategy}>
             {items.map((d) => (
               <DashboardRow
@@ -333,7 +332,10 @@ function DashboardRow({
       </div>
 
       {/* Creado por */}
-      <div className="border-border shrink-0 border-l" style={{ width: COLS[1].width, height: ROW_H }}>
+      <div
+        className="border-border shrink-0 border-l"
+        style={{ width: COLS[1].width, height: ROW_H }}
+      >
         <div className="flex h-full w-full items-center gap-1.5 truncate px-3 text-sm">
           <Avatar name={d.createdBy.name} src={d.createdBy.avatarUrl} size={18} />
           <span className="text-primary truncate">{d.createdBy.name}</span>
@@ -341,14 +343,20 @@ function DashboardRow({
       </div>
 
       {/* Creación */}
-      <div className="border-border shrink-0 border-l" style={{ width: COLS[2].width, height: ROW_H }}>
+      <div
+        className="border-border shrink-0 border-l"
+        style={{ width: COLS[2].width, height: ROW_H }}
+      >
         <div className="text-secondary flex h-full w-full items-center truncate px-3 text-sm">
           {formatRelative(d.createdAt) || <span className="text-tertiary">—</span>}
         </div>
       </div>
 
       {/* Última actualización */}
-      <div className="border-border shrink-0 border-l" style={{ width: COLS[3].width, height: ROW_H }}>
+      <div
+        className="border-border shrink-0 border-l"
+        style={{ width: COLS[3].width, height: ROW_H }}
+      >
         <div className="text-secondary flex h-full w-full items-center truncate px-3 text-sm">
           {formatRelative(d.updatedAt) || <span className="text-tertiary">—</span>}
         </div>

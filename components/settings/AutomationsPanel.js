@@ -118,7 +118,9 @@ export function AutomationsPanel({ initialAutomations, objects, members }) {
     setActions((a) => a.map((act, j) => (j === i ? { ...act, ...patch } : act)));
   }
   function setActionConfig(i, patch) {
-    setActions((a) => a.map((act, j) => (j === i ? { ...act, config: { ...act.config, ...patch } } : act)));
+    setActions((a) =>
+      a.map((act, j) => (j === i ? { ...act, config: { ...act.config, ...patch } } : act)),
+    );
   }
   function removeAction(i) {
     setActions((a) => a.filter((_, j) => j !== i));
@@ -384,7 +386,9 @@ export function AutomationsPanel({ initialAutomations, objects, members }) {
 
       {/* Lista */}
       <ul className="space-y-3">
-        {automations.length === 0 && <li className="text-tertiary text-sm">Sin automatizaciones</li>}
+        {automations.length === 0 && (
+          <li className="text-tertiary text-sm">Sin automatizaciones</li>
+        )}
         {automations.map((a) => (
           <li key={a.id} className="border-border bg-surface rounded-lg border p-3">
             <div className="flex items-start justify-between gap-2">

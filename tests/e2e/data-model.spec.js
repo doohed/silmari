@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { signup } from './helpers';
 
-
 test('crear un objeto custom con una relación a Company desde la UI', async ({ page }) => {
   await signup(page);
   await page.goto('/settings/data-model');

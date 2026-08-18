@@ -155,7 +155,10 @@ describe('automatizaciones · motor', () => {
       name: 'Avisa al crear',
       trigger: { event: 'record.created', objectSlug: 'companies' },
       actions: [
-        { type: 'notify', config: { userIds: [recipient], title: 'Nueva empresa', body: 'Revísala' } },
+        {
+          type: 'notify',
+          config: { userIds: [recipient], title: 'Nueva empresa', body: 'Revísala' },
+        },
       ],
     });
 

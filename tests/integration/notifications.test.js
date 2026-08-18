@@ -164,8 +164,8 @@ describe('actividades → evento task.assigned', () => {
   it('actualizar una tarea sin tocar responsables no emite el evento', async () => {
     const ctx = await owner();
     const task = await createActivity(ctx, { type: 'TASK', title: 'y' });
-    const events = await captureEvents(() =>
-      updateActivity(ctx, task.id, { title: 'y2' }), // no toca assigneeIds
+    const events = await captureEvents(
+      () => updateActivity(ctx, task.id, { title: 'y2' }), // no toca assigneeIds
     );
     expect(events.find((e) => e.type === 'task.assigned')).toBeUndefined();
   });

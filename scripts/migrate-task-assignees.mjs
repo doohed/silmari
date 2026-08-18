@@ -13,5 +13,10 @@ const r1 = await coll.updateMany({ assigneeId: { $ne: null } }, [
   { $set: { assigneeIds: ['$assigneeId'] } },
 ]);
 const r2 = await coll.updateMany({ assigneeId: { $exists: true } }, { $unset: { assigneeId: '' } });
-console.log('assigneeIds poblados:', r1.modifiedCount, '| assigneeId eliminado de:', r2.modifiedCount);
+console.log(
+  'assigneeIds poblados:',
+  r1.modifiedCount,
+  '| assigneeId eliminado de:',
+  r2.modifiedCount,
+);
 await mongoose.disconnect();

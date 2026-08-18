@@ -240,7 +240,7 @@ export function FormsPanel({ initialForms, objects, appUrl }) {
 
             <div className="border-border mt-2 space-y-2 border-t pt-2">
               <div className="flex items-center gap-2">
-                <code className="text-tertiary min-w-0 flex-1 truncate rounded bg-chip-gray px-2 py-1 text-xs">
+                <code className="text-tertiary bg-chip-gray min-w-0 flex-1 truncate rounded px-2 py-1 text-xs">
                   {hostedUrl(f.slug)}
                 </code>
                 <a

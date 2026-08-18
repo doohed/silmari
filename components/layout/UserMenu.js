@@ -75,7 +75,12 @@ export function UserMenu({ user }) {
           </div>
           <div className="border-border my-1 border-t" />
 
-          <Link href="/settings/profile" role="menuitem" onClick={() => setOpen(false)} className={ITEM}>
+          <Link
+            href="/settings/profile"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className={ITEM}
+          >
             <Settings size={15} className="text-tertiary" /> Configuraciones
           </Link>
           <button type="button" role="menuitem" onClick={toggleTheme} className={ITEM}>

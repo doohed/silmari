@@ -18,10 +18,7 @@ const notificationSchema = new mongoose.Schema(
     title: { type: String, required: true },
     body: { type: String, default: '' },
     entity: {
-      type: new mongoose.Schema(
-        { kind: { type: String }, id: { type: String } },
-        { _id: false },
-      ),
+      type: new mongoose.Schema({ kind: { type: String }, id: { type: String } }, { _id: false }),
       default: null,
     },
     actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

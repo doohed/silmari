@@ -1,0 +1,53 @@
+name: E2E
+
+# Los e2e tardan y necesitan Mongo + navegador, así que no van en cada PR.
+# Corren de madrugada sobre main y se pueden lanzar a mano antes de un release.
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  playwright:
+    name: Playwright sobre Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Replica set de un nodo: las transacciones de Mongoose (alta, metadata,
+      # relaciones) no funcionan contra un standalone.
+      - name: Levantar MongoDB con replica set
+        uses: supercharge/mongodb-github-action@1.12.1
+        with:
+          mongodb-version: '7.0'
+          mongodb-replica-set: rs0
+
+      - name: Instalar navegador
+        run: npx playwright install --with-deps chromium
+
+      - name: Ejecutar e2e
+        env:
+          AUTH_SECRET: e2e-secret-solo-para-ci
+          MONGODB_URI: mongodb://localhost:27017/silmari-e2e?replicaSet=rs0
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+        run: npm run test:e2e
+
+      - name: Guardar el reporte si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

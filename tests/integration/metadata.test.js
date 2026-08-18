@@ -130,8 +130,20 @@ describe('seed de objetos estándar', () => {
     // Edición como la del ajuste: preserva id/value de las existentes, añade una nueva.
     const updated = await updateField(ctx, stage.id, {
       options: [
-        ...other.map((o, i) => ({ id: o.id, value: o.value, label: o.label, color: o.color, position: i })),
-        { id: won.id, value: won.value, label: 'Cerrada ganada', color: 'blue', position: other.length },
+        ...other.map((o, i) => ({
+          id: o.id,
+          value: o.value,
+          label: o.label,
+          color: o.color,
+          position: i,
+        })),
+        {
+          id: won.id,
+          value: won.value,
+          label: 'Cerrada ganada',
+          color: 'blue',
+          position: other.length,
+        },
         { label: 'En pausa', color: 'yellow', position: other.length + 1 },
       ],
     });

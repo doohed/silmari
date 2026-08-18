@@ -15,7 +15,9 @@ import { updateProfileAction } from '@/app/(workspace)/settings/actions';
 function Section({ title, description, children, danger }) {
   return (
     <section className="border-border border-b py-8 first:pt-0 last:border-b-0">
-      <h2 className={`text-sm font-semibold ${danger ? 'text-danger' : 'text-primary'}`}>{title}</h2>
+      <h2 className={`text-sm font-semibold ${danger ? 'text-danger' : 'text-primary'}`}>
+        {title}
+      </h2>
       {description && <p className="text-secondary mt-1 text-sm">{description}</p>}
       <div className="mt-4">{children}</div>
     </section>
@@ -46,7 +48,13 @@ export function ProfileForm({ account }) {
   return (
     <div>
       <Section title="Foto" description="Aceptamos PNG, JPEG y GIF cuadrados">
-        <ImagePicker value={avatarUrl} onChange={saveAvatar} name={fullName || '·'} shape="xl" label="Subir" />
+        <ImagePicker
+          value={avatarUrl}
+          onChange={saveAvatar}
+          name={fullName || '·'}
+          shape="xl"
+          label="Subir"
+        />
       </Section>
 
       <Section title="Nombre" description="Tu nombre tal y como se mostrará">

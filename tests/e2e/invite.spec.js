@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { signup } from './helpers';
 
-
 test('invitar a un miembro genera un enlace de invitación', async ({ page }) => {
   await signup(page);
   await page.goto('/settings/members');

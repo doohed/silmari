@@ -41,7 +41,11 @@ const inputClass =
   'border-border bg-surface text-primary h-8 rounded-md border px-2 text-xs focus:border-accent focus:outline-none';
 
 export function TasksInbox({ currentUserId }) {
-  const emptyDraft = () => ({ title: '', date: '', assigneeIds: currentUserId ? [currentUserId] : [] });
+  const emptyDraft = () => ({
+    title: '',
+    date: '',
+    assigneeIds: currentUserId ? [currentUserId] : [],
+  });
   const [view, setView] = useState('list');
   const [scope, setScope] = useState('all');
   const [month, setMonth] = useState(() => new Date());
@@ -233,7 +237,10 @@ export function TasksInbox({ currentUserId }) {
                     className={`${inputClass} ${overdue ? 'text-danger border-danger/40' : 'text-secondary'}`}
                     aria-label="Fecha límite"
                   />
-                  <AssigneePicker value={t.assigneeIds} onChange={(ids) => setAssignees(t.id, ids)} />
+                  <AssigneePicker
+                    value={t.assigneeIds}
+                    onChange={(ids) => setAssignees(t.id, ids)}
+                  />
                   {href && (
                     <Link href={href} className="text-accent shrink-0 text-xs font-medium">
                       Abrir

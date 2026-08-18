@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { signup } from './helpers';
 
-
 test('abrir ficha, editar el identificador y ver el timeline', async ({ page }) => {
   await signup(page);
 

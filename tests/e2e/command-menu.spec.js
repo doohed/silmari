@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { signup } from './helpers';
 
-
 test('⌘K: llegar a un registro por teclado', async ({ page }) => {
   await signup(page);
 

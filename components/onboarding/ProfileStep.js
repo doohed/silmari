@@ -44,7 +44,12 @@ export function ProfileStep({ initial }) {
   return (
     <StepFrame title="Cuéntanos sobre ti" subtitle="Así te reconocerá tu equipo">
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
-        <ImagePicker value={avatarUrl} onChange={setAvatarUrl} name={fullName || '·'} label="Subir foto" />
+        <ImagePicker
+          value={avatarUrl}
+          onChange={setAvatarUrl}
+          name={fullName || '·'}
+          label="Subir foto"
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <div>

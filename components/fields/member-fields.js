@@ -58,9 +58,7 @@ function MemberEdit({ value, onCommit, onCancel }) {
         >
           Vaciar
         </button>
-        {members.length === 0 && (
-          <p className="text-tertiary px-1.5 py-1 text-xs">Sin miembros</p>
-        )}
+        {members.length === 0 && <p className="text-tertiary px-1.5 py-1 text-xs">Sin miembros</p>}
         {members.map((m) => (
           <button
             key={m.id}

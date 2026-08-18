@@ -71,7 +71,9 @@ export function Toolbar({
             </span>
           )}
         </Button>
-        {showFilter && <FilterEditor fields={fields} filters={filters} onChange={onFiltersChange} />}
+        {showFilter && (
+          <FilterEditor fields={fields} filters={filters} onChange={onFiltersChange} />
+        )}
       </div>
       <Button size="sm" variant="ghost" onClick={onImport}>
         <Upload size={14} /> Importar

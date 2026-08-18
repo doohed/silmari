@@ -18,7 +18,13 @@ async function owner() {
     password: 'secret123',
     workspaceName: `Comm Co ${seq}`,
   });
-  return { userId, workspaceId, role: 'OWNER', actorName: 'Comm User', userEmail: `comm${seq}@test.dev` };
+  return {
+    userId,
+    workspaceId,
+    role: 'OWNER',
+    actorName: 'Comm User',
+    userEmail: `comm${seq}@test.dev`,
+  };
 }
 
 async function companyWithTarget(ctx) {
@@ -133,8 +139,6 @@ describe('whatsapp · seam', () => {
 
   it('enviar sin número conectado lanza un error claro', async () => {
     const ctx = await owner();
-    await expect(sendWhatsapp(ctx, { to: '+34600', body: 'hola' })).rejects.toThrow(
-      /WhatsApp/i,
-    );
+    await expect(sendWhatsapp(ctx, { to: '+34600', body: 'hola' })).rejects.toThrow(/WhatsApp/i);
   });
 });

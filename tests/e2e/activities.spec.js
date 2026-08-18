@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { signup } from './helpers';
 
-
 test('una nota creada desde una empresa aparece en el contacto vinculado', async ({ page }) => {
   await signup(page);
   const nav = page.getByRole('navigation');
