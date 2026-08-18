@@ -23,7 +23,8 @@
     "app:down": "docker compose --profile app down",
     "dev:docker": "docker compose --profile dev up -d",
     "dev:docker:down": "docker compose --profile dev down",
-    "dev:docker:logs": "docker compose --profile dev logs -f dev"
+    "dev:docker:logs": "docker compose --profile dev logs -f dev",
+    "purge": "node --no-warnings --loader ./scripts/alias-loader.mjs scripts/purge-deleted.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

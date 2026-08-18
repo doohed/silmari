@@ -119,6 +119,29 @@ rompe nada.
 
 ---
 
+## Borrado definitivo (RGPD)
+
+La app borra en lógico (`deletedAt`) para poder deshacer, pero el derecho de
+supresión exige que los datos acaben desapareciendo. `scripts/purge-deleted.mjs`
+elimina de verdad lo que lleva más de 30 días en la papelera.
+
+```bash
+# Primero en simulación, para ver qué se llevaría por delante.
+MONGODB_URI="..." npm run purge -- --dry-run
+
+# Y en el cron diario, junto al backup.
+0 4 * * * cd /srv/silmari && /usr/bin/npm run purge >> /var/log/silmari-purge.log 2>&1
+```
+
+Los registros se purgan junto con sus **relaciones y su historial**, que no
+tienen `deletedAt` propio y cuelgan del registro por id.
+
+> Los backups anteriores siguen conteniendo los datos purgados hasta que caduquen
+> por retención (30 días). Es admisible si el plazo está documentado en la
+> política de privacidad; no lo es si prometes borrado inmediato.
+
+---
+
 ## Pendiente de escribir (Fase 5)
 
 - Procedimiento de despliegue y de vuelta atrás.

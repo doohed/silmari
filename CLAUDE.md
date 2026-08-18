@@ -259,6 +259,17 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   onboarding pasa `requireVerifiedEmail: false`; ocurre segundos después del alta
   y exigirlo lo dejaría inútil para todo el mundo, así que el riesgo se acota con
   el tope de 3 direcciones y el freno de altas por IP.
+- **Legal y RGPD**: los datos de la empresa viven en `lib/config/legal.js`, y
+  mientras queden marcadores `[[...]]` las páginas `/legal/*` muestran un aviso
+  de borrador (`legalIsDraft()`). **No hay banner de cookies a propósito**: las
+  únicas cookies son la de sesión, `theme`, `locale` y las de estado de OAuth,
+  todas necesarias o de preferencia del usuario, y no hay analítica de terceros;
+  añadir una obligaría a implantar consentimiento previo. La **exportación**
+  (`lib/accounts/export-workspace.js` → `/api/export`) incluye la metadata de
+  objetos y campos, no solo los datos: sin ella `data` sería un diccionario
+  opaco. El **borrado definitivo** lo hace `scripts/purge-deleted.mjs` a los 30
+  días; ojo, los registros arrastran sus **relaciones e historial**, que no
+  tienen `deletedAt` propio y hay que borrar por id del registro.
 - **Facturación** (`lib/billing/`): **los límites viven en código**
   (`plans.js`, puro) y Stripe solo dice _qué ha pagado_ el workspace, no _qué
   puede hacer_; así un cambio en el panel de Stripe no altera en silencio lo que

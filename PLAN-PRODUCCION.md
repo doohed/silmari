@@ -158,6 +158,22 @@ solo al expirar el periodo.
 
 ## Fase 4 — Legal y páginas públicas · ~2-3 días + abogado
 
+> **Estado: la parte técnica está hecha; la jurídica depende de tu abogado.**
+> Hechas las cuatro páginas (`/legal/*`, públicas y enlazadas), la exportación
+> del workspace (`/api/export`, portabilidad) y el borrado definitivo con
+> 30 días de gracia (`scripts/purge-deleted.mjs`).
+>
+> **Banner de cookies: no hace falta.** Auditado contra el código: las únicas
+> cookies son `silmari_session`, `theme`, `locale` y las de estado de OAuth, y no
+> hay ninguna analítica ni rastreador de terceros. Todas son necesarias o de
+> preferencia fijada por el propio usuario, así que no requieren consentimiento
+> previo. Si algún día añades analítica, esto cambia.
+>
+> **Queda**: rellenar `lib/config/legal.js` (razón social, CIF, domicilio, datos
+> registrales, emails), que un abogado revise los cuatro textos, redactar el
+> **DPA** que firmarán tus clientes y el registro de actividades de tratamiento.
+> Mientras queden marcadores, las páginas muestran un aviso de borrador visible.
+
 Puede ir **en paralelo** a la Fase 3: no comparten código.
 
 - Páginas `/legal/privacidad`, `/legal/terminos`, `/legal/cookies` y aviso legal.

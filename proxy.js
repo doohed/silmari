@@ -22,6 +22,9 @@ const PUBLIC_PREFIXES = [
   '/forgot',
   '/reset',
   '/verify',
+  // Las páginas legales tienen que poder leerse antes de registrarse: es
+  // justamente cuando se consultan.
+  '/legal',
 ];
 const AUTH_ONLY = ['/welcome', '/login', '/signup']; // no accesibles si ya hay sesión
 
