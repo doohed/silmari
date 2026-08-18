@@ -235,7 +235,8 @@ anotado y no olvidado:
   antes si el disco crece.
 - **Rate limit compartido** (colección Mongo con TTL, sin infra nueva). Solo hace
   falta al pasar de una instancia.
-- **Responsive móvil**: la tabla necesita su versión en tarjetas.
+- ~~**Responsive móvil**: la tabla necesita su versión en tarjetas.~~ Hecho para
+  la lista de registros y el chrome; falta repasar ficha, kanban y ajustes.
 - **A11y**: roles `grid/row/gridcell` en tabla y kanban.
 - **i18n**: hoy cubre el chrome del sidebar; el resto es extracción progresiva.
 - **MANY_TO_MANY** por UI.

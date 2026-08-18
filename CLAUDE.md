@@ -94,7 +94,9 @@ Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
   **API keys**, **webhooks** (firma HMAC + reintento) y **entrada de leads**
   (formularios de Meta vía Zapier/Make).
 - **Chrome**: el sidebar es un **rail completo** (menú de usuario, buscador,
-  nombre de workspace, navegación); no hay barra superior. Popovers/menús propios
+  nombre de workspace, navegación); en escritorio no hay barra superior, y en
+  móvil (`SidebarShell`) pasa a ser una barra con menú y un cajón lateral.
+  La lista de registros cambia a **tarjetas** por debajo de `md` (`RecordCards`). Popovers/menús propios
   cierran al clic fuera (`hooks/useClickOutside`); confirmaciones con diálogo
   temático (`components/ui/ConfirmDialog`, `useConfirm`) en vez de `window.confirm`.
 - **Transversal**: multi-tenant estricto, soft delete + **papelera** (`/trash`),
@@ -370,7 +372,8 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
 - **MANY_TO_MANY** completo (vincular/desvincular por UI).
 - **Rate limit** compartido entre instancias (hoy en memoria).
 - **A11y**: faltan roles de rejilla (`role="grid/row/gridcell"`) en tabla/kanban.
-- **Responsive**: escritorio sólido; falta la tabla→tarjetas en móvil.
+- **Responsive**: hecho en la lista de registros y el chrome. Falta repasar la
+  ficha, el kanban y los ajustes en pantallas estrechas.
 - **i18n**: cubre el chrome del sidebar; la extracción del resto es progresiva.
 - **Google y Microsoft OAuth** están **implementados** (`lib/auth/oauth/`,
   rutas `app/api/auth/{google,microsoft}/`). Requieren credenciales del humano y

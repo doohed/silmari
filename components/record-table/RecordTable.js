@@ -35,6 +35,7 @@ import { ColumnHeader } from './ColumnHeader';
 import { CellContent } from './CellContent';
 import { EmptyState } from './EmptyState';
 import { ImportDialog } from './ImportDialog';
+import { RecordCards } from './RecordCards';
 import { RecordDrawer } from '@/components/record-detail/RecordDrawer';
 
 const ROW_H = 34;
@@ -128,6 +129,13 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
         .filter((vf) => vf.isVisible && fieldById[vf.fieldMetadataId])
         .sort((a, b) => a.position - b.position),
     [view, fieldById],
+  );
+
+  /** Metadata de las columnas visibles, en orden. La comparten las tarjetas de
+   * móvil y la exportación a CSV. */
+  const visibleFieldMeta = useMemo(
+    () => visibleFields.map((vf) => fieldById[vf.fieldMetadataId]),
+    [visibleFields, fieldById],
   );
 
   const columns = useMemo(
@@ -417,7 +425,7 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
   }
 
   async function exportCsv() {
-    const cols = visibleFields.map((vf) => fieldById[vf.fieldMetadataId]);
+    const cols = visibleFieldMeta;
     let exportRows;
     if (selected.size) {
       exportRows = rows.filter((r) => selected.has(r.id));
@@ -478,9 +486,21 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
             onScroll={onScroll}
             className="relative flex-1 overflow-auto outline-none"
           >
+            {/* Móvil: tarjetas. La tabla necesita scroll horizontal y ahí no se
+              puede usar. Se alternan por CSS y no midiendo el ancho en JS, que
+              provocaría un salto visible tras la hidratación. */}
+            <div className="md:hidden">
+              <RecordCards
+                rows={rows}
+                fields={visibleFieldMeta}
+                primaryFieldId={object.labelIdentifierFieldId}
+                onOpen={setOpenRecordId}
+              />
+            </div>
+
             {/* Cabecera (z-30 para que el menú de columna quede sobre las filas) */}
             <div
-              className="border-border bg-surface sticky top-0 z-30 flex h-9 border-b"
+              className="border-border bg-surface sticky top-0 z-30 hidden h-9 border-b md:flex"
               style={{ width: totalWidth + GUTTER }}
             >
               <div className="flex shrink-0 items-center gap-1 pl-2" style={{ width: GUTTER }}>
@@ -525,6 +545,7 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
             >
               <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
                 <div
+                  className="hidden md:block"
                   style={{
                     height: rowVirtualizer.getTotalSize(),
                     width: totalWidth + GUTTER,

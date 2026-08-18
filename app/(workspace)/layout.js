@@ -2,7 +2,7 @@ import { requireOnboarded, getCurrentUser } from '@/lib/auth/dal';
 import { listUserWorkspaces, getCurrentWorkspace } from '@/lib/workspaces/service';
 import { listObjects } from '@/lib/metadata/object-service';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { ResizableSidebar } from '@/components/layout/ResizableSidebar';
+import { SidebarShell } from '@/components/layout/SidebarShell';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { WorkspaceProvider } from '@/components/providers/WorkspaceProvider';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
@@ -27,15 +27,17 @@ export default async function WorkspaceLayout({ children }) {
       <WorkspaceProvider value={settings}>
         <ConfirmProvider>
           <AppShortcuts />
-          <div className="flex h-screen">
-            <ResizableSidebar>
+          {/* En móvil la barra del menú va arriba y el contenido debajo; en
+            escritorio, el rail a la izquierda. De ahí el cambio de dirección. */}
+          <div className="flex h-screen flex-col md:flex-row">
+            <SidebarShell workspaceName={workspace.name}>
               <Sidebar
                 objects={objects}
                 workspaces={workspaces}
                 activeId={ctx.workspaceId}
                 user={user}
               />
-            </ResizableSidebar>
+            </SidebarShell>
             <div className="flex min-w-0 flex-1 flex-col">
               {user && !user.emailVerified && <VerifyEmailBanner email={user.email} />}
               <main className="min-w-0 flex-1 overflow-hidden">{children}</main>
