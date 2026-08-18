@@ -57,7 +57,10 @@ servicios y utils `kebab-case.js`. Un componente por archivo; divide al pasar de
 Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
 
 - **Auth y onboarding.** Auth propio (`lib/auth/`, `jose` + `bcryptjs`, cookie
-  httpOnly, `proxy.js` optimista + DAL). Alta por email o **Google OAuth real**;
+  httpOnly, `proxy.js` optimista + DAL). **Recuperación de contraseña** por email
+  (`/forgot`, `/reset/[token]`) y **freno anti-fuerza bruta** por email + IP en
+  login, alta, olvido y aceptar invitación (`lib/auth/throttle.js`).
+  Alta por email o **Google OAuth real**;
   **wizard de onboarding** de 5 pasos (`app/onboarding/`,
   `WORKSPACE→PROFILE→INVITE→PLAN→WELCOME→DONE`). Workspaces, miembros e
   invitaciones; roles con `can(ctx, action)`.
@@ -104,6 +107,8 @@ Colecciones (todas con `workspaceId` en los datos y soft delete vía `deletedAt`
 
 - **workspaces**, **users**, **workspaceMembers** `(workspaceId,userId)` único,
   **invitations**.
+- **passwordResets** — token de recuperación: solo el `tokenHash` (sha256), TTL
+  de 1 h con índice `expireAfterSeconds`, `usedAt` para que valga una sola vez.
 - **objectMetadata** — definición de objetos; `(workspaceId, slug)` único
   **parcial** (`deletedAt: null`), para que un objeto borrado no bloquee reusar el
   slug. `createObject` añade el identificador `name` (indexado) y el campo de
@@ -222,6 +227,28 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
 - **Moneda del workspace = moneda de visualización** (por contexto,
   `WorkspaceProvider`); la usan `CurrencyDisplay`, el editor de moneda y las
   sumas del kanban.
+- **Dos remitentes de correo distintos, no los mezcles.** `lib/mailer/` es el
+  **correo de sistema** (recuperar contraseña, invitaciones): driver **Resend**
+  por REST con `fetch`, sin SDK; sin `RESEND_API_KEY` cae al driver `console`,
+  que no envía y escribe el enlace en el log (así el flujo funciona en local).
+  `sendSystemEmail` **nunca lanza**: un fallo de correo no debe tumbar el alta ni
+  la invitación. `lib/email/` es otra cosa: el **SMTP por workspace** para que el
+  usuario escriba a sus clientes desde la ficha. Si un cliente desconecta su
+  SMTP, sus invitaciones deben seguir saliendo.
+- **Recuperación de contraseña** (`lib/accounts/password-reset.js`): token de un
+  solo uso con TTL de 1 h, en BD solo el hash. `requestPasswordReset` **resuelve
+  igual exista la cuenta o no** (si no, el formulario sería un detector de
+  cuentas registradas); pedir un enlace nuevo invalida el anterior, y cambiar la
+  contraseña desde Ajustes invalida los pendientes. No inicia sesión al terminar:
+  manda al login.
+- **Freno de autenticación** (`lib/auth/throttle.js`): las server actions de auth
+  no pasan por `api-context`, así que llaman a `throttleAuth(flow, { email })`,
+  que consume cupo **por email y por IP** a la vez. Hereda la limitación de
+  `rate-limit.js`: memoria por instancia.
+- **`INTEGRATIONS_SECRET` ≠ `AUTH_SECRET`.** El cifrado de los secretos de
+  integraciones usa su propia variable (con fallback a `AUTH_SECRET` por
+  compatibilidad) para que rotar el secreto de sesión no deje ilegibles los
+  secretos de todos los workspaces. Migración: `scripts/rotate-integration-secret.mjs`.
 - **Webhooks**: despacho real en created/updated/deleted desde la capa de
   servicios, firma **HMAC**, log de entregas y reintento manual.
 - **Entrada de leads** (`lib/leads/`): `POST /api/v1/intake/meta` (API key con

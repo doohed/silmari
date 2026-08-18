@@ -91,6 +91,34 @@ Un backup que nunca se ha restaurado no es un backup. El ensayo completo:
 
 ---
 
+## Rotar `INTEGRATIONS_SECRET`
+
+Los secretos de integraciones (contraseña SMTP, token de WhatsApp) se cifran con
+`INTEGRATIONS_SECRET`. Si no está definida se usa `AUTH_SECRET`, por
+compatibilidad con instalaciones anteriores a la separación.
+
+Para migrar de `AUTH_SECRET` a una variable propia, o para rotar la que ya hay:
+
+```bash
+npm run backup            # primero, siempre
+
+OLD_SECRET="<el secreto con el que se cifró>" \
+NEW_SECRET="<el nuevo>" \
+MONGODB_URI="..." \
+node --no-warnings --loader ./scripts/alias-loader.mjs scripts/rotate-integration-secret.mjs
+```
+
+Después actualiza `INTEGRATIONS_SECRET` en el entorno **antes** de reiniciar la
+app. Los documentos que no se puedan descifrar con `OLD_SECRET` se dejan
+intactos y se cuentan aparte, así que repetir el script tras un fallo a medias no
+rompe nada.
+
+> Rotar `AUTH_SECRET` cierra todas las sesiones. Eso es esperado. Lo que **no**
+> debe pasar es que además deje ilegibles los secretos de integraciones: por eso
+> están separados.
+
+---
+
 ## Pendiente de escribir (Fase 5)
 
 - Procedimiento de despliegue y de vuelta atrás.
