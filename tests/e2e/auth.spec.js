@@ -5,10 +5,11 @@ test('alta por email → onboarding → entra al workspace y cierra sesión', as
   const email = `e2e_${stamp}@test.dev`;
   const subdomain = `e2e-${stamp}`;
 
-  // Alta por email (solo email + contraseña).
+  // Alta por email (solo email + contraseña). El formulario rotula por
+  // `placeholder`, sin <label>, así que aquí no vale getByLabel.
   await page.goto('/signup');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Contraseña').fill('secret123');
+  await page.getByPlaceholder('Email').fill(email);
+  await page.getByPlaceholder('Contraseña').fill('secret123');
   await page.getByRole('button', { name: 'Continuar' }).click();
 
   // Arranca el onboarding.
@@ -43,8 +44,10 @@ test('alta por email → onboarding → entra al workspace y cierra sesión', as
   await expect(page.getByRole('heading', { name: 'E2E Workspace' })).toBeVisible();
   await expect(page.getByText('Propietario')).toBeVisible();
 
-  // Cerrar sesión vuelve a la puerta de entrada.
-  await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+  // Cerrar sesión vuelve a la puerta de entrada. Vive dentro del menú de
+  // usuario del rail, así que primero hay que abrirlo.
+  await page.locator('button[aria-haspopup="menu"]').first().click();
+  await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click();
   await expect(page).toHaveURL(/\/welcome$/);
 });
 

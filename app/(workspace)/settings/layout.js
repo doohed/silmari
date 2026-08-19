@@ -1,5 +1,5 @@
 import { requireContext } from '@/lib/auth/dal';
-import { NavItem } from '@/components/layout/NavItem';
+import { SettingsShell } from '@/components/settings/SettingsShell';
 
 /**
  * Secciones agrupadas por a quién afectan, no por orden de llegada: doce
@@ -46,26 +46,5 @@ const GROUPS = [
 
 export default async function SettingsLayout({ children }) {
   await requireContext();
-  return (
-    <div className="flex h-full">
-      <aside className="border-border bg-sunken/60 w-56 shrink-0 overflow-y-auto border-r p-3">
-        <p className="text-primary mb-2 px-2 text-[15px] font-semibold tracking-tight">Ajustes</p>
-        <nav>
-          {GROUPS.map((g) => (
-            <div key={g.title} className="mb-3 last:mb-0">
-              <p className="text-tertiary px-2 pb-1 text-[11px] font-medium tracking-wider uppercase">
-                {g.title}
-              </p>
-              <div className="space-y-px">
-                {g.items.map((s) => (
-                  <NavItem key={s.href} href={s.href} label={s.label} icon={s.icon} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
-      </aside>
-      <div className="min-w-0 flex-1 overflow-auto">{children}</div>
-    </div>
-  );
+  return <SettingsShell groups={GROUPS}>{children}</SettingsShell>;
 }

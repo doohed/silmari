@@ -500,14 +500,20 @@ input[type='checkbox']:focus-visible {
     opacity: 1;
   }
 }
+/* Solo escala y opacidad: el centrado de estos diálogos NO se toca aquí.
+   Los que se centran con `top/left: 50%` lo hacen con `-translate-x-1/2` de
+   Tailwind v4, que compila a la propiedad **`translate`**, independiente de
+   `transform`; repetir el translate en el keyframe desplazaba la caja el doble
+   y el diálogo entraba pegado a la esquina superior izquierda antes de saltar
+   al centro. Los que se centran con flex tampoco quieren desplazamiento. */
 @keyframes dialog-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.97);
+    transform: scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: none;
   }
 }
 /* La ⌘K reposa en top:18% con solo centrado horizontal; su keyframe debe
@@ -583,6 +589,76 @@ input[type='checkbox']:focus-visible {
 }
 .stagger > *:nth-child(n + 7) {
   animation-delay: 230ms;
+}
+
+/* Ventana de Ajustes (`components/settings/SettingsShell.js`).
+   Entra creciendo desde el centro mientras el fondo se difumina, y sale por el
+   mismo camino. Dos detalles del porqué:
+   - El difuminado se declara y se anima AQUÍ, no con `backdrop-blur-*` de
+     Tailwind: la utilidad fija `backdrop-filter` en la regla y pisaría el
+     keyframe en cuanto la animación termina, así que el velo aparecería de
+     golpe enfocado. Aquí interpolan a la vez el color del velo y el blur.
+   - La salida se dispara con `data-closing`, no desmontando: el diálogo no se
+     cierra, se navega fuera de /settings, y quien navega es el shell después de
+     esperar lo que dura esta animación. */
+.settings-scrim {
+  background: rgb(0 0 0 / 25%);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  backdrop-filter: saturate(140%) blur(14px);
+  animation: settings-scrim-in 280ms var(--ease-soft);
+}
+.settings-scrim[data-closing='true'] {
+  animation: settings-scrim-out 170ms ease-in forwards;
+}
+.settings-window {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: settings-window-in 320ms var(--ease-spring);
+}
+.settings-window[data-closing='true'] {
+  animation: settings-window-out 170ms var(--ease-soft) forwards;
+}
+
+@keyframes settings-scrim-in {
+  from {
+    background: rgb(0 0 0 / 0%);
+    -webkit-backdrop-filter: saturate(100%) blur(0);
+    backdrop-filter: saturate(100%) blur(0);
+  }
+}
+@keyframes settings-scrim-out {
+  to {
+    background: rgb(0 0 0 / 0%);
+    -webkit-backdrop-filter: saturate(100%) blur(0);
+    backdrop-filter: saturate(100%) blur(0);
+  }
+}
+/* El centrado vive en `.settings-window` (arriba) DENTRO de `transform`, y por
+   eso los keyframes lo repiten: una sola fuente para esa propiedad. Lo que no
+   se puede hacer aquí es centrar con las utilidades de Tailwind: `-translate-x-1/2`
+   compila a la propiedad **`translate`**, que se compone con `transform` y
+   desplazaría la ventana el doble mientras dura la animación. */
+@keyframes settings-window-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 10px)) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes settings-window-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 6px)) scale(0.97);
+  }
 }
 
 /* Press físico (spring) para elementos accionables. */

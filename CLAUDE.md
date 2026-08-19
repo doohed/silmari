@@ -102,7 +102,24 @@ Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
 - **Chrome**: el sidebar es un **rail completo** (menú de usuario, buscador,
   nombre de workspace, navegación); en escritorio no hay barra superior, y en
   móvil (`SidebarShell`) pasa a ser una barra con menú y un cajón lateral.
-  La lista de registros cambia a **tarjetas** por debajo de `md` (`RecordCards`). Popovers/menús propios
+  La lista de registros cambia a **tarjetas** por debajo de `md` (`RecordCards`).
+  **Ajustes no es una página a pantalla completa**: `components/settings/SettingsShell.js`
+  lo abre como **ventana flotante** (diálogo de Radix siempre abierto) sobre el
+  resto de la app difuminada; se cierra con Escape, la X o el clic fuera, y al
+  cerrar navega a `/` (moverse entre secciones apila historial, así que
+  `router.back()` devolvería a la sección anterior en vez de salir). Mide **lo
+  mismo en todas las secciones** y anima entrada y salida (`.settings-window` /
+  `.settings-scrim` en `globals.css`); como el diálogo no se desmonta al cerrar
+  (se navega), la salida se marca con `data-closing` y la navegación espera lo
+  que dura. **Ojo al animar cualquier caja centrada**: Tailwind v4 compila
+  `-translate-x-1/2` a la propiedad **`translate`**, no a `transform`, y las dos
+  se componen; si el centrado viene de Tailwind, el keyframe **no** debe repetir
+  `translate(-50%, -50%)` (desplazaba el doble y el diálogo entraba pegado a la
+  esquina superior izquierda hasta que acababa la animación — le pasaba a
+  `ConfirmDialog`, `ImportDialog` y la hoja de atajos). O el centrado lo pone la
+  propia clase dentro de `transform` (`.settings-window`) y el keyframe lo
+  repite, o lo pone Tailwind y el keyframe solo escala (`dialog-in`); mezclarlos
+  es lo que rompe. Popovers/menús propios
   cierran al clic fuera (`hooks/useClickOutside`); confirmaciones con diálogo
   temático (`components/ui/ConfirmDialog`, `useConfirm`) en vez de `window.confirm`.
 - **Transversal**: multi-tenant estricto, soft delete + **papelera** (`/trash`),

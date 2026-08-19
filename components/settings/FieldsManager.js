@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Chip } from '@/components/fields/Chip';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import {
   createFieldAction,
   updateFieldAction,
@@ -111,6 +112,7 @@ function OptionRows({ options, setOptions }) {
 
 export function FieldsManager({ object, objects }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [field, setField] = useState({ name: '', label: '', type: 'TEXT', isIndexed: false });
@@ -269,10 +271,22 @@ export function FieldsManager({ object, objects }) {
     }
   }
 
-  async function remove(id) {
-    const r = await deleteFieldAction({ id });
-    if (r.ok) router.refresh();
-    else toast.error(r.message);
+  async function remove(f) {
+    const ok = await confirm({
+      title: `Borrar «${f.label}»`,
+      message:
+        'El campo deja de aparecer en tablas, fichas y filtros. Lo que ya esté guardado en los registros no se borra.',
+      confirmLabel: 'Borrar',
+      danger: true,
+    });
+    if (!ok) return;
+    const r = await deleteFieldAction({ id: f.id });
+    if (r.ok) {
+      toast.success('Campo borrado');
+      router.refresh();
+    } else {
+      toast.error(r.message);
+    }
   }
 
   return (
@@ -555,7 +569,7 @@ export function FieldsManager({ object, objects }) {
                 {deletable && (
                   <button
                     type="button"
-                    onClick={() => remove(f.id)}
+                    onClick={() => remove(f)}
                     className="text-tertiary hover:text-danger"
                     aria-label="Borrar campo"
                   >

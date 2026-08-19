@@ -13,10 +13,11 @@ export async function signup(page, { name = 'Test', workspace = 'Acme' } = {}) {
   const email = `e2e_${stamp}@test.dev`;
   const subdomain = `e2e-${stamp}`;
 
-  // Alta por email.
+  // Alta por email. Los campos del alta se rotulan por `placeholder`, no con un
+  // <label> (el diseño unificado con /welcome), así que aquí no vale getByLabel.
   await page.goto('/signup');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Contraseña').fill('secret123');
+  await page.getByPlaceholder('Email').fill(email);
+  await page.getByPlaceholder('Contraseña').fill('secret123');
   await page.getByRole('button', { name: 'Continuar' }).click();
   await expect(page).toHaveURL(/\/onboarding$/);
 
