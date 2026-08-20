@@ -361,6 +361,145 @@ h3 {
   font-weight: 500;
 }
 
+/* ---------------------------------------------------------------------------
+   Lista del sistema (NSTableView / vista de lista del Finder)
+   Tres rasgos definen esa lista y aquí se implementan los tres:
+   1. **Bandas alternas** en vez de una línea bajo cada fila. Una rejilla de
+      hairlines es lo que hace que una tabla se lea "web"; el Finder distingue
+      las filas por el tono, y por eso aquí NO hay `border-b` por fila.
+   2. **Las bandas siguen hasta el fondo** aunque se acaben los registros
+      (`.mac-list-fill`): en el Finder la lista no termina donde termina el
+      contenido.
+   3. **Cabecera con su propio tono** y divisores verticales SOLO en ella
+      (`.mac-list-head`): las columnas se separan arriba, no en el cuerpo.
+
+   Las filas tienen que ser **opacas** (no una veladura sobre la lámina) porque
+   la primera columna va congelada con `position: sticky` y hereda este fondo;
+   con un fondo translúcido se vería el texto de las otras columnas pasando por
+   debajo al hacer scroll horizontal.
+   Los `color-mix` se declaran una sola vez: `.dark` va en el mismo elemento
+   (`<html>`) que `:root`, así que `--surface`/`--accent` ya son los del tema
+   cuando se sustituyen. */
+:root {
+  /* Altura de la banda de títulos. **Fuente única**: la usan la cabecera de
+     columnas de la tabla y la fila de pestañas de la ficha, que van una al lado
+     de la otra y tienen que casar al píxel. Y el rayado de fondo se desplaza por
+     ella, así que un número suelto en JS se habría ido despegando. */
+  --list-head-h: 30px;
+  --row-stripe: color-mix(in srgb, var(--text-primary) 3.5%, var(--surface));
+  --row-hover: color-mix(in srgb, var(--text-primary) 7%, var(--surface));
+  --row-selected: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  --row-selected-hover: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  --list-header: color-mix(in srgb, var(--text-primary) 4%, var(--surface));
+}
+
+.mac-list-head {
+  height: var(--list-head-h);
+  background: var(--list-header);
+  border-bottom: 0.5px solid var(--border-strong);
+}
+/* Divisores de columna: un hairline a la izquierda de cada cabecera menos la
+   primera (el hueco del checkbox), como en el Finder. Solo con `data-cols`:
+   la misma banda la reusa la fila de pestañas de la ficha, y ahí separar cada
+   pestaña con una línea la convertiría en una tabla. */
+.mac-list-head[data-cols] > * + * {
+  box-shadow: inset 1px 0 0 var(--border);
+}
+
+/* Pestaña dentro de una banda de títulos. La banda hace de carril y la pestaña
+   activa es la pastilla en relieve: es el control segmentado de macOS sin
+   dibujar el carril dos veces. */
+.mac-tab {
+  height: calc(var(--list-head-h) - 8px);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.mac-tab:hover {
+  color: var(--text-primary);
+}
+.mac-tab[data-active='true'] {
+  background: var(--surface);
+  box-shadow: var(--elev-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.mac-row {
+  background-color: var(--surface);
+  transition: background-color 90ms ease;
+}
+.mac-row[data-stripe='true'] {
+  background-color: var(--row-stripe);
+}
+/* Orden importante: hover pisa la banda, la selección pisa el hover. */
+.mac-row:hover {
+  background-color: var(--row-hover);
+}
+.mac-row[data-selected='true'] {
+  background-color: var(--row-selected);
+}
+.mac-row[data-selected='true']:hover {
+  background-color: var(--row-selected-hover);
+}
+
+/* Columna congelada (hueco de selección + identificador). Hereda el fondo de la
+   fila para tapar lo que pasa por debajo, y solo dibuja el canto cuando de
+   verdad hay scroll horizontal. */
+/* z-3 para quedar por encima del anillo de celda activa (z-2) cuando las
+   columnas de la derecha pasan por debajo. */
+.mac-freeze {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background-color: inherit;
+}
+[data-scrolled-x='true'] .mac-freeze-edge {
+  box-shadow:
+    1px 0 0 var(--border),
+    6px 0 10px -6px rgb(0 0 0 / 0.28);
+}
+
+/* Continuación de las bandas por debajo del último registro. Va sobre el
+   contenedor con scroll: `background-attachment: local` hace que el patrón se
+   desplace con el contenido en vez de quedarse pegado al viewport, y el
+   `background-position` lo baja la altura de la cabecera para que la primera
+   banda caiga en la fila 2. Solo en escritorio: en móvil la lista son tarjetas
+   y el rayado se vería por detrás. */
+@media (min-width: 48rem) {
+  .mac-list-fill {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent var(--row-h),
+      var(--row-stripe) var(--row-h),
+      var(--row-stripe) calc(var(--row-h) * 2)
+    );
+    background-attachment: local;
+    background-position: 0 var(--list-head-h);
+    background-repeat: repeat;
+  }
+}
+
+/* Control deshabilitado: **gris apagado y plano**, no el color de la accion a
+   media opacidad. Un naranja translucido no se lee como "apagado", se lee como
+   "roto" — y en un boton primario es justo el que mas canta. macOS apaga el
+   relleno y el rotulo, y deja la forma del control.
+   Va como clase y no como utilidades `disabled:` porque el valor depende del
+   tema, y porque la veladura de `.mac-gloss` hay que matarla: el atajo es el
+   `background` en forma corta, que resetea el `background-image` a `none`.
+   Al ser una clase SIN `@layer` y con pseudoclase (0,2,0) gana a `bg-accent`,
+   a `shadow-sm` y a `.mac-gloss` esten donde esten en el className. */
+.mac-disabled:disabled {
+  background: var(--sunken);
+  color: var(--text-tertiary);
+  box-shadow: inset 0 0 0 0.5px var(--border-strong);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
 /* Foco del sistema: halo ancho alrededor del control, no un borde de 1px. */
 .mac-focus:focus-visible,
 .mac-focus:has(:focus-visible) {

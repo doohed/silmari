@@ -24,7 +24,10 @@ function Dropdown({ children, onCancel }) {
   return (
     <div
       ref={ref}
-      className="mac-menu absolute top-full left-0 z-20 mt-1 max-h-60 w-56 overflow-auto rounded-md border p-1 shadow-lg"
+      /* `select-none`: se entra a editar con doble clic, que deja seleccionado
+        el texto de la celda; sin esto el menú aparecía con sus etiquetas
+        resaltadas en azul, como si estuvieran marcadas. */
+      className="mac-menu absolute top-full left-0 z-20 mt-1 max-h-60 w-56 overflow-auto p-1 select-none"
       tabIndex={-1}
       onKeyDown={(e) => {
         if (e.key === 'Escape') {

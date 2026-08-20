@@ -78,10 +78,19 @@ Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
   edición inline, teclado, filtros, orden por columna, columnas configurables
   (persistidas en la vista), selección + borrado masivo, **orden manual por
   defecto reordenando filas al arrastrar**, **proyección de columnas** (solo pide
-  al servidor los campos visibles), import/export CSV.
+  al servidor los campos visibles), import/export CSV y **primera columna
+  congelada** al desplazarse en horizontal (como la de cabecera de Numbers). El
+  cambio de vista (tabla/kanban) es un **control segmentado** en `RecordViewBar`,
+  que con una sola vista se pinta como título.
 - **Vista kanban** (`components/record-board/`): columnas por opciones de un
   SELECT, drag&drop (`@dnd-kit`), `position` fraccional, agregados por columna.
-- **Ficha de registro** (`components/record-detail/`): campos editables en sitio,
+- **Ficha de registro** (`components/record-detail/`): se abre pegada a la
+  tabla, así que **mide igual que ella**: cabecera `h-12` como `RecordViewBar` y
+  fila de pestañas con `.mac-list-head`. Los campos son una lista con hairlines
+  sangrados (la ventana "Información" del Finder) y `@container`: por debajo de
+  24rem la etiqueta se pone encima del valor, porque el mismo panel vive también
+  en la columna de 288 px de la ficha a página completa, donde dos columnas
+  fijas cortaban los emails. Campos editables en sitio,
   **timeline en lenguaje humano** con el autor del cambio, registros relacionados
   (vincular/desvincular/crear) y pestañas de **Notas (Tiptap), Tareas y Adjuntos**.
 - **Tareas** (`/tasks`, `components/activities/`): bandeja con vista **Lista /
@@ -90,7 +99,15 @@ Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
   vinculadas; las notas siempre van vinculadas.
 - **Paneles** (`/dashboards`, `components/dashboards/`): varios paneles por
   workspace (crear/renombrar/borrar/reordenar), rejilla de **widgets** y
-  **métricas de Oportunidades** con gráficos SVG propios.
+  **métricas de Oportunidades** con gráficos SVG propios. El índice es la
+  **misma lista** que la de registros (mismas primitivas de `globals.css`:
+  `.mac-list-head`, `.mac-row`, `.mac-list-fill`), aunque escrita a mano —
+  columnas fijas, sin metadata, sin TanStack Table. La **última columna se
+  estira**: con todas fijas, la banda de cabecera terminaba a media lámina.
+  El lienzo de widgets va sobre `--bg`, el **gris de la ventana**, no sobre la
+  lámina: unas tarjetas blancas con borde sobre blanco no se leen como tarjetas.
+  `--bg` y no `--sunken` porque tiene que ser más oscuro que la tarjeta en los
+  **dos** temas, y en oscuro `--sunken` es el más claro de los dos.
 - **Command menu ⌘K, búsqueda global y favoritos** (`components/command-menu/`,
   `lib/search/`, `lib/favorites/`).
 - **Ajustes** (`/settings`): perfil (foto, contraseña, **idioma**, borrar cuenta),
@@ -239,6 +256,25 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   motivo por el que `decodeCursor` descarta un `sortValue` que no sea escalar.
   Si añades un tipo de campo nuevo, **no** repitas la coacción en su
   `buildFilter`: ya viene hecha del llamante.
+- **El valor de orden tiene que ser un escalar, o la paginación se rompe en
+  silencio.** El cursor va sobre `(sortValue, _id)` y `decodeCursor` descarta
+  todo `sortValue` que sea un objeto (si no, el cliente escribiría operadores de
+  Mongo dentro del match). Un tipo compuesto sin `sortPath` metía el
+  subdocumento entero en el cursor: se descartaba al decodificarlo, la petición
+  de la página 2 iba **sin recorte** y devolvía otra vez la página 1 — la lista
+  repetía registros al hacer scroll y React se quejaba de keys duplicadas, sin
+  un solo error en el log. Por eso cada tipo declara o bien un **`sortPath` a una
+  hoja escalar** (FULL_NAME → `.firstName`, CURRENCY → `.amount`, ADDRESS →
+  `.city`, ACTOR → `.source`) o bien **`isSortable: false`** cuando no la hay
+  (arrays: EMAILS, PHONES, LINKS, MULTI_SELECT, LINE_ITEMS, ARRAY, RAW_JSON; y
+  los calculados FORMULA/ROLLUP, que no se persisten). `buildQuery` rechaza
+  ordenar por un campo no ordenable y `buildNextCursor` **lanza** si el valor no
+  es escalar: vale más reventar donde el mensaje señala al tipo que le falta el
+  `sortPath` que devolver filas duplicadas.
+- **El recuento de la barra es el total de la vista**, no las filas cargadas:
+  `listRecords` devuelve `total` (un `countDocuments` **solo en la primera
+  página**, que sin cursor el match ya es el filtro completo). Antes se pasaba
+  `rows.length` y el número subía de 100 a 200 a 300 según se hacía scroll.
 - **Orden manual con `fractional-indexing`** (claves string): `records.position`
   es **`String`**. Sin orden de columna, los registros se listan por `position`
   y se **reordenan arrastrando**; el cursor por defecto también va sobre
@@ -525,7 +561,24 @@ formula-eval.js`, cálculo en `hydrate`, config en `settings.formula`, editor en
   - `.mac-menu` — material de popovers, desplegables y diálogos.
   - `.mac-segment` — control segmentado; el estado se lee de `aria-pressed` o
     `data-active`, sin clases condicionales en el marcado.
+  - `.mac-list-head` / `.mac-tab` — la **banda de títulos** y sus pestañas. La
+    altura sale de `--list-head-h`, que es **fuente única**: la comparten la
+    cabecera de columnas de la tabla, la fila de pestañas de la ficha y la
+    cabecera "Detalles" de la columna lateral, que se ven las tres a la vez y
+    tienen que cerrar en la misma línea (por eso ese número **no** vive en JS;
+    el rayado de fondo también se desplaza por él). Los divisores verticales
+    solo salen con `data-cols`: en las pestañas convertirían la fila en una
+    tabla. Lo activo es una **pastilla en relieve**, no un subrayado: en 30 px el
+    subrayado se pega al hairline de abajo y se lee como un borde suelto.
   - `.mac-focus` — halo ancho de foco (no un borde de 1 px).
+  - `.mac-disabled` — estado deshabilitado de un control **con relleno**: gris
+    apagado y plano. **No uses `disabled:opacity-*` en un botón de acento**: un
+    naranja a media opacidad no se lee como "apagado", se lee como "roto", y en
+    la acción primaria es justo el que más canta. La clase resetea el
+    `background` en forma corta a propósito, que es lo que mata la veladura de
+    `.mac-gloss`. En el `ghost` no se usa (no tiene relleno: se apaga bajando el
+    rótulo a `text-tertiary`, porque darle fondo lo haría _más_ visible al
+    deshabilitarse).
   - `.mac-gloss` — la veladura de blanco de botones y desplegables. Va por el
     token `--gloss`, que en **oscuro es `transparent`**: la misma veladura que da
     relieve sobre un fondo claro, sobre uno oscuro se lee como una rampa de gris
@@ -537,9 +590,30 @@ formula-eval.js`, cálculo en `hydrate`, config en `settings.formula`, editor en
     Tailwind aunque se escriba después en el `className` (un `max-md:rounded-none`
     junto a `.mac-sheet` no haría nada). Lo responsive se resuelve dentro de la
     propia clase con un media query.
-- **Sin rejilla vertical en las listas** (tabla de registros y de paneles): solo
-  separadores horizontales, como las listas del sistema. La columna se distingue
-  por el ancho y la alineación.
+- **La tabla de registros se pinta como la vista de lista del Finder**, no como
+  una tabla web. Cuatro reglas, todas en `globals.css` (`.mac-list-head`,
+  `.mac-row`, `.mac-freeze`, `.mac-list-fill`) y usadas por
+  `components/record-table/`:
+  - **Bandas alternas en vez de una línea bajo cada fila.** Nada de `border-b`
+    por fila: una rejilla de hairlines es justo lo que hace que una tabla se lea
+    "web". Las bandas **siguen hasta el fondo** aunque se acaben los registros
+    (`.mac-list-fill` es un `repeating-linear-gradient` con
+    `background-attachment: local` sobre el contenedor con scroll; por eso
+    `ROW_H`/`HEAD_H` viven en JS y en CSS a la vez — si se cambia uno sin el
+    otro, las bandas dejan de coincidir con las filas).
+  - **Las filas son opacas**, no una veladura sobre la lámina: la primera
+    columna va congelada (`position: sticky`) y hereda ese fondo; con un fondo
+    translúcido se vería el texto de las demás columnas pasando por debajo.
+  - **Divisores verticales solo en la cabecera.** Y la cabecera va en texto
+    normal, **no en versalitas**: las mayúsculas con `tracking` ancho son la
+    marca del dashboard web; el sistema escribe la etiqueta tal cual y marca la
+    columna ordenada tiñéndola.
+  - **Las columnas numéricas se alinean a la derecha** (`fieldAlign` en
+    `CellContent.js`) con `tabular-nums`, como la columna "Tamaño" del Finder.
+    Solo números: alinear texto a la derecha deja un borde irregular.
+  - Los **checkboxes se esconden** mientras no haya selección viva (aparecen al
+    pasar el cursor), y el **anillo de celda activa** solo se pinta con la
+    rejilla enfocada y después de elegir una celda — `active` arranca en `-1`.
 - Textos de interfaz **en español**, voz activa, frase capitalizada, sin punto
   final en botones/etiquetas.
 - Sin `console.log` en producción: logger propio con niveles.
@@ -558,6 +632,11 @@ un módulo que exporta:
 4. **`normalize(value, fieldMeta)`** — normaliza antes de persistir.
 5. **`filterOperators`** — operadores de filtro válidos y su traducción a
    agregación de Mongo.
+   5b. **`sortPath(base)`** o **`isSortable: false`** — obligatorio si el valor del
+   campo **no es un escalar**. `sortPath` devuelve la ruta a una hoja escalar
+   (`` `${base}.amount` ``); si no existe ninguna (arrays, calculados), marca el
+   tipo como no ordenable. Ver la nota sobre el cursor más arriba: saltarse esto
+   no da un error, da filas duplicadas.
 6. **`compare(a, b)`** — comparador para ordenación.
 7. **`toSearchText(value)`** — texto plano para `records.searchText`.
 8. **Componentes** `Display` y `Edit` en `components/fields/`.

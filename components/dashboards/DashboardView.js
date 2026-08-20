@@ -7,6 +7,7 @@ import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@d
 import { CSS } from '@dnd-kit/utilities';
 import { Plus, X, GripVertical, Pencil, Check, Scaling, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/Button';
 import { WIDGETS, defaultSizeFor, nextSize } from '@/lib/dashboards/catalog';
 import {
   updateDashboardWidgetsAction,
@@ -74,12 +75,14 @@ export function DashboardView({ dashboard, metrics }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-border flex h-12 shrink-0 items-center justify-between gap-3 border-b px-6">
-        <div className="flex min-w-0 items-center gap-2">
+      {/* `h-12` y `px-3` como `RecordViewBar` y como la cabecera de la ficha:
+        las tres barras superiores de la app cierran en la misma línea. */}
+      <div className="border-border flex h-12 shrink-0 items-center justify-between gap-3 border-b px-3">
+        <div className="flex min-w-0 items-center gap-1">
           <button
             type="button"
             onClick={() => router.push('/dashboards')}
-            className="press text-tertiary hover:bg-chip-gray hover:text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+            className="text-tertiary hover:bg-chip-gray hover:text-primary flex size-7 shrink-0 items-center justify-center rounded-md transition-colors"
             aria-label="Volver a paneles"
             title="Volver a paneles"
           >
@@ -97,7 +100,7 @@ export function DashboardView({ dashboard, metrics }) {
                 if (e.key === 'Enter') submitRename();
                 if (e.key === 'Escape') setRenaming(false);
               }}
-              className="border-accent bg-surface text-primary h-8 rounded-lg border px-2.5 text-sm font-semibold focus:outline-none"
+              className="bg-elevated text-primary ring-accent h-7 rounded-md px-2 text-[13px] font-semibold ring-2 outline-none ring-inset"
               aria-label="Nombre del panel"
             />
           ) : (
@@ -105,39 +108,40 @@ export function DashboardView({ dashboard, metrics }) {
               type="button"
               onClick={() => setRenaming(true)}
               title="Clic para renombrar"
-              className="hover:bg-chip-gray text-primary flex h-8 max-w-md items-center rounded-lg px-2 text-sm font-semibold"
+              className="hover:bg-chip-gray/60 text-primary flex h-7 max-w-md items-center rounded-md px-2 text-[13px] font-semibold"
             >
               <span className="truncate">{name}</span>
             </button>
           )}
         </div>
-        <div className="relative flex shrink-0 items-center gap-2">
+        <div className="relative flex shrink-0 items-center gap-1">
           {editing && (
-            <button
-              type="button"
-              onClick={() => setAdding((a) => !a)}
-              className="press border-border text-primary hover:bg-chip-gray flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium"
-            >
+            <Button size="sm" variant="ghost" onClick={() => setAdding((a) => !a)}>
               <Plus size={14} /> Añadir widget
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant={editing ? 'primary' : 'secondary'}
             onClick={() => {
               setEditing((e) => !e);
               setAdding(false);
             }}
-            className="press bg-accent text-accent-fg flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium"
           >
             {editing ? <Check size={14} /> : <Pencil size={14} />} {editing ? 'Hecho' : 'Editar'}
-          </button>
+          </Button>
           {adding && <AddMenu existing={widgets} onAdd={add} onClose={() => setAdding(false)} />}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto p-6">
+      {/* Lienzo sobre el GRIS de la ventana, no sobre la lámina blanca: unas
+        tarjetas blancas con borde sobre blanco no se leen como tarjetas, se leen
+        como recuadros. `--bg` es más oscuro que `--surface` en los dos temas, así
+        que el widget queda por encima del fondo en claro y en oscuro (al revés
+        que `--sunken`, que en oscuro es el más claro de los dos). */}
+      <div className="bg-bg min-h-0 flex-1 overflow-auto p-4">
         {widgets.length === 0 ? (
-          <p className="text-tertiary text-sm">
+          <p className="text-tertiary text-[13px]">
             Este panel está vacío. Pulsa <span className="font-medium">Editar</span> y añade
             widgets.
           </p>
@@ -188,10 +192,12 @@ function SortableCard({ widget, metrics, editing, onRemove, onResize }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="border-border bg-surface flex min-h-0 flex-col rounded-xl border p-4 shadow-sm"
+      className="bg-surface border-border flex min-h-0 flex-col rounded-xl border p-4 shadow-sm"
     >
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-secondary truncate text-xs font-medium">{def?.title ?? widget.type}</p>
+      <div className="mb-2 flex h-5 items-center justify-between gap-2">
+        <p className="text-secondary truncate text-[11.5px] font-medium">
+          {def?.title ?? widget.type}
+        </p>
         {editing && (
           <div className="flex items-center gap-1.5">
             <button
@@ -233,15 +239,15 @@ function AddMenu({ onAdd, onClose }) {
   return (
     <>
       <div className="fixed inset-0 z-30" onClick={onClose} />
-      <div className="anim-pop mac-menu absolute top-full right-0 z-40 mt-1 max-h-80 w-64 overflow-auto rounded-xl border p-1 shadow-lg">
+      <div className="anim-pop mac-menu absolute top-full right-0 z-40 mt-1 max-h-80 w-64 overflow-auto p-1">
         {WIDGETS.map((w) => (
           <button
             key={w.type}
             type="button"
             onClick={() => onAdd(w.type)}
-            className="hover:bg-chip-gray text-primary flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm"
+            className="hover:bg-accent hover:text-accent-fg text-primary group flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px]"
           >
-            <Plus size={13} className="text-tertiary shrink-0" />
+            <Plus size={13} className="text-tertiary group-hover:text-accent-fg shrink-0" />
             <span className="truncate">{w.title}</span>
           </button>
         ))}

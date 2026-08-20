@@ -81,6 +81,9 @@ export function Toolbar({
       <Button size="sm" variant="ghost" onClick={onExport}>
         <Download size={14} /> Exportar
       </Button>
+      {/* Separador de la barra de herramientas: a la izquierda lo que opera
+        sobre la lista, a la derecha la acción principal. */}
+      <span aria-hidden className="bg-border mx-1 h-4 w-px" />
       <Button size="sm" onClick={onNewRecord}>
         <Plus size={14} /> Nuevo
       </Button>

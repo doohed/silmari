@@ -190,7 +190,7 @@ export function LineItemsEditor({ field, value, onCommit }) {
             type="button"
             disabled={!dirty}
             onClick={() => onCommit(rows)}
-            className="bg-accent text-accent-fg rounded-md px-2.5 py-1 text-xs font-medium disabled:opacity-40"
+            className="bg-accent text-accent-fg mac-disabled rounded-md px-2.5 py-1 text-xs font-medium"
           >
             Guardar líneas
           </button>

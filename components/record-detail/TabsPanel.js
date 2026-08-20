@@ -35,17 +35,22 @@ export function TabsPanel({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-border flex h-9 shrink-0 items-center gap-1 overflow-x-auto border-b px-3">
+      {/* Misma banda y misma ALTURA que la cabecera de columnas de la tabla
+        (`.mac-list-head`, `--list-head-h`): la ficha se abre pegada a la lista y
+        las dos franjas de títulos tienen que cerrar en la misma línea. Sin
+        `data-cols`, que aquí los divisores verticales convertirían las pestañas
+        en columnas. Lo activo es una pastilla en relieve (`.mac-tab`) y no un
+        subrayado: dentro de una banda de 30 px el subrayado se pega al hairline
+        de abajo y se lee como un borde suelto. */}
+      <div className="mac-list-head flex shrink-0 items-center gap-0.5 overflow-x-auto px-2">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`-mb-px h-9 shrink-0 border-b-2 px-2.5 text-[13px] transition-colors ${
-              tab === t.id
-                ? 'border-accent text-primary font-medium'
-                : 'text-secondary hover:text-primary border-transparent'
-            }`}
+            data-active={tab === t.id}
+            aria-current={tab === t.id ? 'page' : undefined}
+            className="mac-tab shrink-0 px-2.5 text-[11.5px] font-medium whitespace-nowrap"
           >
             {t.label}
           </button>

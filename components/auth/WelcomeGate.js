@@ -172,10 +172,7 @@ export function WelcomeGate({ googleReady, microsoftReady, brand }) {
             type="button"
             onClick={signIn}
             disabled={loading}
-            className={cn(
-              providerBtn,
-              'bg-accent text-accent-fg hover:bg-accent/90 disabled:opacity-60',
-            )}
+            className={cn(providerBtn, 'bg-accent text-accent-fg hover:bg-accent/90 mac-disabled')}
           >
             {loading ? 'Entrando…' : 'Iniciar sesión'}
           </button>

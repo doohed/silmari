@@ -9,11 +9,15 @@ import { cn } from '@/lib/utils/cn';
    uno oscuro se lee como una rampa y el control parece un degradado. */
 const GLOSS = 'mac-gloss';
 
+/* Deshabilitado: gris apagado (`.mac-disabled`, `globals.css`) en los botones
+   con relleno. El `ghost` no lleva relleno, así que apagarlo es bajarle el
+   rótulo a terciario: darle fondo lo haría MÁS visible al deshabilitarse. */
 const VARIANTS = {
-  primary: `bg-accent ${GLOSS} text-accent-fg shadow-sm hover:brightness-105 active:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none`,
-  secondary: `bg-surface ${GLOSS} text-primary border-border shadow-xs hover:bg-sunken border disabled:opacity-50`,
-  ghost: 'text-secondary hover:bg-primary/[0.06] hover:text-primary disabled:opacity-50',
-  danger: `bg-danger ${GLOSS} text-white shadow-sm hover:brightness-110 disabled:opacity-50`,
+  primary: `bg-accent ${GLOSS} text-accent-fg shadow-sm hover:brightness-105 active:brightness-95 mac-disabled`,
+  secondary: `bg-surface ${GLOSS} text-primary border-border shadow-xs hover:bg-sunken border mac-disabled`,
+  ghost:
+    'text-secondary hover:bg-primary/[0.06] hover:text-primary disabled:text-tertiary disabled:cursor-not-allowed disabled:hover:bg-transparent',
+  danger: `bg-danger ${GLOSS} text-white shadow-sm hover:brightness-110 mac-disabled`,
 };
 
 const SIZES = {

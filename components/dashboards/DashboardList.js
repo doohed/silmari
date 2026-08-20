@@ -23,22 +23,31 @@ import {
   reorderDashboardAction,
 } from '@/app/(workspace)/dashboards/actions';
 
-// Rejilla de la tabla, con las mismas medidas que la tabla de registros.
-const ROW_H = 34;
-const GUTTER = 76;
+// Las mismas medidas que la tabla de registros (`components/record-table/`).
+// La altura de la banda de títulos NO se repite aquí: sale de `--list-head-h`
+// vía `.mac-list-head`.
+const ROW_H = 32;
+const GUTTER = 68;
+// La última columna **no lleva ancho**: se estira. Con todas fijas, la banda de
+// cabecera terminaba a media lámina y dejaba un escalón de gris hasta el canto.
 const COLS = [
-  { key: 'title', label: 'Título', width: 260 },
+  { key: 'title', label: 'Título', width: 280 },
   { key: 'createdBy', label: 'Creado por', width: 200 },
-  { key: 'createdAt', label: 'Creación', width: 180 },
-  { key: 'updatedAt', label: 'Última actualización', width: 200 },
+  { key: 'createdAt', label: 'Creación', width: 160 },
+  { key: 'updatedAt', label: 'Última actualización' },
 ];
-const TOTAL_WIDTH = GUTTER + COLS.reduce((s, c) => s + c.width, 0);
+
+/** Ancho de una columna como estilo en línea; la última se reparte el resto. */
+const colStyle = (c) => (c.width ? { width: c.width, flexShrink: 0 } : { flex: 1, minWidth: 160 });
 
 /**
- * Índice de paneles con la misma estética que la tabla de registros
- * (`/objects/[slug]`): gutter con selección, arrastre y «abrir»; celdas con
- * borde y celda primaria con avatar. El título se renombra en línea (doble clic)
- * y las filas se reordenan arrastrando. No permite borrar el último panel.
+ * Índice de paneles. Es la **misma lista** que la de registros —bandas alternas,
+ * banda de títulos, hueco de selección que solo aparece al pasar el cursor— pero
+ * escrita a mano: aquí las columnas son fijas y no hay metadata que consultar,
+ * así que no pasa por TanStack Table. Lo que sí comparte son las primitivas de
+ * `globals.css`, que es lo que evita que las dos listas se vayan separando.
+ * El título se renombra en línea (doble clic) y las filas se reordenan
+ * arrastrando. No permite borrar el último panel.
  * @param {{ dashboards: Array<{
  *   id:string, name:string, position:string|null,
  *   createdBy:{ name:string, avatarUrl:string|null },
@@ -141,48 +150,60 @@ export function DashboardList({ dashboards }) {
 
   return (
     <div className="flex h-full flex-col">
-      {selected.size > 0 ? (
-        <div className="border-border bg-accent-subtle anim-fade-up flex h-12 shrink-0 items-center gap-3 border-b px-5">
-          <span className="text-primary text-sm font-medium">{selected.size} seleccionados</span>
-          <Button size="sm" variant="danger" onClick={deleteSelected} disabled={pending}>
-            <Trash2 size={14} /> Eliminar
-          </Button>
+      {/* Barra de herramientas: `h-12` y `px-3`, las de `RecordViewBar`. Al
+        seleccionar cambian las ACCIONES, no la barra: teñirla entera de naranja
+        y animarla hacía saltar el título y desplazaba todo lo de debajo. */}
+      <div className="border-border flex h-12 shrink-0 items-center justify-between gap-3 border-b px-3">
+        <div className="flex min-w-0 items-center gap-2 pl-1">
+          <span className="text-primary truncate text-[13px] font-semibold">Paneles</span>
+          <span className="text-tertiary text-xs tabular-nums">{items.length}</span>
         </div>
-      ) : (
-        <div className="border-border flex h-12 shrink-0 items-center justify-between border-b px-5">
-          <div className="flex items-center gap-2">
-            <span className="text-primary text-sm font-medium">Paneles</span>
-            <span className="text-tertiary text-xs">{items.length}</span>
-          </div>
-          <Button size="sm" onClick={create} disabled={pending}>
-            <Plus size={14} /> Nuevo panel
-          </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          {selected.size > 0 ? (
+            <>
+              <span className="text-secondary mr-1 text-xs font-medium">
+                {selected.size} seleccionados
+              </span>
+              <Button size="sm" variant="danger" onClick={deleteSelected} disabled={pending}>
+                <Trash2 size={14} /> Eliminar
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" onClick={create} disabled={pending}>
+              <Plus size={14} /> Nuevo panel
+            </Button>
+          )}
         </div>
-      )}
+      </div>
 
-      <div className="relative flex-1 overflow-auto">
-        {/* Cabecera */}
-        <div
-          className="border-border bg-sunken/80 sticky top-0 z-10 flex border-b backdrop-blur-md"
-          style={{ width: TOTAL_WIDTH }}
-        >
-          <div className="flex shrink-0 items-center gap-1 pl-2" style={{ width: GUTTER }}>
+      <div
+        style={{ '--row-h': `${ROW_H}px` }}
+        className="mac-list-fill relative flex-1 overflow-auto"
+      >
+        {/* Banda de títulos: la misma clase, la misma altura y los mismos
+          divisores que la cabecera de columnas de la tabla de registros. */}
+        <div data-cols className="mac-list-head group/head sticky top-0 z-10 flex w-full">
+          <div className="flex shrink-0 items-center gap-0.5 pl-2" style={{ width: GUTTER }}>
             {/* Espaciador del ancho del asa de arrastre para alinear el checkbox
                 con los de las filas. */}
-            <span aria-hidden className="w-3.5 shrink-0" />
+            <span aria-hidden className="w-3 shrink-0" />
             <input
               type="checkbox"
               checked={allSelected}
               onChange={toggleAll}
-              className="accent-accent size-3.5"
               aria-label="Seleccionar todos"
+              className={`size-3.5 ${
+                selected.size
+                  ? ''
+                  : 'opacity-0 group-hover/head:opacity-100 focus-visible:opacity-100'
+              }`}
             />
           </div>
           {COLS.map((c) => (
             <div
               key={c.key}
-              className="text-tertiary flex h-8 shrink-0 items-center pr-1 pl-2 text-xs font-medium tracking-wide uppercase select-none"
-              style={{ width: c.width }}
+              className="text-secondary flex h-full items-center pr-2 pl-3 text-[11.5px] font-medium select-none"
+              style={colStyle(c)}
             >
               <span className="truncate">{c.label}</span>
             </div>
@@ -197,10 +218,12 @@ export function DashboardList({ dashboards }) {
           onDragEnd={onDragEnd}
         >
           <SortableContext items={items.map((d) => d.id)} strategy={verticalListSortingStrategy}>
-            {items.map((d) => (
+            {items.map((d, i) => (
               <DashboardRow
                 key={d.id}
                 dashboard={d}
+                stripe={i % 2 === 1}
+                selectionActive={selected.size > 0}
                 selected={selected.has(d.id)}
                 onToggle={() => toggleOne(d.id)}
                 onOpen={() => open(d.id)}
@@ -215,13 +238,14 @@ export function DashboardList({ dashboards }) {
           </SortableContext>
         </DndContext>
 
-        {/* Fila para crear */}
+        {/* Fila para crear: sangrada hasta la columna del título, para que el
+          «+» caiga justo bajo los avatares y se lea como una fila más. */}
         <button
           type="button"
           onClick={create}
           disabled={pending}
-          className="text-tertiary hover:bg-chip-gray/40 hover:text-primary flex items-center gap-2 border-b border-transparent pl-4 text-sm disabled:opacity-50"
-          style={{ width: TOTAL_WIDTH, height: ROW_H }}
+          className="text-tertiary hover:text-primary flex w-full items-center gap-2 text-[13px] hover:bg-[var(--row-hover)] disabled:opacity-50"
+          style={{ height: ROW_H, paddingLeft: GUTTER + 12 }}
         >
           <Plus size={14} /> Añadir panel
         </button>
@@ -233,7 +257,9 @@ export function DashboardList({ dashboards }) {
 /** Una fila arrastrable de la tabla de paneles. */
 function DashboardRow({
   dashboard: d,
+  stripe,
   selected,
+  selectionActive,
   onToggle,
   onOpen,
   editing,
@@ -249,40 +275,39 @@ function DashboardRow({
   const style = {
     transform: CSS.Translate.toString(transform),
     transition,
-    width: TOTAL_WIDTH,
     height: ROW_H,
     zIndex: isDragging ? 20 : undefined,
-    opacity: isDragging ? 0.9 : 1,
   };
+  const showCheck = selected || selectionActive;
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`group border-border hover:bg-primary/[0.035] relative flex border-b transition-colors ${
-        isDragging ? 'bg-surface shadow-md' : ''
-      }`}
+      data-stripe={stripe || undefined}
+      data-selected={selected || undefined}
+      className={`mac-row group relative flex w-full ${isDragging ? 'shadow-lg' : ''}`}
     >
-      <div className="flex shrink-0 items-center gap-1 pl-2" style={{ width: GUTTER }}>
+      <div className="flex shrink-0 items-center gap-0.5 pl-2" style={{ width: GUTTER }}>
         <span
           {...attributes}
           {...listeners}
-          className="text-tertiary hover:text-secondary cursor-grab opacity-0 group-hover:opacity-100 active:cursor-grabbing"
+          className="text-tertiary hover:text-secondary flex w-3 shrink-0 cursor-grab justify-center opacity-0 group-hover:opacity-100 active:cursor-grabbing"
           aria-label="Reordenar panel"
         >
-          <GripVertical size={14} />
+          <GripVertical size={13} />
         </span>
         <input
           type="checkbox"
           checked={selected}
           onChange={onToggle}
-          className="accent-accent size-3.5"
           aria-label={`Seleccionar ${d.name}`}
+          className={`size-3.5 ${showCheck ? '' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
         />
         <button
           type="button"
           onClick={onOpen}
-          className="text-tertiary hover:bg-chip-gray hover:text-primary flex cursor-pointer items-center justify-center rounded-md p-1.5 opacity-0 transition-colors group-hover:opacity-100"
+          className="text-tertiary hover:bg-chip-gray hover:text-primary flex cursor-pointer items-center justify-center rounded-md p-1 opacity-0 transition-colors group-hover:opacity-100"
           aria-label="Abrir panel"
         >
           <Maximize2 size={13} />
@@ -290,12 +315,13 @@ function DashboardRow({
       </div>
 
       {/* Título (celda primaria, editable en línea) */}
+      {/* Título (celda primaria, editable en línea). Sin animación de subrayado
+        ni avatar que crece al pasar por encima: una lista del sistema no se
+        mueve al pasarle el cursor, se tiñe la fila y ya. */}
       <div
         onDoubleClick={onStartEdit}
-        className={`shrink-0 ${
-          editing ? 'ring-accent relative z-10 rounded-md ring-2 ring-inset' : ''
-        }`}
-        style={{ width: COLS[0].width, height: ROW_H }}
+        className={`relative ${editing ? 'ring-accent z-10 rounded-[7px] ring-2 ring-inset' : ''}`}
+        style={colStyle(COLS[0])}
       >
         {editing ? (
           <input
@@ -309,48 +335,45 @@ function DashboardRow({
               if (e.key === 'Enter') onSubmit();
               if (e.key === 'Escape') onCancel();
             }}
-            className="bg-surface text-primary h-full w-full px-3 text-sm outline-none"
+            className="bg-elevated text-primary h-full w-full rounded-[7px] px-3 text-[13px] outline-none"
             aria-label="Nombre del panel"
           />
         ) : (
           <button
             type="button"
             onClick={onOpen}
-            className="group/title flex h-full w-full cursor-pointer items-center gap-2.5 truncate px-3 text-left"
+            className="flex h-full w-full cursor-pointer items-center gap-2 truncate px-3 text-left"
             title={d.name}
           >
-            <Avatar
-              name={d.name}
-              size={20}
-              className="transition-transform duration-200 group-hover/title:scale-110"
-            />
-            <span className="text-primary group-hover/title:text-accent relative truncate text-sm font-medium transition-colors duration-200 after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-200 group-hover/title:after:scale-x-100">
-              {d.name}
-            </span>
+            <Avatar name={d.name} size={19} />
+            <span className="text-primary truncate text-[13px]">{d.name}</span>
           </button>
         )}
       </div>
 
       {/* Creado por */}
-      <div className="shrink-0" style={{ width: COLS[1].width, height: ROW_H }}>
-        <div className="flex h-full w-full items-center gap-1.5 truncate px-3 text-sm">
-          <Avatar name={d.createdBy.name} src={d.createdBy.avatarUrl} size={18} />
-          <span className="text-primary truncate">{d.createdBy.name}</span>
-        </div>
+      <div
+        className="flex h-full items-center gap-2 truncate px-3 text-[13px]"
+        style={colStyle(COLS[1])}
+      >
+        <Avatar name={d.createdBy.name} src={d.createdBy.avatarUrl} size={19} />
+        <span className="text-primary truncate">{d.createdBy.name}</span>
       </div>
 
       {/* Creación */}
-      <div className="shrink-0" style={{ width: COLS[2].width, height: ROW_H }}>
-        <div className="text-secondary flex h-full w-full items-center truncate px-3 text-sm">
-          {formatRelative(d.createdAt) || <span className="text-tertiary">—</span>}
-        </div>
+      <div
+        className="text-secondary flex h-full items-center truncate px-3 text-[13px]"
+        style={colStyle(COLS[2])}
+      >
+        {formatRelative(d.createdAt) || <span className="text-tertiary">—</span>}
       </div>
 
       {/* Última actualización */}
-      <div className="shrink-0" style={{ width: COLS[3].width, height: ROW_H }}>
-        <div className="text-secondary flex h-full w-full items-center truncate px-3 text-sm">
-          {formatRelative(d.updatedAt) || <span className="text-tertiary">—</span>}
-        </div>
+      <div
+        className="text-secondary flex h-full items-center truncate px-3 text-[13px]"
+        style={colStyle(COLS[3])}
+      >
+        {formatRelative(d.updatedAt) || <span className="text-tertiary">—</span>}
       </div>
     </div>
   );

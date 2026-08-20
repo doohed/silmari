@@ -18,7 +18,9 @@ function NumberEdit({ value, onCommit, onCancel }) {
     <input
       autoFocus
       type="number"
-      className={cellInputClass}
+      // A la derecha, como el valor que sustituye: si no, la cifra salta al
+      // otro lado de la celda en cuanto entras a editar.
+      className={`${cellInputClass} text-right`}
       value={v}
       onChange={(e) => setV(e.target.value)}
       onKeyDown={cellKeyDown(finish)}
@@ -59,7 +61,9 @@ function CurrencyEdit({ value, onCommit, onCancel }) {
     <input
       autoFocus
       type="number"
-      className={cellInputClass}
+      // A la derecha, como el valor que sustituye: si no, la cifra salta al
+      // otro lado de la celda en cuanto entras a editar.
+      className={`${cellInputClass} text-right`}
       value={v}
       onChange={(e) => setV(e.target.value)}
       onKeyDown={cellKeyDown(finish)}

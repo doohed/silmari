@@ -12,7 +12,7 @@ import { FormError } from '@/components/ui/FormError';
 import { applyFieldErrors } from '@/lib/forms/apply-field-errors';
 
 const submitBtn =
-  'press flex h-11 w-full items-center justify-center rounded-xl bg-accent text-accent-fg text-sm font-semibold hover:bg-accent/90 disabled:opacity-60';
+  'press flex h-11 w-full items-center justify-center rounded-xl bg-accent text-accent-fg text-sm font-semibold hover:bg-accent/90 mac-disabled';
 
 export function SignupForm({ defaultEmail = '' }) {
   const {

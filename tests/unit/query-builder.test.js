@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import mongoose from 'mongoose';
-import { buildQuery } from '@/lib/records/query-builder';
-import { encodeCursor } from '@/lib/utils/cursor';
+import { buildQuery, buildNextCursor } from '@/lib/records/query-builder';
+import { encodeCursor, decodeCursor } from '@/lib/utils/cursor';
 
 const fields = [
   { name: 'precio', type: 'NUMBER' },
@@ -115,5 +115,63 @@ describe('buildQuery', () => {
     expect(sort).toEqual({ 'data.precio': 1, _id: 1 });
     const cursorClause = match.$and.find((c) => c.$or);
     expect(cursorClause.$or[0]).toEqual({ 'data.precio': { $gt: 100 } });
+  });
+
+  it('el cursor de un campo compuesto sobrevive a decodeCursor', () => {
+    // Regresión: FULL_NAME y CURRENCY no declaraban `sortPath`, así que el
+    // cursor salía con el subdocumento entero dentro. `decodeCursor` descarta
+    // todo `sortValue` no escalar, de modo que la petición de la página 2 iba
+    // SIN recorte y devolvía otra vez la página 1: al hacer scroll la lista
+    // repetía registros (y React se quejaba de keys duplicadas).
+    const casos = [
+      {
+        field: { name: 'nombre', type: 'FULL_NAME' },
+        doc: { firstName: 'Ada', lastName: 'Curie' },
+      },
+      { field: { name: 'monto', type: 'CURRENCY' }, doc: { amount: 1200, currencyCode: 'MXN' } },
+    ];
+    for (const { field, doc } of casos) {
+      const id = new mongoose.Types.ObjectId();
+      const cursor = buildNextCursor({ _id: id, data: { [field.name]: doc } }, field);
+      const decoded = decodeCursor(cursor);
+      expect(decoded, `${field.type} produjo un cursor que se descarta`).not.toBeNull();
+      expect(typeof decoded.sortValue).not.toBe('object');
+
+      // Y con ese cursor sí se recorta la consulta.
+      const { match } = buildQuery({
+        workspaceId,
+        objectMetadataId,
+        fields: [field],
+        sorts: [{ fieldName: field.name, direction: 'asc' }],
+        cursor,
+      });
+      expect(match.$and.some((c) => c.$or)).toBe(true);
+    }
+  });
+
+  it('revienta si un tipo produce un valor de orden no escalar', () => {
+    const field = { name: 'dir', type: 'ADDRESS' };
+    expect(() =>
+      // `sortPath` apunta a `.city`; si se le quita, el cursor sale roto.
+      buildNextCursor(
+        { _id: new mongoose.Types.ObjectId(), data: { dir: { city: 'Madrid' } } },
+        { ...field, type: 'RAW_JSON' },
+      ),
+    ).toThrow(/no escalar/i);
+  });
+
+  it('rechaza ordenar por un campo que la BD no sabe ordenar', () => {
+    for (const type of ['EMAILS', 'MULTI_SELECT', 'FORMULA', 'ROLLUP']) {
+      expect(
+        () =>
+          buildQuery({
+            workspaceId,
+            objectMetadataId,
+            fields: [{ name: 'x', type }],
+            sorts: [{ fieldName: 'x', direction: 'asc' }],
+          }),
+        `${type} debería rechazarse`,
+      ).toThrow(/no se puede ordenar/i);
+    }
   });
 });

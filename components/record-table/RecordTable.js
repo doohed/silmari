@@ -15,7 +15,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { generateKeyBetween } from 'fractional-indexing';
 import { toast } from 'sonner';
 import { Maximize2, GripVertical } from 'lucide-react';
-import { getFieldType } from '@/lib/field-types';
+import { getFieldType, isSortableField } from '@/lib/field-types';
 import { readFieldValue } from '@/lib/records/field-path';
 import { toCsv } from '@/lib/records/csv';
 import { getFieldComponents } from '@/components/fields/registry';
@@ -33,14 +33,17 @@ import {
 import { Toolbar } from './Toolbar';
 import { RecordViewBar } from './RecordViewBar';
 import { ColumnHeader } from './ColumnHeader';
-import { CellContent } from './CellContent';
+import { CellContent, fieldAlign } from './CellContent';
 import { EmptyState } from './EmptyState';
 import { ImportDialog } from './ImportDialog';
 import { RecordCards } from './RecordCards';
 import { RecordDrawer } from '@/components/record-detail/RecordDrawer';
 
-const ROW_H = 34;
-const GUTTER = 76;
+// La altura de la fila va aquí porque el virtualizador mide en JS. La de la
+// banda de títulos **no**: vive en `--list-head-h` (`globals.css`), que es lo
+// que la mantiene idéntica a la fila de pestañas de la ficha de al lado.
+const ROW_H = 32;
+const GUTTER = 68;
 const PAGE = 100;
 
 /** Mapea viewFilters/viewSorts (fieldMetadataId) → forma del servicio (fieldName). */
@@ -52,9 +55,14 @@ function mapView(view, fieldById) {
       value: f.value,
     }))
     .filter((f) => f.fieldName);
+  // Una vista guardada puede arrastrar un orden por un campo que la BD no sabe
+  // ordenar (se guardó antes de que existiera la comprobación). Se descarta
+  // aquí en vez de dejar que el servicio conteste con un error de validación y
+  // la tabla se quede en blanco.
   const sorts = (view.viewSorts ?? [])
-    .map((s) => ({ fieldName: fieldById[s.fieldMetadataId]?.name, direction: s.direction }))
-    .filter((s) => s.fieldName);
+    .map((s) => ({ field: fieldById[s.fieldMetadataId], direction: s.direction }))
+    .filter((s) => s.field && isSortableField(s.field))
+    .map((s) => ({ fieldName: s.field.name, direction: s.direction }));
   return { filters, sorts };
 }
 
@@ -122,6 +130,11 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
   });
 
   const rows = useMemo(() => (query.data?.pages ?? []).flatMap((p) => p.records), [query.data]);
+
+  // El recuento de la barra es el TOTAL de la vista, que viaja en la primera
+  // página. Antes se pasaba `rows.length`, así que el número subía de 100 a 200
+  // a 300 según se hacía scroll: no contaba registros, contaba lo descargado.
+  const total = query.data?.pages?.[0]?.total ?? null;
 
   // Columnas desde viewFields (visibles, ordenadas).
   const visibleFields = useMemo(
@@ -204,8 +217,15 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
   const [openRecordId, setOpenRecordId] = useState(null);
 
   // ---- Celda activa / edición ----
-  const [active, setActive] = useState({ row: 0, col: 0 });
+  // `-1` = todavía no hay celda elegida. Arrancar en {0,0} pintaba el anillo
+  // naranja sobre la primera celda nada más abrir la página, como si el usuario
+  // hubiera hecho algo; en una NSTableView no hay selección hasta que la hay.
+  const [active, setActive] = useState({ row: -1, col: -1 });
   const [editing, setEditing] = useState(false);
+  // El anillo de celda activa solo se pinta con la rejilla enfocada, como la
+  // selección de una NSTableView: sin esto, al abrir la página la primera celda
+  // aparecía rodeada de naranja sin que nadie hubiera tocado nada.
+  const [gridFocused, setGridFocused] = useState(false);
   const focusGrid = () => scrollRef.current?.focus();
 
   const updateM = useMutation({
@@ -338,10 +358,19 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
   }
 
   // ---- Teclado ----
+  const NAV_KEYS = ['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Tab', 'Enter'];
+
   function onKeyDown(e) {
     if (editing) return;
     const maxRow = rows.length - 1;
     const maxCol = columns.length - 1;
+    // Primera tecla de navegación sin celda elegida: entra por la de arriba a
+    // la izquierda en vez de mover desde una posición que no existe.
+    if (active.row < 0 && NAV_KEYS.includes(e.key)) {
+      e.preventDefault();
+      setActive({ row: 0, col: 0 });
+      return;
+    }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActive((a) => ({ ...a, row: Math.min(maxRow, a.row + 1) }));
@@ -363,6 +392,9 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
   // ---- Scroll infinito ----
   function onScroll(e) {
     const el = e.currentTarget;
+    // Atributo en el DOM y no estado: esto se dispara en cada frame de scroll y
+    // un `setState` por frame re-renderizaría la lista entera.
+    el.dataset.scrolledX = el.scrollLeft > 0;
     if (
       el.scrollHeight - el.scrollTop - el.clientHeight < 400 &&
       query.hasNextPage &&
@@ -454,7 +486,7 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
           objectSlug={objectSlug}
           views={views}
           activeViewId={activeViewId}
-          count={rows.length}
+          count={total}
         >
           <Toolbar
             selectedCount={selected.size}
@@ -485,7 +517,10 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
             tabIndex={0}
             onKeyDown={onKeyDown}
             onScroll={onScroll}
-            className="relative flex-1 overflow-auto outline-none"
+            onFocus={() => setGridFocused(true)}
+            onBlur={() => setGridFocused(false)}
+            style={{ '--row-h': `${ROW_H}px` }}
+            className="mac-list-fill relative flex-1 overflow-auto outline-none"
           >
             {/* Móvil: tarjetas. La tabla necesita scroll horizontal y ahí no se
               puede usar. Se alternan por CSS y no midiendo el ancho en JS, que
@@ -499,29 +534,47 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
               />
             </div>
 
-            {/* Cabecera (z-30 para que el menú de columna quede sobre las filas) */}
+            {/* Cabecera (z-30 para que el menú de columna quede sobre las filas).
+              La primera columna viaja congelada con el hueco de selección: al
+              desplazarse en horizontal el identificador del registro sigue a la
+              vista, como la columna de cabecera de Numbers. */}
             <div
-              className="border-border bg-sunken/80 sticky top-0 z-30 hidden h-8 border-b backdrop-blur-md md:flex"
+              data-cols
+              className="mac-list-head group/head sticky top-0 z-30 hidden md:flex"
               style={{ width: totalWidth + GUTTER }}
             >
-              <div className="flex shrink-0 items-center gap-1 pl-2" style={{ width: GUTTER }}>
+              <div
+                className="mac-freeze flex shrink-0 items-center gap-0.5 pl-2"
+                style={{ width: GUTTER }}
+              >
                 {/* Espaciador del ancho del asa de arrastre para alinear el
                   checkbox con los de las filas. */}
-                <span aria-hidden className="w-3.5 shrink-0" />
+                <span aria-hidden className="w-3 shrink-0" />
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
-                  className="accent-accent size-3.5"
+                  aria-label="Seleccionar todo"
+                  className={`size-3.5 ${
+                    selected.size
+                      ? ''
+                      : 'opacity-0 group-hover/head:opacity-100 focus-visible:opacity-100'
+                  }`}
                 />
               </div>
-              {table.getFlatHeaders().map((header) => {
+              {table.getFlatHeaders().map((header, i) => {
                 const field = header.column.columnDef.meta.field;
                 return (
-                  <div key={header.id} className="shrink-0" style={{ width: header.getSize() }}>
+                  <div
+                    key={header.id}
+                    className={i === 0 ? 'mac-freeze mac-freeze-edge shrink-0' : 'shrink-0'}
+                    style={{ width: header.getSize(), ...(i === 0 ? { left: GUTTER } : null) }}
+                  >
                     <ColumnHeader
                       label={field.label}
                       sortDir={sortDir(field.name)}
+                      align={fieldAlign(field)}
+                      sortable={isSortableField(field)}
                       onSort={() => toggleSort(field.name)}
                       onHide={() => hideField(field.id)}
                       onMoveLeft={() => moveField(field.id, -1)}
@@ -559,11 +612,14 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
                         cells={row.getVisibleCells()}
                         top={vItem.start}
                         width={totalWidth + GUTTER}
+                        stripe={vItem.index % 2 === 1}
                         dragEnabled
                         isActiveRow={active.row === vItem.index}
                         activeCol={active.col}
+                        showRing={gridFocused}
                         editing={editing}
                         selected={selected.has(record.id)}
+                        selectionActive={selected.size > 0}
                         onToggleSelected={() => toggleSelected(record.id)}
                         onOpen={() => setOpenRecordId(record.id)}
                         onActivateCell={(colIndex) =>
@@ -626,6 +682,19 @@ function rechunkPages(old, flatRows) {
 }
 
 /**
+ * Clases de estado de una celda. Editando y anillo son **excluyentes**: el
+ * editor ya trae su propio anillo, y dejar los dos `z-*` en el className los
+ * hacía competir (el orden lo decidía la hoja de estilos, no el marcado).
+ * Editando sube a `z-20` para que un desplegable no quede tapado por las filas
+ * de abajo, que van después en el DOM.
+ */
+function cellStateClass(isActiveCell, editing, showRing) {
+  if (!isActiveCell) return '';
+  if (editing) return 'z-20';
+  return showRing ? 'ring-accent z-[2] rounded-[7px] ring-2 ring-inset' : '';
+}
+
+/**
  * Fila de la tabla, arrastrable (dnd-kit). Se extrae en su propio componente
  * porque el cuerpo está virtualizado y `useSortable` es un hook (no puede
  * llamarse dentro del `.map` de los elementos virtuales).
@@ -635,11 +704,14 @@ function RecordRow({
   cells,
   top,
   width,
+  stripe,
   dragEnabled,
   isActiveRow,
   activeCol,
+  showRing,
   editing,
   selected,
+  selectionActive,
   onToggleSelected,
   onOpen,
   onActivateCell,
@@ -658,39 +730,44 @@ function RecordRow({
     transform: CSS.Translate.toString(transform),
     transition,
     zIndex: isDragging ? 20 : undefined,
-    opacity: isDragging ? 0.9 : 1,
   };
+
+  // El checkbox se esconde mientras no haya nada que seleccionar: una columna
+  // de casillas siempre visible es lo que delata un formulario web. Reaparece
+  // al pasar el cursor y se queda fija en cuanto hay una selección viva.
+  const showCheck = selected || selectionActive;
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       data-testid="record-row"
-      className={`group border-border hover:bg-primary/[0.035] absolute left-0 flex border-b transition-colors ${
-        isDragging ? 'bg-surface shadow-md' : ''
-      }`}
+      data-stripe={stripe || undefined}
+      data-selected={selected || undefined}
+      className={`mac-row group absolute left-0 flex ${isDragging ? 'shadow-lg' : ''}`}
     >
-      <div className="flex shrink-0 items-center gap-1 pl-2" style={{ width: GUTTER }}>
+      <div className="mac-freeze flex shrink-0 items-center gap-0.5 pl-2" style={{ width: GUTTER }}>
         {dragEnabled && (
           <span
             {...attributes}
             {...listeners}
-            className="text-tertiary hover:text-secondary cursor-grab opacity-0 group-hover:opacity-100 active:cursor-grabbing"
+            className="text-tertiary hover:text-secondary flex w-3 shrink-0 cursor-grab justify-center opacity-0 group-hover:opacity-100 active:cursor-grabbing"
             aria-label="Reordenar registro"
           >
-            <GripVertical size={14} />
+            <GripVertical size={13} />
           </span>
         )}
         <input
           type="checkbox"
           checked={selected}
           onChange={onToggleSelected}
-          className="accent-accent size-3.5"
+          aria-label="Seleccionar registro"
+          className={`size-3.5 ${showCheck ? '' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
         />
         <button
           type="button"
           onClick={onOpen}
-          className="text-tertiary hover:bg-chip-gray hover:text-primary flex cursor-pointer items-center justify-center rounded-md p-1.5 opacity-0 transition-colors group-hover:opacity-100"
+          className="text-tertiary hover:bg-chip-gray hover:text-primary flex cursor-pointer items-center justify-center rounded-md p-1 opacity-0 transition-colors group-hover:opacity-100"
           aria-label="Abrir registro"
         >
           <Maximize2 size={13} />
@@ -699,13 +776,28 @@ function RecordRow({
       {cells.map((cell, colIndex) => {
         const field = cell.column.columnDef.meta.field;
         const isActiveCell = isActiveRow && activeCol === colIndex;
+        const frozen = colIndex === 0;
         return (
           <div
             key={cell.id}
             onMouseDown={() => onActivateCell(colIndex)}
             onDoubleClick={onStartEdit}
-            className={`shrink-0 overflow-visible ${isActiveCell ? 'ring-accent relative z-10 rounded-md ring-2 ring-inset' : ''}`}
-            style={{ width: cell.column.getSize(), height: ROW_H }}
+            /* `relative` SIEMPRE, no solo con el anillo: los editores que abren
+              un desplegable (SELECT, MULTI_SELECT) se posicionan con
+              `absolute top-full` y buscan el ancestro posicionado más cercano.
+              Si la celda no lo era, ese ancestro pasaba a ser la FILA (que sí
+              es `absolute`), y el menú aparecía pegado al borde izquierdo de la
+              tabla en vez de bajo la celda. Salía bien la primera vez —cuando
+              la celda llevaba el anillo y con él el `relative`— y mal en
+              cuanto se movía a otro registro. */
+            className={`relative shrink-0 overflow-visible ${
+              frozen ? 'mac-freeze mac-freeze-edge' : ''
+            } ${cellStateClass(isActiveCell, editing, showRing)}`}
+            style={{
+              width: cell.column.getSize(),
+              height: ROW_H,
+              ...(frozen ? { left: GUTTER } : null),
+            }}
           >
             <CellContent
               field={field}
