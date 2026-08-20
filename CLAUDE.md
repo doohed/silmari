@@ -365,6 +365,21 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   no pasan por `api-context`, así que llaman a `throttleAuth(flow, { email })`,
   que consume cupo **por email y por IP** a la vez. Hereda la limitación de
   `rate-limit.js`: memoria por instancia.
+- **Log de eventos de seguridad** (`logSecurityEvent` en `lib/utils/logger.js`):
+  prefijo `[sec]` para poder `grep`earlo, y el `email` **enmascarado**
+  (`an***@gmail.com`) porque un log lleno de direcciones en claro es un fichero
+  de datos personales que hay que justificar. Registran: login fallido, freno
+  disparado, alta/revocación de API key, alta o **bloqueo** de webhook, cambio de
+  contraseña, borrado de cuenta y expulsión de un miembro. No hay agregador: esto
+  se lee a mano con `docker compose logs`.
+- **El login tarda lo mismo exista la cuenta o no.** `authenticate` compara
+  contra un **hash señuelo** cuando no hay usuario. El mensaje genérico no basta
+  por sí solo: sin bcrypt, la respuesta volvía en milisegundos y el formulario
+  quedaba convertido en un detector de direcciones registradas.
+- **Un id imposible se responde 404, no 500.** `to-response.js` traduce los
+  `CastError`/`BSONError` de Mongoose: desde fuera un id que no puede existir no
+  se distingue de uno que no existe, y así deja de ensuciar el log de errores
+  (que es donde se buscan los fallos de verdad).
 - **`INTEGRATIONS_SECRET` ≠ `AUTH_SECRET`.** El cifrado de los secretos de
   integraciones usa su propia variable (con fallback a `AUTH_SECRET` por
   compatibilidad) para que rotar el secreto de sesión no deje ilegibles los

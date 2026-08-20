@@ -468,7 +468,7 @@ literales, porque `url.hostname` las devuelve entre corchetes (`[::1]`) y
 `dns.lookup` no las acepta así. Bloqueaba igual, pero por el motivo equivocado
 ("no se puede resolver el dominio") — un dominio con AAAA interna habría pasado.
 
-### Fase 3 — Higiene · ~2-3 h
+### Fase 3 — Higiene · ✅ **hecha** (20/08/2026)
 
 | #   | Hallazgo | Archivos                          |
 | --- | -------- | --------------------------------- |
@@ -478,6 +478,39 @@ literales, porque `url.hostname` las devuelve entre corchetes (`[::1]`) y
 | 3.4 | S-11     | `lib/utils/logger.js` + llamantes |
 
 ---
+
+**Cómo quedó.** `npm test` 187 ✓ · `npm run test:integration` 199 ✓ ·
+`npm run lint` sin errores · `npm run build` correcto.
+
+- **S-12** — `to-response.js` traduce `CastError`/`BSONError` a 404 (id
+  imposible) o 400 (cast que no es de id), en las server actions y en la API por
+  igual. Deja de escribirse en el log de errores lo que no es un fallo nuestro.
+- **S-09** — la guardia de ruta del storage exige el separador, así que una
+  carpeta hermana con el mismo prefijo (`/app/storage-otro`) ya no cuela.
+- **S-10** — `authenticate` compara contra un hash señuelo cuando la cuenta no
+  existe. Hay un test que mide los dos caminos y comprueba que no se separan un
+  orden de magnitud.
+- **S-11** — `logSecurityEvent` con prefijo `[sec]` y email enmascarado, en
+  login fallido, freno disparado, API key creada/revocada, webhook creado o
+  **bloqueado por apuntar a la red interna**, contraseña cambiada, cuenta
+  borrada y miembro expulsado. De paso desaparece el único sitio que escribía una
+  dirección en claro (`password-reset.js`).
+
+---
+
+## Estado
+
+Las tres fases están aplicadas. Los doce hallazgos quedan cerrados salvo lo que
+se listó como **deliberadamente fuera** (abajo), más dos cosas que dependen de
+decisiones de operación y no de código:
+
+| Pendiente                                                         | Cuándo deja de valer lo de hoy                                                |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Rate limit en memoria (`lib/http/rate-limit.js`)                  | El día que haya una **segunda instancia**: el cupo se multiplica por réplica. |
+| Correr `scripts/clean-form-redirect-urls.mjs` una vez por entorno | Ya (Fase 1).                                                                  |
+
+Conviene repetir esta revisión cuando se toque auth, la API pública o cualquier
+sitio donde entren datos de fuera (formularios, leads, integraciones nuevas).
 
 ## Lo que se deja como está, a propósito
 

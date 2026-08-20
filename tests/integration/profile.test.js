@@ -17,6 +17,32 @@ async function emailCtx(email = 'prof@test.dev') {
 }
 
 describe('perfil: contraseña y borrado', () => {
+  it('el login tarda lo mismo exista la cuenta o no', async () => {
+    // El mensaje de error ya era genérico, pero el tiempo delataba: sin usuario
+    // no se ejecutaba bcrypt y la respuesta volvía en milisegundos. Eso convierte
+    // el login en un detector de direcciones registradas.
+    await createAccount({
+      firstName: 'Tim',
+      lastName: 'Ing',
+      email: 'timing@test.dev',
+      password: 'secret123',
+      workspaceName: 'Timing Co',
+    });
+
+    const medir = async (email) => {
+      const t0 = performance.now();
+      await expect(authenticate({ email, password: 'incorrecta1' })).rejects.toThrow();
+      return performance.now() - t0;
+    };
+
+    const existe = await medir('timing@test.dev');
+    const noExiste = await medir('fantasma@test.dev');
+
+    // Ambas pasan por bcrypt (coste 12, ~100 ms arriba): la que no existe no
+    // puede ser un orden de magnitud más rápida.
+    expect(noExiste).toBeGreaterThan(existe / 3);
+  });
+
   it('cambia la contraseña con la actual correcta', async () => {
     const ctx = await emailCtx('pwd@test.dev');
     await changePassword(ctx, { currentPassword: 'secret123', newPassword: 'nueva1234' });
