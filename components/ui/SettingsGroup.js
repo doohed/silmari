@@ -42,12 +42,13 @@ export function SettingsGroup({ title, footnote, children, className }) {
  * @param {{
  *   label: string,
  *   hint?: string,
+ *   icon?: import('react').ReactNode,  glifo a la izquierda de la etiqueta
  *   children?: import('react').ReactNode,
  *   stacked?: boolean,  el control debajo, para contenidos anchos
  *   className?: string,
  * }} props
  */
-export function SettingsRow({ label, hint, children, stacked = false, className }) {
+export function SettingsRow({ label, hint, icon, children, stacked = false, className }) {
   return (
     <div
       className={cn(
@@ -59,13 +60,29 @@ export function SettingsRow({ label, hint, children, stacked = false, className 
         className,
       )}
     >
-      <div className="min-w-0">
-        <p className="text-primary text-[13px]">{label}</p>
-        {hint && <p className="text-tertiary mt-0.5 text-xs">{hint}</p>}
+      <div className="flex min-w-0 items-center gap-2.5">
+        {icon && <span className="text-secondary shrink-0">{icon}</span>}
+        <div className="min-w-0">
+          <p className="text-primary truncate text-[13px]">{label}</p>
+          {hint && <p className="text-tertiary mt-0.5 text-xs">{hint}</p>}
+        </div>
       </div>
       {children && <div className={stacked ? '' : 'shrink-0'}>{children}</div>}
     </div>
   );
+}
+
+/**
+ * Fila única de un grupo vacío.
+ *
+ * Un grupo vacío tiene que seguir pareciendo un grupo: si se pinta una caja
+ * distinta cuando no hay nada, la lista "salta" al aparecer el primer elemento.
+ * Aquí solo cambia el contenido de la fila.
+ *
+ * @param {{ children: import('react').ReactNode }} props
+ */
+export function SettingsEmpty({ children }) {
+  return <p className="text-tertiary px-4 py-6 text-center text-[13px]">{children}</p>;
 }
 
 export default SettingsGroup;

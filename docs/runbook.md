@@ -217,12 +217,33 @@ apt-get install -y nginx certbot python3-certbot-nginx
 
 `/etc/nginx/sites-available/silmari`:
 
+Las dos zonas de `limit_req` van **fuera** del bloque `server`, en el contexto
+`http` (`/etc/nginx/nginx.conf`, o en un archivo de `conf.d/`): una zona es
+global y no se puede declarar dentro de un `server`.
+
+```nginx
+# Contexto http. 10 MB de zona son ~160.000 IPs en seguimiento, de sobra.
+limit_req_zone $binary_remote_addr zone=silmari_general:10m rate=30r/s;
+limit_req_zone $binary_remote_addr zone=silmari_auth:10m    rate=1r/s;
+limit_req_status 429;
+```
+
 ```nginx
 server {
     listen 80;
     server_name tudominio.com;
 
     location / {
+        # Freno de fuerza bruta a nivel de proxy. Esto es lo único que sirve
+        # ante una avalancha: los contadores de la app viven DENTRO del proceso
+        # de Node, así que para que se miren, la petición ya ha llegado hasta
+        # ahí. Aquí se corta antes.
+        #
+        # `burst` permite la ráfaga normal de un navegador (una página del App
+        # Router pide decenas de recursos a la vez) y `nodelay` la sirve sin
+        # encolarla; lo que se corta es el ritmo sostenido.
+        limit_req zone=silmari_general burst=60 nodelay;
+
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
 
@@ -240,6 +261,22 @@ server {
         proxy_buffering off;
     }
 
+    # Las rutas de credenciales van mucho más apretadas: aquí nadie navega, se
+    # envía un formulario. Duplica el freno por email/IP de
+    # `lib/auth/throttle.js`, a propósito: ese vive en memoria del proceso y se
+    # reinicia con cada despliegue, este no.
+    location ~ ^/(login|signup|forgot|reset|invite) {
+        limit_req zone=silmari_auth burst=10 nodelay;
+
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $host;
+        proxy_buffering off;
+    }
+
     # Por defecto nginx corta en 1 MB y los adjuntos fallarían con un 413.
     # 12 MB = los 10 del límite de la app más el margen del multipart.
     client_max_body_size 12M;
@@ -252,6 +289,43 @@ server {
 **No añadas cabeceras de seguridad aquí.** Las pone la app: las estáticas en
 `next.config.mjs` y la CSP con su nonce en `proxy.js`. Duplicarlas deja dos
 valores en la respuesta y, en el caso de la CSP, una sin nonce pisando a la buena.
+
+### Hasta dónde llega esto, y hasta dónde no
+
+Conviene tener clara la diferencia, porque las dos cosas se llaman igual:
+
+- **Abuso** — alguien con cuenta o con API key raspando datos, machacando un
+  endpoint caro o probando contraseñas. Lo para la **aplicación**: el freno por
+  API key de `/api/v1`, el de los formularios públicos, el de subidas, el de
+  `/api/export` (3 por hora, es el endpoint más caro que hay) y
+  `lib/auth/throttle.js`.
+- **Avalancha** — miles de peticiones por segundo, con o sin cuenta. **No la para
+  la aplicación**: para que un contador en memoria de Node se mire, la petición
+  ya ha atravesado la red, nginx y el arranque de la petición en el servidor. Lo
+  que la para es lo de arriba, `limit_req`, y por delante un CDN.
+
+**Cuándo hace falta un CDN delante** (Cloudflare o equivalente, modo proxy): en
+cuanto el dominio sea público y haya clientes de pago. Un `limit_req` protege
+frente a un script suelto, no frente a un ataque distribuido ni frente a la
+saturación del ancho de banda del VPS — eso se corta antes de llegar a tu
+máquina o no se corta. Si lo pones, revisa que siga llegando la IP real: con
+Cloudflare hay que añadir `set_real_ip_from` con sus rangos y
+`real_ip_header CF-Connecting-IP`, o `X-Forwarded-For` pasará a ser la del CDN y
+todos los frenos por IP contarán como si fuera un solo cliente.
+
+Comprobar que el freno está puesto y no molesta:
+
+```bash
+nginx -t && systemctl reload nginx
+# 30 peticiones seguidas: deben responder 200; ninguna 429.
+for i in $(seq 30); do curl -s -o /dev/null -w "%{http_code} " https://tudominio.com/; done
+# El log de nginx registra cada corte, con la zona que lo hizo.
+grep 'limiting requests' /var/log/nginx/error.log | tail
+```
+
+Si aparecen 429 en la navegación normal, sube el `burst` antes que el `rate`: la
+ráfaga es lo propio de un navegador, el ritmo sostenido es lo que delata a un
+script.
 
 Activar y pedir el certificado:
 

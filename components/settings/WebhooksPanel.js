@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Trash2, RefreshCw } from 'lucide-react';
+import { Trash2, RefreshCw, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
+import { SettingsGroup, SettingsRow, SettingsEmpty } from '@/components/ui/SettingsGroup';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import {
   createWebhookAction,
   listWebhooksAction,
@@ -16,10 +17,20 @@ import {
 
 const EVENTS = ['created', 'updated', 'deleted'];
 
+/**
+ * Webhooks en listas agrupadas.
+ *
+ * **Cada webhook es su propio grupo**, con la URL de título. Es lo que hace
+ * macOS con las cosas conectadas (una cuenta, un dispositivo): un grupo por
+ * cada una, con sus ajustes dentro. Además resuelve el problema que tenía la
+ * versión anterior, donde el registro de entregas colgaba de la tarjeta y no
+ * quedaba claro a qué webhook pertenecía cuando había varios seguidos.
+ */
 export function WebhooksPanel({ initialWebhooks, objects }) {
   const [hooks, setHooks] = useState(initialWebhooks);
   const [targetUrl, setTargetUrl] = useState('');
   const [ops, setOps] = useState(new Set());
+  const confirm = useConfirm();
 
   const allOps = objects.flatMap((o) => EVENTS.map((e) => `${o.nameSingular}.${e}`));
 
@@ -47,9 +58,17 @@ export function WebhooksPanel({ initialWebhooks, objects }) {
     toast.success('Webhook creado');
   }
 
-  async function remove(id) {
-    const r = await deleteWebhookAction({ id });
+  async function remove(hook) {
+    const ok = await confirm({
+      title: '¿Eliminar este webhook?',
+      message: `Se dejará de notificar a ${hook.targetUrl}.`,
+      confirmLabel: 'Eliminar',
+      danger: true,
+    });
+    if (!ok) return;
+    const r = await deleteWebhookAction({ id: hook.id });
     if (r.ok) refresh();
+    else toast.error(r.message);
   }
 
   async function retry(webhookId, deliveryId) {
@@ -61,85 +80,112 @@ export function WebhooksPanel({ initialWebhooks, objects }) {
   }
 
   return (
-    <div className="space-y-4">
-      <form onSubmit={create} className="border-border bg-bg space-y-3 rounded-lg border p-4">
-        <div>
-          <Label htmlFor="url">URL de destino</Label>
+    <div>
+      <SettingsGroup footnote="Cada entrega va firmada con HMAC en la cabecera x-silmari-signature. El destino tiene que ser una URL pública: no se admiten direcciones de red interna.">
+        <SettingsRow label="URL de destino">
           <Input
-            id="url"
+            aria-label="URL de destino"
             value={targetUrl}
             onChange={(e) => setTargetUrl(e.target.value)}
             placeholder="https://ejemplo.com/webhook"
+            className="w-72"
           />
-        </div>
-        <div>
-          <Label>Eventos</Label>
-          <div className="flex flex-wrap gap-1.5">
-            {allOps.map((op) => (
-              <button
-                key={op}
-                type="button"
-                onClick={() => toggleOp(op)}
-                className={`rounded-md border px-2 py-0.5 font-mono text-xs ${ops.has(op) ? 'border-accent bg-accent-subtle text-primary' : 'border-border text-secondary'}`}
-              >
-                {op}
-              </button>
-            ))}
-          </div>
-        </div>
-        <Button size="sm" type="submit" disabled={!targetUrl || ops.size === 0}>
-          Crear webhook
-        </Button>
-      </form>
+        </SettingsRow>
+        <SettingsRow stacked label="Eventos que lo disparan">
+          <EventPicker options={allOps} selected={ops} onToggle={toggleOp} />
+        </SettingsRow>
+        <SettingsRow label="Crear">
+          <Button size="md" onClick={create} disabled={!targetUrl || ops.size === 0}>
+            <Plus size={14} /> Añadir webhook
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
 
-      <ul className="space-y-3">
-        {hooks.length === 0 && <li className="text-tertiary text-sm">Sin webhooks</li>}
-        {hooks.map((h) => (
-          <li key={h.id} className="border-border bg-surface rounded-lg border p-3">
-            <div className="mb-2 flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-primary truncate text-sm font-medium">{h.targetUrl}</p>
-                <p className="text-tertiary truncate font-mono text-xs">
-                  {h.operations.join(', ')}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => remove(h.id)}
-                className="text-tertiary hover:text-danger shrink-0"
-                aria-label="Borrar webhook"
-              >
-                <Trash2 size={14} />
-              </button>
+      {hooks.length === 0 && (
+        <SettingsGroup title="Webhooks">
+          <SettingsEmpty>Todavía no has creado ninguno</SettingsEmpty>
+        </SettingsGroup>
+      )}
+
+      {hooks.map((h) => (
+        <SettingsGroup key={h.id} title={h.targetUrl}>
+          <SettingsRow stacked label="Eventos">
+            <div className="flex flex-wrap gap-1.5">
+              {h.operations.map((op) => (
+                <span
+                  key={op}
+                  className="border-border text-secondary rounded-md border px-2 py-0.5 font-mono text-xs"
+                >
+                  {op}
+                </span>
+              ))}
             </div>
+          </SettingsRow>
 
-            {h.deliveryLog.length > 0 && (
-              <ul className="border-border mt-2 space-y-1 border-t pt-2">
+          {h.deliveryLog.length > 0 && (
+            <SettingsRow stacked label="Últimas entregas">
+              <ul className="space-y-1">
                 {h.deliveryLog.slice(0, 5).map((d) => (
                   <li key={d.id} className="flex items-center gap-2 text-xs">
                     <span
                       className={`size-2 shrink-0 rounded-full ${d.ok ? 'bg-success' : 'bg-danger'}`}
+                      aria-hidden
                     />
                     <span className="text-secondary font-mono">{d.operation}</span>
                     <span className="text-tertiary">{d.ok ? d.statusCode : 'error'}</span>
-                    <span className="text-tertiary ml-auto">
+                    <span className="text-tertiary ml-auto tabular-nums">
                       {format(new Date(d.at), 'HH:mm:ss')}
                     </span>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => retry(h.id, d.id)}
-                      className="text-accent"
-                      aria-label="Reintentar"
+                      aria-label={`Reintentar ${d.operation}`}
                     >
                       <RefreshCw size={12} />
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
-            )}
-          </li>
-        ))}
-      </ul>
+            </SettingsRow>
+          )}
+
+          <SettingsRow label="Eliminar webhook" hint="Deja de notificar de inmediato">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => remove(h)}
+              aria-label={`Eliminar ${h.targetUrl}`}
+              className="hover:text-danger"
+            >
+              <Trash2 size={14} />
+            </Button>
+          </SettingsRow>
+        </SettingsGroup>
+      ))}
+    </div>
+  );
+}
+
+/** Selector múltiple de eventos: fichas que se encienden al pulsarlas. */
+function EventPicker({ options, selected, onToggle }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((op) => (
+        <button
+          key={op}
+          type="button"
+          onClick={() => onToggle(op)}
+          aria-pressed={selected.has(op)}
+          className={`press rounded-md border px-2 py-0.5 font-mono text-xs ${
+            selected.has(op)
+              ? 'border-accent bg-accent-subtle text-primary'
+              : 'border-border text-secondary hover:bg-sunken'
+          }`}
+        >
+          {op}
+        </button>
+      ))}
     </div>
   );
 }

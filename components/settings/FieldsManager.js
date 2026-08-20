@@ -8,6 +8,7 @@ import { FIELD_TYPES } from '@/lib/field-types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { SettingsGroup, SettingsRow } from '@/components/ui/SettingsGroup';
 import { Chip } from '@/components/fields/Chip';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import {
@@ -290,316 +291,328 @@ export function FieldsManager({ object, objects }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-primary text-sm font-semibold">Campos</h2>
-        <Button size="sm" onClick={() => setOpen((o) => !o)}>
-          <Plus size={14} /> Añadir campo
-        </Button>
-      </div>
+    <div>
+      <SettingsGroup>
+        <SettingsRow label="Nuevo campo" hint="Se añade a la tabla, a la ficha y a la API">
+          <Button
+            size="md"
+            variant={open ? 'secondary' : 'primary'}
+            onClick={() => setOpen((o) => !o)}
+          >
+            <Plus size={14} /> {open ? 'Cancelar' : 'Añadir campo'}
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
 
       {open && (
-        <form onSubmit={create} className="border-border bg-bg space-y-3 rounded-lg border p-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="fname">Nombre técnico (camelCase)</Label>
+        <form onSubmit={create}>
+          <SettingsGroup title="Nuevo campo">
+            <SettingsRow label="Nombre técnico" hint="camelCase; es el que usa la API">
               <Input
-                id="fname"
+                aria-label="Nombre técnico"
                 value={field.name}
                 onChange={(e) => setField({ ...field, name: e.target.value })}
                 placeholder="precio"
+                className="w-56"
               />
-            </div>
-            <div>
-              <Label htmlFor="flabel">Etiqueta</Label>
+            </SettingsRow>
+            <SettingsRow label="Etiqueta">
               <Input
-                id="flabel"
+                aria-label="Etiqueta"
                 value={field.label}
                 onChange={(e) => setField({ ...field, label: e.target.value })}
                 placeholder="Precio"
+                className="w-56"
               />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="ftype">Tipo</Label>
-            <select
-              id="ftype"
-              value={field.type}
-              onChange={(e) => changeType(e.target.value)}
-              className={SELECT_CLS}
-            >
-              {FIELD_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {CHOICE.has(field.type) && (
-            <div className="space-y-2">
-              <Label>Opciones</Label>
-              <OptionRows options={options} setOptions={setOptions} />
-            </div>
-          )}
-
-          {field.type === 'RELATION' && (
-            <div>
-              <Label htmlFor="rel">Objeto destino (MANY_TO_ONE)</Label>
+            </SettingsRow>
+            <SettingsRow label="Tipo">
               <select
-                id="rel"
-                value={relationTarget}
-                onChange={(e) => setRelationTarget(e.target.value)}
-                className="border-border bg-surface text-primary h-9 w-full rounded-md border px-2 text-sm"
+                aria-label="Tipo"
+                value={field.type}
+                onChange={(e) => changeType(e.target.value)}
+                className={`${SELECT_CLS} w-56`}
               >
-                <option value="">Elige un objeto…</option>
-                {targets.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.labelSingular}
+                {FIELD_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
                   </option>
                 ))}
               </select>
-            </div>
-          )}
+            </SettingsRow>
 
-          {field.type === 'FORMULA' && (
-            <div>
-              <Label htmlFor="formula">Fórmula</Label>
-              <Input
-                id="formula"
-                value={formula}
-                onChange={(e) => setFormula(e.target.value)}
-                placeholder="p. ej. amount * probability / 100"
-                className="font-mono"
-              />
-              <p className="text-tertiary mt-1 text-xs">
-                Usa los nombres de otros campos numéricos con{' '}
-                <span className="font-mono">+ - * /</span> y paréntesis. Es un campo de solo
-                lectura.
-              </p>
-            </div>
-          )}
+            {/* La configuración propia del tipo (opciones, relación, fórmula,
+                rollup, líneas) va en una fila apilada: son bloques que cambian
+                por completo según el tipo y no caben en la columna derecha. */}
+            <SettingsRow stacked label="Configuración del tipo">
+              <div className="space-y-3">
+                {CHOICE.has(field.type) && (
+                  <div className="space-y-2">
+                    <Label>Opciones</Label>
+                    <OptionRows options={options} setOptions={setOptions} />
+                  </div>
+                )}
 
-          {field.type === 'ROLLUP' && (
-            <div className="space-y-2">
-              <div>
-                <Label htmlFor="rollup-rel">Relación entrante</Label>
-                <select
-                  id="rollup-rel"
-                  value={rollup.relationFieldId}
-                  onChange={(e) =>
-                    setRollup({
-                      ...rollup,
-                      relationFieldId: e.target.value,
-                      aggregateFieldName: '',
-                    })
-                  }
-                  className={SELECT_CLS}
-                >
-                  <option value="">
-                    {rollupSources === null ? 'Cargando…' : 'Elige una relación…'}
-                  </option>
-                  {(rollupSources ?? []).map((s) => (
-                    <option key={s.relationFieldId} value={s.relationFieldId}>
-                      {s.sourceObject.labelPlural} · {s.relationFieldLabel}
-                    </option>
-                  ))}
-                </select>
-                {rollupSources !== null && rollupSources.length === 0 && (
-                  <p className="text-tertiary mt-1 text-xs">
-                    Ningún objeto apunta a este todavía. Crea antes una relación (MANY_TO_ONE) hacia
-                    este objeto.
-                  </p>
+                {field.type === 'RELATION' && (
+                  <div>
+                    <Label htmlFor="rel">Objeto destino (MANY_TO_ONE)</Label>
+                    <select
+                      id="rel"
+                      value={relationTarget}
+                      onChange={(e) => setRelationTarget(e.target.value)}
+                      className="border-border bg-surface text-primary h-9 w-full rounded-md border px-2 text-sm"
+                    >
+                      <option value="">Elige un objeto…</option>
+                      {targets.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.labelSingular}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {field.type === 'FORMULA' && (
+                  <div>
+                    <Label htmlFor="formula">Fórmula</Label>
+                    <Input
+                      id="formula"
+                      value={formula}
+                      onChange={(e) => setFormula(e.target.value)}
+                      placeholder="p. ej. amount * probability / 100"
+                      className="font-mono"
+                    />
+                    <p className="text-tertiary mt-1 text-xs">
+                      Usa los nombres de otros campos numéricos con{' '}
+                      <span className="font-mono">+ - * /</span> y paréntesis. Es un campo de solo
+                      lectura.
+                    </p>
+                  </div>
+                )}
+
+                {field.type === 'ROLLUP' && (
+                  <div className="space-y-2">
+                    <div>
+                      <Label htmlFor="rollup-rel">Relación entrante</Label>
+                      <select
+                        id="rollup-rel"
+                        value={rollup.relationFieldId}
+                        onChange={(e) =>
+                          setRollup({
+                            ...rollup,
+                            relationFieldId: e.target.value,
+                            aggregateFieldName: '',
+                          })
+                        }
+                        className={SELECT_CLS}
+                      >
+                        <option value="">
+                          {rollupSources === null ? 'Cargando…' : 'Elige una relación…'}
+                        </option>
+                        {(rollupSources ?? []).map((s) => (
+                          <option key={s.relationFieldId} value={s.relationFieldId}>
+                            {s.sourceObject.labelPlural} · {s.relationFieldLabel}
+                          </option>
+                        ))}
+                      </select>
+                      {rollupSources !== null && rollupSources.length === 0 && (
+                        <p className="text-tertiary mt-1 text-xs">
+                          Ningún objeto apunta a este todavía. Crea antes una relación (MANY_TO_ONE)
+                          hacia este objeto.
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="rollup-op">Operación</Label>
+                      <select
+                        id="rollup-op"
+                        value={rollup.operation}
+                        onChange={(e) => setRollup({ ...rollup, operation: e.target.value })}
+                        className={SELECT_CLS}
+                      >
+                        {ROLLUP_OPS.map((op) => (
+                          <option key={op.value} value={op.value}>
+                            {op.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {rollup.operation !== 'count' && (
+                      <div>
+                        <Label htmlFor="rollup-field">Campo a agregar</Label>
+                        <select
+                          id="rollup-field"
+                          value={rollup.aggregateFieldName}
+                          onChange={(e) =>
+                            setRollup({ ...rollup, aggregateFieldName: e.target.value })
+                          }
+                          className={SELECT_CLS}
+                        >
+                          <option value="">Elige un campo numérico…</option>
+                          {(
+                            rollupSources?.find((s) => s.relationFieldId === rollup.relationFieldId)
+                              ?.numericFields ?? []
+                          ).map((nf) => (
+                            <option key={nf.name} value={nf.name}>
+                              {nf.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <p className="text-tertiary text-xs">
+                      Agrega los registros relacionados que apuntan a este. Es un campo de solo
+                      lectura.
+                    </p>
+                  </div>
+                )}
+
+                {field.type === 'LINE_ITEMS' && (
+                  <div className="space-y-2">
+                    <div>
+                      <Label htmlFor="li-catalog">Catálogo de productos (opcional)</Label>
+                      <select
+                        id="li-catalog"
+                        value={lineItemsCfg.productObjectSlug}
+                        onChange={(e) => chooseCatalog(e.target.value)}
+                        className={SELECT_CLS}
+                      >
+                        <option value="">Sin catálogo (líneas libres)</option>
+                        {targets.map((o) => (
+                          <option key={o.id} value={o.slug}>
+                            {o.labelPlural}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {lineItemsCfg.productObjectSlug && (
+                      <div>
+                        <Label htmlFor="li-price">Campo de precio</Label>
+                        <select
+                          id="li-price"
+                          value={lineItemsCfg.priceFieldName}
+                          onChange={(e) =>
+                            setLineItemsCfg({ ...lineItemsCfg, priceFieldName: e.target.value })
+                          }
+                          className={SELECT_CLS}
+                        >
+                          <option value="">Sin autorrelleno de precio</option>
+                          {priceFields.map((pf) => (
+                            <option key={pf.name} value={pf.name}>
+                              {pf.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <p className="text-tertiary text-xs">
+                      Las líneas se editan en la ficha. Con catálogo, cada línea puede elegir un
+                      producto que autorellena descripción y precio.
+                    </p>
+                  </div>
                 )}
               </div>
-              <div>
-                <Label htmlFor="rollup-op">Operación</Label>
-                <select
-                  id="rollup-op"
-                  value={rollup.operation}
-                  onChange={(e) => setRollup({ ...rollup, operation: e.target.value })}
-                  className={SELECT_CLS}
-                >
-                  {ROLLUP_OPS.map((op) => (
-                    <option key={op.value} value={op.value}>
-                      {op.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {rollup.operation !== 'count' && (
-                <div>
-                  <Label htmlFor="rollup-field">Campo a agregar</Label>
-                  <select
-                    id="rollup-field"
-                    value={rollup.aggregateFieldName}
-                    onChange={(e) => setRollup({ ...rollup, aggregateFieldName: e.target.value })}
-                    className={SELECT_CLS}
-                  >
-                    <option value="">Elige un campo numérico…</option>
-                    {(
-                      rollupSources?.find((s) => s.relationFieldId === rollup.relationFieldId)
-                        ?.numericFields ?? []
-                    ).map((nf) => (
-                      <option key={nf.name} value={nf.name}>
-                        {nf.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <p className="text-tertiary text-xs">
-                Agrega los registros relacionados que apuntan a este. Es un campo de solo lectura.
-              </p>
-            </div>
-          )}
+            </SettingsRow>
 
-          {field.type === 'LINE_ITEMS' && (
-            <div className="space-y-2">
-              <div>
-                <Label htmlFor="li-catalog">Catálogo de productos (opcional)</Label>
-                <select
-                  id="li-catalog"
-                  value={lineItemsCfg.productObjectSlug}
-                  onChange={(e) => chooseCatalog(e.target.value)}
-                  className={SELECT_CLS}
-                >
-                  <option value="">Sin catálogo (líneas libres)</option>
-                  {targets.map((o) => (
-                    <option key={o.id} value={o.slug}>
-                      {o.labelPlural}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {lineItemsCfg.productObjectSlug && (
-                <div>
-                  <Label htmlFor="li-price">Campo de precio</Label>
-                  <select
-                    id="li-price"
-                    value={lineItemsCfg.priceFieldName}
-                    onChange={(e) =>
-                      setLineItemsCfg({ ...lineItemsCfg, priceFieldName: e.target.value })
-                    }
-                    className={SELECT_CLS}
-                  >
-                    <option value="">Sin autorrelleno de precio</option>
-                    {priceFields.map((pf) => (
-                      <option key={pf.name} value={pf.name}>
-                        {pf.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <p className="text-tertiary text-xs">
-                Las líneas se editan en la ficha. Con catálogo, cada línea puede elegir un producto
-                que autorellena descripción y precio.
-              </p>
-            </div>
-          )}
+            {!NO_INDEX.has(field.type) && (
+              <SettingsRow label="Indexar" hint="Filtrar y ordenar por este campo va más rápido">
+                <input
+                  type="checkbox"
+                  className="size-4"
+                  checked={field.isIndexed}
+                  onChange={(e) => setField({ ...field, isIndexed: e.target.checked })}
+                  aria-label="Indexar"
+                />
+              </SettingsRow>
+            )}
 
-          {!NO_INDEX.has(field.type) && (
-            <label className="text-secondary flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={field.isIndexed}
-                onChange={(e) => setField({ ...field, isIndexed: e.target.checked })}
-                className="accent-accent size-3.5"
-              />
-              Indexar para filtrar y ordenar rápido
-            </label>
-          )}
-
-          <Button size="sm" type="submit" disabled={saving}>
-            {saving ? 'Creando…' : 'Crear campo'}
-          </Button>
+            <SettingsRow label="Crear el campo">
+              <Button size="md" type="submit" disabled={saving}>
+                {saving ? 'Creando…' : 'Crear campo'}
+              </Button>
+            </SettingsRow>
+          </SettingsGroup>
         </form>
       )}
 
-      <ul className="border-border bg-surface divide-border divide-y rounded-lg border">
+      <SettingsGroup title="Campos">
         {object.fields.map((f) => {
           const isIdentifier = f.id === object.labelIdentifierFieldId;
           const deletable = !f.isSystem && !isIdentifier;
           const editable = CHOICE.has(f.type);
+          const marca = isIdentifier ? ' · identificador' : f.isSystem ? ' · sistema' : '';
           return (
-            <li key={f.id}>
-              <div className="flex items-center gap-3 px-4 py-2.5">
-                <div className="min-w-0 flex-1">
-                  <p className="text-primary truncate text-sm font-medium">
-                    {f.label}
-                    {isIdentifier && (
-                      <span className="text-tertiary ml-1 text-xs">(identificador)</span>
-                    )}
-                    {f.isSystem && <span className="text-tertiary ml-1 text-xs">(sistema)</span>}
-                  </p>
-                  <p className="text-tertiary font-mono text-xs">{f.name}</p>
+            <div key={f.id}>
+              <SettingsRow label={f.label} hint={`${f.name}${marca}`}>
+                <div className="flex items-center gap-2">
+                  <Chip label={f.type} />
+                  {!f.isSystem && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleIndex(f)}
+                      disabled={indexingId === f.id}
+                      className={f.isIndexed ? 'text-accent' : undefined}
+                      aria-label={
+                        f.isIndexed ? `Quitar índice de ${f.label}` : `Indexar ${f.label}`
+                      }
+                      title={
+                        f.isIndexed
+                          ? 'Indexado (filtrar/ordenar rápido) · clic para quitar'
+                          : 'Indexar para filtrar y ordenar rápido'
+                      }
+                    >
+                      <Zap size={14} />
+                    </Button>
+                  )}
+                  {editable && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => (editingId === f.id ? setEditingId(null) : startEdit(f))}
+                      className={editingId === f.id ? 'text-accent' : undefined}
+                      aria-label={`Editar opciones de ${f.label}`}
+                      title="Editar opciones"
+                    >
+                      <SlidersHorizontal size={14} />
+                    </Button>
+                  )}
+                  {deletable && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => remove(f)}
+                      aria-label={`Borrar ${f.label}`}
+                      className="hover:text-danger"
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
                 </div>
-                <Chip label={f.type} />
-                {!f.isSystem && (
-                  <button
-                    type="button"
-                    onClick={() => toggleIndex(f)}
-                    disabled={indexingId === f.id}
-                    className={f.isIndexed ? 'text-accent' : 'text-tertiary hover:text-primary'}
-                    aria-label={f.isIndexed ? 'Quitar índice' : 'Indexar campo'}
-                    title={
-                      f.isIndexed
-                        ? 'Indexado (filtrar/ordenar rápido) · clic para quitar'
-                        : 'Indexar para filtrar y ordenar rápido'
-                    }
-                  >
-                    <Zap size={14} />
-                  </button>
-                )}
-                {editable && (
-                  <button
-                    type="button"
-                    onClick={() => (editingId === f.id ? setEditingId(null) : startEdit(f))}
-                    className={
-                      editingId === f.id ? 'text-accent' : 'text-tertiary hover:text-primary'
-                    }
-                    aria-label="Editar opciones"
-                    title="Editar opciones"
-                  >
-                    <SlidersHorizontal size={14} />
-                  </button>
-                )}
-                {deletable && (
-                  <button
-                    type="button"
-                    onClick={() => remove(f)}
-                    className="text-tertiary hover:text-danger"
-                    aria-label="Borrar campo"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
+              </SettingsRow>
 
               {editingId === f.id && (
-                <div className="border-border bg-bg space-y-3 border-t px-4 py-3">
-                  <p className="text-secondary text-xs font-medium">Opciones de «{f.label}»</p>
-                  <OptionRows options={editOptions} setOptions={setEditOptions} />
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={saveOptions} disabled={savingEdit}>
-                      {savingEdit ? 'Guardando…' : 'Guardar opciones'}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                      Cancelar
-                    </Button>
+                <SettingsRow stacked label={`Opciones de «${f.label}»`} className="bg-sunken">
+                  <div className="space-y-3">
+                    <OptionRows options={editOptions} setOptions={setEditOptions} />
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" onClick={saveOptions} disabled={savingEdit}>
+                        {savingEdit ? 'Guardando…' : 'Guardar opciones'}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                    <p className="text-tertiary text-xs">
+                      Renombrar o recolorear no afecta a los registros. Si quitas una opción, los
+                      registros que la usaban conservan su valor pero quedará sin etiqueta.
+                    </p>
                   </div>
-                  <p className="text-tertiary text-xs">
-                    Renombrar o recolorear no afecta a los registros. Si quitas una opción, los
-                    registros que la usaban conservan su valor pero quedará sin etiqueta.
-                  </p>
-                </div>
+                </SettingsRow>
               )}
-            </li>
+            </div>
           );
         })}
-      </ul>
+      </SettingsGroup>
     </div>
   );
 }

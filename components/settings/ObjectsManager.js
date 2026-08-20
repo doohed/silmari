@@ -7,13 +7,20 @@ import { Plus, ChevronRight, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
+import { SettingsGroup, SettingsRow } from '@/components/ui/SettingsGroup';
 import { Icon, OBJECT_ICONS } from '@/components/ui/Icon';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { createObjectAction, deleteObjectAction } from '@/app/(workspace)/settings/actions';
 
 const DEFAULT_ICON = 'Box';
 
+/**
+ * Lista de objetos del modelo de datos, en lista agrupada.
+ *
+ * El alta va en su propio grupo y se despliega al pulsar "Nuevo objeto": ocupa
+ * cuatro campos y tenerla siempre abierta empujaba la lista —que es a lo que se
+ * viene— fuera de la pantalla.
+ */
 export function ObjectsManager({ objects }) {
   const router = useRouter();
   const confirm = useConfirm();
@@ -58,101 +65,114 @@ export function ObjectsManager({ objects }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-primary text-sm font-semibold">Objetos</h2>
-        <Button size="sm" onClick={() => setOpen((o) => !o)}>
-          <Plus size={14} /> Nuevo objeto
-        </Button>
-      </div>
+    <div>
+      <SettingsGroup footnote="Cada objeto tiene sus propios campos, su tabla y su kanban. Los estándar no se pueden borrar.">
+        <SettingsRow
+          label="Nuevo objeto"
+          hint="Un tipo de ficha: productos, contratos, incidencias…"
+        >
+          <Button
+            size="md"
+            variant={open ? 'secondary' : 'primary'}
+            onClick={() => setOpen((o) => !o)}
+          >
+            <Plus size={14} /> {open ? 'Cancelar' : 'Crear'}
+          </Button>
+        </SettingsRow>
 
-      {open && (
-        <form onSubmit={create} className="border-border bg-bg space-y-3 rounded-lg border p-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="nameSingular">Nombre técnico (camelCase)</Label>
+        {open && (
+          <>
+            <SettingsRow label="Nombre técnico" hint="camelCase; es el que usa la API">
               <Input
-                id="nameSingular"
+                aria-label="Nombre técnico"
                 value={form.nameSingular}
                 onChange={set('nameSingular')}
                 placeholder="producto"
+                className="w-56"
               />
-            </div>
-            <div>
-              <Label htmlFor="labelSingular">Etiqueta singular</Label>
+            </SettingsRow>
+            <SettingsRow label="Etiqueta singular">
               <Input
-                id="labelSingular"
+                aria-label="Etiqueta singular"
                 value={form.labelSingular}
                 onChange={set('labelSingular')}
                 placeholder="Producto"
+                className="w-56"
               />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="labelPlural">Etiqueta plural</Label>
-            <Input
-              id="labelPlural"
-              value={form.labelPlural}
-              onChange={set('labelPlural')}
-              placeholder="Productos"
-            />
-          </div>
+            </SettingsRow>
+            <SettingsRow label="Etiqueta plural">
+              <Input
+                aria-label="Etiqueta plural"
+                value={form.labelPlural}
+                onChange={set('labelPlural')}
+                placeholder="Productos"
+                className="w-56"
+              />
+            </SettingsRow>
+            <SettingsRow stacked label="Icono">
+              <div className="flex flex-wrap gap-1.5">
+                {OBJECT_ICONS.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, icon: name }))}
+                    aria-label={name}
+                    aria-pressed={form.icon === name}
+                    className={
+                      form.icon === name
+                        ? 'border-accent bg-accent-subtle text-accent flex size-8 items-center justify-center rounded-md border'
+                        : 'border-border text-secondary hover:bg-chip-gray hover:text-primary flex size-8 items-center justify-center rounded-md border'
+                    }
+                  >
+                    <Icon name={name} size={15} />
+                  </button>
+                ))}
+              </div>
+            </SettingsRow>
+            <SettingsRow label="Crear el objeto">
+              <Button size="md" onClick={create} disabled={saving || !form.nameSingular.trim()}>
+                {saving ? 'Creando…' : 'Crear objeto'}
+              </Button>
+            </SettingsRow>
+          </>
+        )}
+      </SettingsGroup>
 
-          <div>
-            <Label>Icono</Label>
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {OBJECT_ICONS.map((name) => (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, icon: name }))}
-                  aria-label={name}
-                  aria-pressed={form.icon === name}
-                  className={
-                    form.icon === name
-                      ? 'border-accent bg-accent-subtle text-accent flex size-8 items-center justify-center rounded-md border'
-                      : 'border-border text-secondary hover:bg-chip-gray hover:text-primary flex size-8 items-center justify-center rounded-md border'
-                  }
-                >
-                  <Icon name={name} size={15} />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Button size="sm" type="submit" disabled={saving}>
-            {saving ? 'Creando…' : 'Crear objeto'}
-          </Button>
-        </form>
-      )}
-
-      <ul className="border-border bg-surface divide-border divide-y rounded-lg border">
+      <SettingsGroup title="Objetos">
         {objects.map((o) => (
-          <li key={o.id} className="hover:bg-bg flex items-center gap-2 px-4 py-2.5">
+          <SettingsRow
+            key={o.id}
+            label={o.labelPlural}
+            icon={<Icon name={o.icon} size={15} />}
+            className="hover:bg-sunken relative"
+          >
+            <div className="flex items-center gap-3">
+              {o.isCustom ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => remove(o)}
+                  aria-label={`Borrar ${o.labelPlural}`}
+                  className="hover:text-danger relative z-10"
+                >
+                  <Trash2 size={14} />
+                </Button>
+              ) : (
+                <span className="text-tertiary text-xs">Estándar</span>
+              )}
+              <ChevronRight size={15} className="text-tertiary" aria-hidden />
+            </div>
+            {/* Enlace en toda la fila: en una lista agrupada se pulsa la fila
+                entera, no solo el texto. Va por encima con `absolute` para no
+                envolver los botones, que tienen su propia acción. */}
             <Link
               href={`/settings/data-model/${o.slug}`}
-              className="flex min-w-0 flex-1 items-center gap-2 text-sm"
-            >
-              <Icon name={o.icon} size={15} className="text-secondary shrink-0" />
-              <span className="text-primary truncate">{o.labelPlural}</span>
-            </Link>
-            {o.isCustom ? (
-              <button
-                type="button"
-                onClick={() => remove(o)}
-                className="text-tertiary hover:text-danger shrink-0"
-                aria-label="Borrar objeto"
-                title="Borrar objeto"
-              >
-                <Trash2 size={14} />
-              </button>
-            ) : (
-              <span className="text-tertiary shrink-0 text-xs">estándar</span>
-            )}
-            <ChevronRight size={15} className="text-tertiary shrink-0" />
-          </li>
+              className="absolute inset-0"
+              aria-label={o.labelPlural}
+            />
+          </SettingsRow>
         ))}
-      </ul>
+      </SettingsGroup>
     </div>
   );
 }

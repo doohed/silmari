@@ -22,11 +22,14 @@ export default async function ObjectFieldsPage({ params }) {
     throw err;
   }
 
+  // No usa `SettingsPage` porque es la única sección con un nivel más de
+  // profundidad y necesita la vuelta atrás encima del título. El resto de
+  // medidas son las mismas.
   return (
     <div className="mx-auto max-w-2xl px-8 py-8">
       <Link
         href="/settings/data-model"
-        className="text-tertiary hover:text-primary mb-4 inline-flex items-center gap-1 text-xs"
+        className="text-tertiary hover:text-primary mb-2 inline-flex items-center gap-1 text-xs"
       >
         <ArrowLeft size={14} /> Modelo de datos
       </Link>

@@ -48,7 +48,7 @@ export function Select({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="press mac-focus border-border-strong bg-surface text-primary hover:bg-sunken flex h-8 w-full items-center justify-between gap-2 rounded-lg border bg-linear-to-b from-white/12 to-transparent px-2.5 text-[13px] shadow-xs"
+        className="press mac-focus border-border-strong bg-surface text-primary hover:bg-sunken mac-gloss flex h-8 w-full items-center justify-between gap-2 rounded-lg border px-2.5 text-[13px] shadow-xs"
       >
         <span className={cn('truncate', !selected && 'text-tertiary')}>
           {selected?.label ?? placeholder}

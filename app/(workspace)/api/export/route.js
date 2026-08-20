@@ -1,5 +1,6 @@
 import { getContext } from '@/lib/auth/dal';
 import { exportWorkspace } from '@/lib/accounts/export-workspace';
+import { consumeRateLimit } from '@/lib/http/rate-limit';
 import { errorResponse } from '@/lib/errors/to-response';
 import { UnauthorizedError } from '@/lib/errors/domain-errors';
 
@@ -16,6 +17,13 @@ export async function GET() {
   try {
     const ctx = await getContext();
     if (!ctx) throw new UnauthorizedError();
+
+    // Es el endpoint más caro de la app: recorre el workspace entero y lo
+    // serializa en memoria. Un bucle contra esta URL basta para dejar la
+    // instancia inservible, así que lleva su propio freno, más estrecho que el
+    // del resto. Tres por hora y workspace sobran: es una descarga de RGPD, no
+    // una consulta.
+    consumeRateLimit(`export:${ctx.workspaceId}`, { limit: 3, windowMs: 60 * 60_000 });
 
     const data = await exportWorkspace(ctx);
     const filename = `silmari-${data.workspace.slug ?? 'export'}-${data.exportedAt.slice(0, 10)}.json`;

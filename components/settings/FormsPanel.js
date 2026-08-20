@@ -5,8 +5,8 @@ import { toast } from 'sonner';
 import { Trash2, Copy, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
 import { Select } from '@/components/ui/Select';
+import { SettingsGroup, SettingsRow, SettingsEmpty } from '@/components/ui/SettingsGroup';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import {
   listFormsAction,
@@ -15,6 +15,14 @@ import {
   deleteFormAction,
 } from '@/app/(workspace)/settings/forms/actions';
 
+/**
+ * Formularios web públicos, en listas agrupadas.
+ *
+ * **Cada formulario ya creado es su propio grupo**, con su nombre de título: la
+ * versión anterior metía en una tarjeta el nombre, las estadísticas, el
+ * interruptor, el enlace y el snippet, y con dos o tres seguidos no se sabía
+ * dónde acababa uno y empezaba el siguiente.
+ */
 export function FormsPanel({ initialForms, objects, appUrl }) {
   const confirm = useConfirm();
   const [forms, setForms] = useState(initialForms);
@@ -109,50 +117,58 @@ export function FormsPanel({ initialForms, objects, appUrl }) {
   const objectLabel = (id) => objects.find((o) => o.id === id)?.labelSingular ?? '';
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={create} className="border-border bg-bg space-y-4 rounded-lg border p-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="form-name">Nombre</Label>
-            <Input
-              id="form-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="p. ej. Contacto web"
-            />
-          </div>
-          <div>
-            <Label>Objeto destino</Label>
-            <Select
-              value={objectSlug}
-              onChange={(v) => {
-                setObjectSlug(v);
-                setSel({});
-                setDedupeFieldName('');
-              }}
-              options={objects.map((o) => ({ value: o.slug, label: o.labelSingular }))}
-            />
-          </div>
-        </div>
+    <div>
+      <SettingsGroup
+        title="Nuevo formulario"
+        footnote="Quien lo rellena no necesita cuenta. Cada envío crea o actualiza un registro del objeto que elijas."
+      >
+        <SettingsRow label="Nombre">
+          <Input
+            aria-label="Nombre"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="p. ej. Contacto web"
+            className="w-56"
+          />
+        </SettingsRow>
+        <SettingsRow label="Objeto destino">
+          <Select
+            value={objectSlug}
+            onChange={(v) => {
+              setObjectSlug(v);
+              setSel({});
+              setDedupeFieldName('');
+            }}
+            options={objects.map((o) => ({ value: o.slug, label: o.labelSingular }))}
+            className="w-56"
+          />
+        </SettingsRow>
 
-        <div>
-          <Label className="mb-1.5">Campos del formulario</Label>
-          <div className="border-border divide-border divide-y rounded-md border">
+        <SettingsRow stacked label="Campos del formulario">
+          <div className="border-border divide-border divide-y rounded-lg border">
             {fields.length === 0 && (
-              <p className="text-tertiary p-3 text-xs">Este objeto no tiene campos editables</p>
+              <p className="text-tertiary px-3 py-2 text-xs">
+                Este objeto no tiene campos editables
+              </p>
             )}
             {fields.map((f) => {
               const on = Boolean(sel[f.name]?.included);
               return (
                 <div key={f.name} className="flex items-center gap-3 px-3 py-2">
-                  <label className="flex flex-1 items-center gap-2 text-sm">
-                    <input type="checkbox" checked={on} onChange={() => toggleField(f.name)} />
+                  <label className="flex flex-1 items-center gap-2 text-[13px]">
+                    <input
+                      type="checkbox"
+                      className="size-4"
+                      checked={on}
+                      onChange={() => toggleField(f.name)}
+                    />
                     <span className="text-primary">{f.label}</span>
                   </label>
                   {on && (
                     <label className="text-secondary flex items-center gap-1.5 text-xs">
                       <input
                         type="checkbox"
+                        className="size-3.5"
                         checked={Boolean(sel[f.name]?.required)}
                         onChange={() => toggleRequired(f.name)}
                       />
@@ -163,115 +179,123 @@ export function FormsPanel({ initialForms, objects, appUrl }) {
               );
             })}
           </div>
-        </div>
+        </SettingsRow>
 
         {included.length > 0 && (
-          <div>
-            <Label>Campo clave (deduplicación, opcional)</Label>
+          <SettingsRow
+            label="Campo clave"
+            hint="Un envío con el mismo valor actualiza el registro en vez de duplicarlo"
+          >
             <Select
               value={dedupeFieldName}
               onChange={setDedupeFieldName}
               options={[
-                { value: '', label: 'Crear siempre un registro nuevo' },
+                { value: '', label: 'Crear siempre uno nuevo' },
                 ...included.map((f) => ({ value: f.name, label: f.label })),
               ]}
+              className="w-56"
             />
-            <p className="text-tertiary mt-1 text-xs">
-              Si eliges uno, un envío con el mismo valor actualiza el registro existente en vez de
-              duplicarlo.
-            </p>
-          </div>
+          </SettingsRow>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="form-submit">Texto del botón</Label>
-            <Input
-              id="form-submit"
-              value={submitLabel}
-              onChange={(e) => setSubmitLabel(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="form-success">Mensaje de éxito</Label>
-            <Input
-              id="form-success"
-              value={successMessage}
-              onChange={(e) => setSuccessMessage(e.target.value)}
-            />
-          </div>
-        </div>
+        <SettingsRow label="Texto del botón">
+          <Input
+            aria-label="Texto del botón"
+            value={submitLabel}
+            onChange={(e) => setSubmitLabel(e.target.value)}
+            className="w-56"
+          />
+        </SettingsRow>
+        <SettingsRow label="Mensaje de éxito">
+          <Input
+            aria-label="Mensaje de éxito"
+            value={successMessage}
+            onChange={(e) => setSuccessMessage(e.target.value)}
+            className="w-56"
+          />
+        </SettingsRow>
 
-        <Button size="sm" type="submit" disabled={saving || !name.trim() || included.length === 0}>
-          {saving ? 'Creando…' : 'Crear formulario'}
-        </Button>
-      </form>
+        <SettingsRow label="Crear el formulario">
+          <Button
+            size="md"
+            onClick={create}
+            disabled={saving || !name.trim() || included.length === 0}
+          >
+            {saving ? 'Creando…' : 'Crear formulario'}
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
 
-      <ul className="space-y-3">
-        {forms.length === 0 && <li className="text-tertiary text-sm">Sin formularios</li>}
-        {forms.map((f) => (
-          <li key={f.id} className="border-border bg-surface rounded-lg border p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-primary truncate text-sm font-medium">{f.name}</p>
-                <p className="text-secondary mt-0.5 text-xs">
-                  {objectLabel(f.objectMetadataId)} · {f.fields.length}{' '}
-                  {f.fields.length === 1 ? 'campo' : 'campos'} · {f.stats.submissions} envíos
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => toggle(f.id)}
-                  className={`rounded-md border px-2 py-0.5 text-xs ${f.isActive ? 'border-accent text-accent' : 'border-border text-tertiary'}`}
-                >
-                  {f.isActive ? 'Activo' : 'Inactivo'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => remove(f.id, f.name)}
-                  className="text-tertiary hover:text-danger"
-                  aria-label="Borrar formulario"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
+      {forms.length === 0 && (
+        <SettingsGroup title="Formularios">
+          <SettingsEmpty>Todavía no has creado ninguno</SettingsEmpty>
+        </SettingsGroup>
+      )}
 
-            <div className="border-border mt-2 space-y-2 border-t pt-2">
-              <div className="flex items-center gap-2">
-                <code className="text-tertiary bg-chip-gray min-w-0 flex-1 truncate rounded px-2 py-1 text-xs">
-                  {hostedUrl(f.slug)}
-                </code>
-                <a
-                  href={hostedUrl(f.slug)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-tertiary hover:text-primary"
-                  aria-label="Abrir formulario"
-                >
-                  <ExternalLink size={14} />
-                </a>
-                <button
-                  type="button"
-                  onClick={() => copy(hostedUrl(f.slug), 'Enlace copiado')}
-                  className="text-tertiary hover:text-primary"
-                  aria-label="Copiar enlace"
-                >
-                  <Copy size={14} />
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => copy(embedSnippet(f.slug), 'Snippet copiado')}
-                className="text-accent flex items-center gap-1 text-xs"
+      {forms.map((f) => (
+        <SettingsGroup key={f.id} title={f.name}>
+          <SettingsRow
+            label={objectLabel(f.objectMetadataId)}
+            hint={`${f.fields.length} ${f.fields.length === 1 ? 'campo' : 'campos'} · ${f.stats.submissions} envíos`}
+          >
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => toggle(f.id)}
+              aria-pressed={f.isActive}
+              className={f.isActive ? 'border-accent text-accent' : 'text-tertiary'}
+            >
+              {f.isActive ? 'Activo' : 'Inactivo'}
+            </Button>
+          </SettingsRow>
+
+          <SettingsRow stacked label="Enlace público">
+            <div className="flex items-center gap-2">
+              <code className="text-tertiary bg-sunken min-w-0 flex-1 truncate rounded-md px-2 py-1 text-xs">
+                {hostedUrl(f.slug)}
+              </code>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.open(hostedUrl(f.slug), '_blank', 'noopener,noreferrer')}
+                aria-label={`Abrir ${f.name}`}
               >
-                <Copy size={12} /> Copiar snippet para embeber
-              </button>
+                <ExternalLink size={14} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copy(hostedUrl(f.slug), 'Enlace copiado')}
+                aria-label="Copiar enlace"
+              >
+                <Copy size={14} />
+              </Button>
             </div>
-          </li>
-        ))}
-      </ul>
+          </SettingsRow>
+
+          <SettingsRow label="Insertar en tu web" hint="Un iframe listo para pegar">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => copy(embedSnippet(f.slug), 'Snippet copiado')}
+            >
+              <Copy size={13} /> Copiar snippet
+            </Button>
+          </SettingsRow>
+
+          <SettingsRow label="Eliminar formulario" hint="El enlace dejará de funcionar">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => remove(f.id, f.name)}
+              aria-label={`Borrar ${f.name}`}
+              className="hover:text-danger"
+            >
+              <Trash2 size={14} />
+            </Button>
+          </SettingsRow>
+        </SettingsGroup>
+      ))}
     </div>
   );
 }

@@ -4,12 +4,15 @@ import { listObjects, getObjectBySlug } from '@/lib/metadata/object-service';
 import { isWritableField } from '@/lib/field-types';
 import { appUrl } from '@/lib/config/app';
 import { FormsPanel } from '@/components/settings/FormsPanel';
+import { SettingsPage } from '@/components/settings/SettingsPage';
 
 /**
  * Ensambla para el editor: cada objeto con sus campos escribibles (los que puede
  * recoger un formulario). Pasa la URL de la app para construir el snippet y el
  * enlace alojado.
  */
+export const metadata = { title: 'Formularios · Silmari' };
+
 export default async function FormsPage() {
   const ctx = await requireContext();
   const [forms, objects] = await Promise.all([listForms(ctx), listObjects(ctx)]);
@@ -29,13 +32,8 @@ export default async function FormsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl px-8 py-8">
-      <h1 className="text-primary mb-1 text-xl font-semibold tracking-tight">Formularios</h1>
-      <p className="text-secondary mb-6 text-sm">
-        Formularios web que puedes embeber en tu sitio. Cada envío crea o actualiza un registro (por
-        el campo clave), sin que quien lo rellena necesite cuenta.
-      </p>
+    <SettingsPage title="Formularios">
       <FormsPanel initialForms={forms} objects={objectsWithFields} appUrl={appUrl()} />
-    </div>
+    </SettingsPage>
   );
 }

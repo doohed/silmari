@@ -35,6 +35,10 @@
   /* Halo de foco: en macOS el anillo es ancho y difuso, no un borde de 1px. */
   --focus-ring: color-mix(in oklab, var(--accent) 35%, transparent);
 
+  /* Brillo del material de los controles (botones y desplegables): una veladura
+     de blanco arriba que se desvanece. En claro da el relieve de macOS. */
+  --gloss: rgb(255 255 255 / 0.12);
+
   /* Acción primaria: casi negro. Separado de --accent (que marca lo activo y
      los enlaces) para poder cambiar el color de marca sin tocar los botones. */
   --primary: #18181b;
@@ -111,6 +115,13 @@
   --sidebar: var(--bg);
   --sidebar-border: rgb(255 255 255 / 0.08);
   --focus-ring: color-mix(in oklab, var(--accent) 45%, transparent);
+
+  /* **Sin brillo en oscuro.** La misma veladura que en claro da relieve, sobre
+     un gris oscuro se lee como una rampa de gris claro a gris oscuro: el
+     control parece un degradado y, dentro de una ventana llena de ellos, es la
+     ventana entera la que parece degradada. Los controles del modo oscuro de
+     macOS son de color plano. */
+  --gloss: transparent;
 
   /* En oscuro el "casi negro" no contrasta: la acción primaria se invierte. */
   --primary: #fafafa;
@@ -296,6 +307,14 @@ h3 {
    sobre la tabla y sobre el rail, donde cualquier resto de transparencia deja
    ver texto y anillos de foco a través del menú. La sensación de material la
    dan el radio, el canto fino y la sombra, no el ver a través. */
+/* Veladura del material de un control. Va como clase y no como utilidad de
+   Tailwind porque el valor depende del tema: en oscuro el token es
+   `transparent` y el degradado desaparece solo, sin `dark:` repartidos por los
+   componentes. */
+.mac-gloss {
+  background-image: linear-gradient(to bottom, var(--gloss), transparent);
+}
+
 .mac-menu {
   background: var(--elevated);
   border: 0.5px solid var(--border-strong);

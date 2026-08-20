@@ -103,6 +103,20 @@ Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
   nombre de workspace, navegación); en escritorio no hay barra superior, y en
   móvil (`SidebarShell`) pasa a ser una barra con menú y un cajón lateral.
   La lista de registros cambia a **tarjetas** por debajo de `md` (`RecordCards`).
+  **Todas las secciones de Ajustes se pintan igual**, con el patrón de la página
+  de Perfil: `SettingsPage` (columna `max-w-2xl`, solo el título — **sin párrafo
+  de descripción y sin acciones en la cabecera**, que harían saltar el título al
+  cambiar de sección) y dentro, listas agrupadas de `SettingsGroup` /
+  `SettingsRow` (`components/ui/SettingsGroup.js`). Una fila = etiqueta a la
+  izquierda, control a la derecha; `hint` para lo que el control no dice,
+  `footnote` del grupo para lo que hay que explicar una vez, `stacked` cuando el
+  control es ancho. Los botones de "añadir" van **en una fila del primer grupo**,
+  no flotando sobre la lista, y una cosa con varios ajustes propios (un webhook,
+  un formulario, una integración) es **un grupo con su nombre de título**. Si
+  añades una sección nueva, no escribas el `div` y el `h1` a mano: eso es lo que
+  hizo que ninguna midiera igual que la de al lado.
+  ⚠️ El checkbox propio (`appearance:none` en `globals.css`) **no tiene tamaño
+  intrínseco**: sin una clase `size-*` se queda en un punto invisible.
   **Ajustes no es una página a pantalla completa**: `components/settings/SettingsShell.js`
   lo abre como **ventana flotante** (diálogo de Radix siempre abierto) sobre el
   resto de la app difuminada; se cierra con Escape, la X o el clic fuera, y al
@@ -429,8 +443,16 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   `ana@x.com` con `juana@x.com`.
 - **Storage** de adjuntos: abstracción `lib/storage/` con driver de disco local
   (carpeta `storage/`, gitignored); listo para S3.
-- **Rate limiting** de `/api/v1`: en memoria por instancia (ventana fija por
-  key); no compartido entre instancias.
+- **Rate limiting**: en memoria por instancia (ventana fija por key,
+  `lib/http/rate-limit.js`); **no compartido entre instancias**. Cubierto hoy:
+  `/api/v1` (120/min por API key), formularios públicos (20/min por IP+slug),
+  `/api/upload` (60/min por workspace), `/api/export` (**3/hora** por workspace:
+  vuelca el workspace entero y es el endpoint más caro que hay) y los flujos de
+  auth (`lib/auth/throttle.js`). Las demás server actions no llevan freno.
+  ⚠️ **Esto para el abuso, no una avalancha**: para que se mire un contador que
+  vive dentro del proceso de Node, la petición ya ha llegado hasta ahí. El corte
+  ante un flood es `limit_req` de nginx y un CDN por delante — configuración y
+  criterio en `docs/runbook.md`.
 - **Búsqueda**: regex parcial case-insensitive sobre `records.searchText`.
   **Imágenes** (logo/avatar): reescaladas en cliente y guardadas como **data URL**.
 - **Migraciones puntuales**: scripts en `scripts/` (p. ej.
@@ -504,6 +526,13 @@ formula-eval.js`, cálculo en `hydrate`, config en `settings.formula`, editor en
   - `.mac-segment` — control segmentado; el estado se lee de `aria-pressed` o
     `data-active`, sin clases condicionales en el marcado.
   - `.mac-focus` — halo ancho de foco (no un borde de 1 px).
+  - `.mac-gloss` — la veladura de blanco de botones y desplegables. Va por el
+    token `--gloss`, que en **oscuro es `transparent`**: la misma veladura que da
+    relieve sobre un fondo claro, sobre uno oscuro se lee como una rampa de gris
+    claro a gris oscuro, y en una ventana llena de controles es la ventana entera
+    la que parece degradada. Los controles del modo oscuro de macOS son planos.
+    Medido: el `Select` iba de `#37373a` a `#2a2a2d` sobre una tarjeta de
+    `#242427`. **No uses `from-white/…` suelto en un control**, usa esta clase.
     ⚠️ Estas clases van **sin `@layer`**, así que ganan a cualquier utilidad de
     Tailwind aunque se escriba después en el `className` (un `max-md:rounded-none`
     junto a `.mac-sheet` no haría nada). Lo responsive se resuelve dentro de la

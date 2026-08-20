@@ -2,11 +2,14 @@ import { requireContext } from '@/lib/auth/dal';
 import { listTemplates } from '@/lib/templates/service';
 import { listObjects, getObjectBySlug } from '@/lib/metadata/object-service';
 import { TemplatesPanel } from '@/components/settings/TemplatesPanel';
+import { SettingsPage } from '@/components/settings/SettingsPage';
 
 /**
  * Ensambla para el editor: cada objeto con los nombres de sus campos (las
  * variables `{{campo}}` insertables) para la vista previa y los chips.
  */
+export const metadata = { title: 'Plantillas · Silmari' };
+
 export default async function TemplatesPage() {
   const ctx = await requireContext();
   const [templates, objects] = await Promise.all([listTemplates(ctx), listObjects(ctx)]);
@@ -23,13 +26,8 @@ export default async function TemplatesPage() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl px-8 py-8">
-      <h1 className="text-primary mb-1 text-xl font-semibold tracking-tight">Plantillas</h1>
-      <p className="text-secondary mb-6 text-sm">
-        Mensajes reutilizables con variables <span className="font-mono">{'{{campo}}'}</span> que se
-        rellenan con los datos del registro. Las usarán el email y WhatsApp al escribir.
-      </p>
+    <SettingsPage title="Plantillas">
       <TemplatesPanel initialTemplates={templates} objects={objectsWithFields} />
-    </div>
+    </SettingsPage>
   );
 }

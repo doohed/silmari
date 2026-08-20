@@ -5,8 +5,8 @@ import { toast } from 'sonner';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
 import { Select } from '@/components/ui/Select';
+import { SettingsGroup, SettingsRow, SettingsEmpty } from '@/components/ui/SettingsGroup';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { renderTemplate } from '@/lib/templates/render';
 import {
@@ -107,26 +107,24 @@ export function TemplatesPanel({ initialTemplates, objects }) {
   }
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={create} className="border-border bg-bg space-y-4 rounded-lg border p-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="tpl-name">Nombre</Label>
-            <Input
-              id="tpl-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="p. ej. Bienvenida"
-            />
-          </div>
-          <div>
-            <Label>Canal</Label>
-            <Select value={channel} onChange={setChannel} options={CHANNELS} />
-          </div>
-        </div>
-
-        <div>
-          <Label>Objeto (opcional)</Label>
+    <div>
+      <SettingsGroup
+        title="Nueva plantilla"
+        footnote="Las variables {{campo}} se rellenan con los datos del registro al escribir el mensaje. Elige un objeto para ver cuáles hay disponibles."
+      >
+        <SettingsRow label="Nombre">
+          <Input
+            aria-label="Nombre"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="p. ej. Bienvenida"
+            className="w-56"
+          />
+        </SettingsRow>
+        <SettingsRow label="Canal">
+          <Select value={channel} onChange={setChannel} options={CHANNELS} className="w-56" />
+        </SettingsRow>
+        <SettingsRow label="Objeto" hint="De dónde salen las variables. Opcional">
           <Select
             value={objectSlug}
             onChange={setObjectSlug}
@@ -134,97 +132,93 @@ export function TemplatesPanel({ initialTemplates, objects }) {
               { value: '', label: 'Sin objeto' },
               ...objects.map((o) => ({ value: o.slug, label: o.labelSingular })),
             ]}
+            className="w-56"
           />
-        </div>
+        </SettingsRow>
 
         {channel === 'EMAIL' && (
-          <div>
-            <Label htmlFor="tpl-subject">Asunto</Label>
+          <SettingsRow label="Asunto">
             <Input
-              id="tpl-subject"
+              aria-label="Asunto"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Hola {{name}}"
+              className="w-56"
             />
-          </div>
+          </SettingsRow>
         )}
 
-        <div>
-          <Label htmlFor="tpl-body">Mensaje</Label>
+        <SettingsRow stacked label="Mensaje">
           <textarea
-            id="tpl-body"
             ref={bodyRef}
+            aria-label="Mensaje"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Hola {{name}}, gracias por tu interés…"
             className={TEXTAREA}
           />
-          {fields.length > 0 && (
-            <div className="mt-2">
-              <span className="text-tertiary mb-1 block text-xs">Insertar variable</span>
-              <div className="flex flex-wrap gap-1.5">
-                {fields.map((f) => (
-                  <button
-                    key={f.name}
-                    type="button"
-                    onClick={() => insertVariable(f.name)}
-                    className="border-border text-secondary hover:border-accent hover:text-primary rounded-md border px-2 py-0.5 font-mono text-xs"
-                  >
-                    {`{{${f.name}}}`}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        </SettingsRow>
 
-        {/* Vista previa */}
-        {(subject || body) && (
-          <div className="border-border bg-surface rounded-md border p-3">
-            <span className="text-tertiary mb-1 block text-xs">Vista previa</span>
-            {channel === 'EMAIL' && subject && (
-              <p className="text-primary mb-1 text-sm font-medium">
-                {renderTemplate(subject, previewVars)}
-              </p>
-            )}
-            <p className="text-secondary text-sm whitespace-pre-wrap">
-              {renderTemplate(body, previewVars)}
-            </p>
-          </div>
+        {fields.length > 0 && (
+          <SettingsRow stacked label="Insertar variable">
+            <div className="flex flex-wrap gap-1.5">
+              {fields.map((f) => (
+                <button
+                  key={f.name}
+                  type="button"
+                  onClick={() => insertVariable(f.name)}
+                  className="press border-border text-secondary hover:border-accent hover:text-primary rounded-md border px-2 py-0.5 font-mono text-xs"
+                >
+                  {`{{${f.name}}}`}
+                </button>
+              ))}
+            </div>
+          </SettingsRow>
         )}
 
-        <Button size="sm" type="submit" disabled={saving || !name.trim() || !body.trim()}>
-          {saving ? 'Creando…' : 'Crear plantilla'}
-        </Button>
-      </form>
+        {(subject || body) && (
+          <SettingsRow stacked label="Vista previa">
+            <div className="border-border bg-sunken rounded-lg border px-3 py-2">
+              {channel === 'EMAIL' && subject && (
+                <p className="text-primary mb-1 text-[13px] font-medium">
+                  {renderTemplate(subject, previewVars)}
+                </p>
+              )}
+              <p className="text-secondary text-[13px] whitespace-pre-wrap">
+                {renderTemplate(body, previewVars)}
+              </p>
+            </div>
+          </SettingsRow>
+        )}
 
-      <ul className="space-y-3">
-        {templates.length === 0 && <li className="text-tertiary text-sm">Sin plantillas</li>}
+        <SettingsRow label="Crear la plantilla">
+          <Button size="md" onClick={create} disabled={saving || !name.trim() || !body.trim()}>
+            {saving ? 'Creando…' : 'Crear plantilla'}
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
+
+      <SettingsGroup title="Plantillas">
+        {templates.length === 0 && <SettingsEmpty>Todavía no has creado ninguna</SettingsEmpty>}
         {templates.map((t) => (
-          <li key={t.id} className="border-border bg-surface rounded-lg border p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-primary truncate text-sm font-medium">{t.name}</p>
-                  <span className="bg-chip-blue text-chip-blue-fg rounded px-1.5 py-0.5 text-[10px] font-medium">
-                    {channelLabel(t.channel)}
-                  </span>
-                </div>
-                {t.subject && <p className="text-secondary mt-0.5 truncate text-xs">{t.subject}</p>}
-                <p className="text-tertiary mt-0.5 line-clamp-2 text-xs">{t.body}</p>
-              </div>
-              <button
-                type="button"
+          <SettingsRow key={t.id} label={t.name} hint={t.subject || t.body.slice(0, 90)}>
+            <div className="flex items-center gap-3">
+              <span className="bg-chip-blue text-chip-blue-fg rounded-full px-2 py-0.5 text-xs font-medium">
+                {channelLabel(t.channel)}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => remove(t.id, t.name)}
-                className="text-tertiary hover:text-danger shrink-0"
-                aria-label="Borrar plantilla"
+                aria-label={`Borrar ${t.name}`}
+                className="hover:text-danger"
               >
                 <Trash2 size={14} />
-              </button>
+              </Button>
             </div>
-          </li>
+          </SettingsRow>
         ))}
-      </ul>
+      </SettingsGroup>
     </div>
   );
 }

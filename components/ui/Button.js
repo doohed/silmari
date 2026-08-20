@@ -3,8 +3,11 @@ import { cn } from '@/lib/utils/cn';
 /* Los botones de macOS tienen un brillo muy tenue arriba (el degradado del
    material) y una sombra corta que los despega del fondo. Se consigue con un
    `linear-gradient` de blanco casi transparente encima del color, no con un
-   color distinto: así vale igual para el acento, el rojo o el gris. */
-const GLOSS = 'bg-linear-to-b from-white/12 to-transparent';
+   color distinto: así vale igual para el acento, el rojo o el gris.
+   El valor vive en el token `--gloss` (`globals.css`), que en **oscuro es
+   `transparent`**: la misma veladura que da relieve sobre un fondo claro, sobre
+   uno oscuro se lee como una rampa y el control parece un degradado. */
+const GLOSS = 'mac-gloss';
 
 const VARIANTS = {
   primary: `bg-accent ${GLOSS} text-accent-fg shadow-sm hover:brightness-105 active:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none`,

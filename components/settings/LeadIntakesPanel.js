@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Trash2, Pencil, Copy, Check } from 'lucide-react';
+import { Trash2, Pencil, Copy, Check, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/Button';
+import { SettingsGroup, SettingsRow, SettingsEmpty } from '@/components/ui/SettingsGroup';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { LeadIntakeForm } from '@/components/settings/LeadIntakeForm';
 import {
@@ -71,128 +72,141 @@ export function LeadIntakesPanel({ initialIntakes, objects, endpoint }) {
 
   if (objects.length === 0) {
     return (
-      <p className="text-tertiary text-sm">
-        Crea antes un objeto en Modelo de datos para poder recibir leads.
-      </p>
+      <SettingsGroup>
+        <SettingsEmpty>
+          Crea antes un objeto en Modelo de datos para poder recibir leads
+        </SettingsEmpty>
+      </SettingsGroup>
     );
   }
 
   return (
-    <div className="space-y-5">
-      <div className="border-border bg-surface rounded-lg border p-4">
-        <p className="text-primary mb-1 text-sm font-medium">URL para Zapier o Make</p>
-        <p className="text-secondary mb-3 text-xs">
-          En el Zap, tras el trigger «New Lead» de Facebook Lead Ads, añade una acción{' '}
-          <span className="text-primary">Webhooks → Custom Request</span> con método POST a esta
-          URL, cabecera <code className="text-primary">Authorization: Bearer TU_API_KEY</code> y el
-          lead como cuerpo JSON. La API key se crea en Ajustes → API keys con permiso{' '}
-          <code className="text-primary">records:write</code>.
-        </p>
-        <div className="border-border bg-bg flex items-center gap-2 rounded-md border px-3 py-2">
-          <code className="text-primary flex-1 truncate text-xs">{endpoint}</code>
-          <button
-            type="button"
-            onClick={copyEndpoint}
-            className="text-tertiary hover:text-primary shrink-0"
-            aria-label="Copiar URL"
-          >
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-          </button>
-        </div>
-      </div>
+    <div>
+      <SettingsGroup
+        title="Conexión"
+        footnote="En el Zap, tras el trigger «New Lead» de Facebook Lead Ads, añade una acción Webhooks → Custom Request con método POST a esta URL, cabecera Authorization: Bearer TU_API_KEY y el lead como cuerpo JSON. La API key se crea en Ajustes → API keys con permiso records:write."
+      >
+        <SettingsRow stacked label="URL para Zapier o Make">
+          <div className="border-border bg-sunken flex items-center gap-2 rounded-lg border px-3 py-2">
+            <code className="text-primary min-w-0 flex-1 truncate text-xs">{endpoint}</code>
+            <Button variant="secondary" size="sm" onClick={copyEndpoint} aria-label="Copiar URL">
+              {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copiada' : 'Copiar'}
+            </Button>
+          </div>
+        </SettingsRow>
+      </SettingsGroup>
 
       {editing === 'new' ? (
         <LeadIntakeForm objects={objects} onSubmit={save} onCancel={() => setEditing(null)} />
       ) : (
-        <Button size="sm" onClick={() => setEditing('new')}>
-          Nueva configuración
-        </Button>
+        <SettingsGroup>
+          <SettingsRow
+            label="Nueva configuración"
+            hint="A qué objeto va cada formulario y cómo se traduce cada pregunta"
+          >
+            <Button size="md" onClick={() => setEditing('new')}>
+              <Plus size={14} /> Crear
+            </Button>
+          </SettingsRow>
+        </SettingsGroup>
       )}
 
-      <ul className="space-y-3">
-        {intakes.length === 0 && (
-          <li className="text-tertiary text-sm">Sin configuraciones de entrada</li>
-        )}
-        {intakes.map((intake) =>
-          editing === intake.id ? (
-            <li key={intake.id}>
-              <LeadIntakeForm
-                intake={intake}
-                objects={objects}
-                onSubmit={save}
-                onCancel={() => setEditing(null)}
-              />
-            </li>
-          ) : (
-            <li key={intake.id} className="border-border bg-surface rounded-lg border p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-primary truncate text-sm font-medium">
-                    {intake.name}
-                    {!intake.isActive && (
-                      <span className="text-tertiary ml-2 text-xs font-normal">(pausada)</span>
-                    )}
-                  </p>
-                  <p className="text-tertiary truncate text-xs">
-                    {intake.formId ? `Formulario ${intake.formId}` : 'Cualquier formulario'} →{' '}
-                    {objects.find((o) => o.id === intake.objectMetadataId)?.labelPlural ??
-                      'objeto borrado'}
-                    {intake.dedupeFieldName && ` · clave: ${intake.dedupeFieldName}`}
-                  </p>
-                  <p className="text-tertiary mt-1 text-xs">
-                    {intake.stats.created} creados · {intake.stats.updated} actualizados ·{' '}
-                    {intake.stats.failed} con error
-                    {intake.lastReceivedAt &&
-                      ` · último ${format(new Date(intake.lastReceivedAt), 'dd/MM HH:mm')}`}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => toggleActive(intake)}
-                    className="text-tertiary hover:text-primary text-xs"
-                  >
-                    {intake.isActive ? 'Pausar' : 'Activar'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditing(intake.id)}
-                    className="text-tertiary hover:text-primary"
-                    aria-label="Editar configuración"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => remove(intake)}
-                    className="text-tertiary hover:text-danger"
-                    aria-label="Borrar configuración"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
+      {intakes.length === 0 && (
+        <SettingsGroup title="Formularios conectados">
+          <SettingsEmpty>Todavía no has configurado ninguno</SettingsEmpty>
+        </SettingsGroup>
+      )}
 
-              {intake.log.length > 0 && (
-                <ul className="border-border mt-2 space-y-1 border-t pt-2">
+      {intakes.map((intake) =>
+        editing === intake.id ? (
+          <LeadIntakeForm
+            key={intake.id}
+            intake={intake}
+            objects={objects}
+            onSubmit={save}
+            onCancel={() => setEditing(null)}
+          />
+        ) : (
+          <SettingsGroup key={intake.id} title={intake.name}>
+            <SettingsRow
+              label={intake.formId ? `Formulario ${intake.formId}` : 'Cualquier formulario'}
+              hint={`Va a ${
+                objects.find((o) => o.id === intake.objectMetadataId)?.labelPlural ??
+                'objeto borrado'
+              }${intake.dedupeFieldName ? ` · clave: ${intake.dedupeFieldName}` : ''}`}
+            >
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => toggleActive(intake)}>
+                  {intake.isActive ? 'Pausar' : 'Activar'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditing(intake.id)}
+                  aria-label={`Editar ${intake.name}`}
+                >
+                  <Pencil size={14} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => remove(intake)}
+                  aria-label={`Borrar ${intake.name}`}
+                  className="hover:text-danger"
+                >
+                  <Trash2 size={14} />
+                </Button>
+              </div>
+            </SettingsRow>
+
+            <SettingsRow label="Estado">
+              {intake.isActive ? (
+                <span className="bg-chip-green text-chip-green-fg rounded-full px-2 py-0.5 text-xs">
+                  Activa
+                </span>
+              ) : (
+                <span className="bg-chip-gray text-chip-gray-fg rounded-full px-2 py-0.5 text-xs">
+                  Pausada
+                </span>
+              )}
+            </SettingsRow>
+
+            <SettingsRow
+              label="Resultados"
+              hint={
+                intake.lastReceivedAt
+                  ? `Último lead el ${format(new Date(intake.lastReceivedAt), 'dd/MM HH:mm')}`
+                  : 'Todavía no ha entrado ninguno'
+              }
+            >
+              <span className="text-secondary text-[13px] tabular-nums">
+                {intake.stats.created} creados · {intake.stats.updated} act. · {intake.stats.failed}{' '}
+                con error
+              </span>
+            </SettingsRow>
+
+            {intake.log.length > 0 && (
+              <SettingsRow stacked label="Últimas entradas">
+                <ul className="space-y-1">
                   {intake.log.slice(0, 5).map((l) => (
                     <li key={l.id} className="flex items-center gap-2 text-xs">
                       <span
                         className={`size-2 shrink-0 rounded-full ${l.ok ? 'bg-success' : 'bg-danger'}`}
+                        aria-hidden
                       />
                       <span className="text-secondary">{l.action}</span>
                       <span className="text-tertiary min-w-0 truncate">{l.message}</span>
-                      <span className="text-tertiary ml-auto shrink-0">
+                      <span className="text-tertiary ml-auto shrink-0 tabular-nums">
                         {format(new Date(l.at), 'dd/MM HH:mm')}
                       </span>
                     </li>
                   ))}
                 </ul>
-              )}
-            </li>
-          ),
-        )}
-      </ul>
+              </SettingsRow>
+            )}
+          </SettingsGroup>
+        ),
+      )}
     </div>
   );
 }

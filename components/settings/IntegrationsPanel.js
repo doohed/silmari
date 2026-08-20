@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Mail, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
+import { SettingsGroup, SettingsRow } from '@/components/ui/SettingsGroup';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import {
   saveEmailConnectionAction,
@@ -14,15 +14,51 @@ import {
   deleteWhatsappConnectionAction,
 } from '@/app/(workspace)/settings/integrations/actions';
 
-function ConnectedBadge() {
-  return (
-    <span className="text-success flex items-center gap-1 text-xs font-medium">
-      <CheckCircle2 size={13} /> Conectado
+/**
+ * Integraciones salientes (SMTP y WhatsApp), en listas agrupadas.
+ *
+ * Antes era un formulario clásico —etiqueta encima, campo debajo, en rejilla de
+ * dos y tres columnas— dentro de una tarjeta con su propio encabezado. Ahora
+ * cada conexión es **un grupo**, con el nombre del servicio de título y una fila
+ * por dato. Es más largo en vertical y se lee mucho mejor: cada línea es "esto
+ * se llama así y vale esto", que es lo que hace una pantalla de ajustes.
+ *
+ * El estado (conectado o no) va en la primera fila del grupo, no en un badge
+ * flotando en la esquina.
+ */
+
+/** Chip de estado de una conexión. */
+function StatusChip({ connected }) {
+  return connected ? (
+    <span className="text-success flex items-center gap-1 text-[13px] font-medium">
+      <CheckCircle2 size={14} aria-hidden /> Conectado
+    </span>
+  ) : (
+    <span className="bg-chip-gray text-chip-gray-fg rounded-full px-2 py-0.5 text-xs">
+      Sin conectar
     </span>
   );
 }
 
-function EmailCard({ initial }) {
+/** Fila con los botones de guardar y desconectar. */
+function ActionsRow({ connected, busy, onDisconnect }) {
+  return (
+    <SettingsRow label={connected ? 'Actualizar la conexión' : 'Guardar y conectar'}>
+      <div className="flex gap-2">
+        {connected && (
+          <Button size="md" variant="ghost" type="button" onClick={onDisconnect}>
+            Desconectar
+          </Button>
+        )}
+        <Button size="md" type="submit" disabled={busy}>
+          {busy ? 'Guardando…' : connected ? 'Actualizar' : 'Conectar'}
+        </Button>
+      </div>
+    </SettingsRow>
+  );
+}
+
+function EmailGroup({ initial }) {
   const confirm = useConfirm();
   const [connected, setConnected] = useState(initial.connected);
   const [host, setHost] = useState(initial.host || 'smtp.gmail.com');
@@ -70,99 +106,89 @@ function EmailCard({ initial }) {
   }
 
   return (
-    <form onSubmit={save} className="border-border bg-surface space-y-3 rounded-lg border p-4">
-      <div className="flex items-center justify-between">
-        <div className="text-primary flex items-center gap-2 text-sm font-medium">
-          <Mail size={16} /> Correo (SMTP)
-        </div>
-        {connected && <ConnectedBadge />}
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <div className="col-span-2">
-          <Label htmlFor="smtp-host">Servidor SMTP</Label>
-          <Input id="smtp-host" value={host} onChange={(e) => setHost(e.target.value)} />
-        </div>
-        <div>
-          <Label htmlFor="smtp-port">Puerto</Label>
+    <form onSubmit={save}>
+      <SettingsGroup
+        title="Correo (SMTP)"
+        footnote="Con Gmail: activa la verificación en dos pasos y genera una contraseña de aplicación (host smtp.gmail.com, puerto 587). La contraseña se guarda cifrada."
+      >
+        <SettingsRow label="Estado">
+          <StatusChip connected={connected} />
+        </SettingsRow>
+        <SettingsRow label="Servidor">
           <Input
-            id="smtp-port"
+            aria-label="Servidor SMTP"
+            value={host}
+            onChange={(e) => setHost(e.target.value)}
+            className="w-56"
+          />
+        </SettingsRow>
+        <SettingsRow label="Puerto">
+          <Input
+            aria-label="Puerto"
             type="number"
             value={port}
             onChange={(e) => setPort(Number(e.target.value))}
+            className="w-24"
           />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label htmlFor="smtp-user">Usuario</Label>
+        </SettingsRow>
+        <SettingsRow label="Conexión segura" hint="SSL/TLS directo, para el puerto 465">
+          {/* El checkbox propio (`appearance:none` en globals.css) no tiene
+              tamaño intrínseco: sin una clase `size-*` se queda en un punto. */}
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={secure}
+            onChange={(e) => setSecure(e.target.checked)}
+            aria-label="Conexión segura"
+          />
+        </SettingsRow>
+        <SettingsRow label="Usuario">
           <Input
-            id="smtp-user"
+            aria-label="Usuario"
             value={user}
             onChange={(e) => setUser(e.target.value)}
             placeholder="tu@gmail.com"
+            className="w-56"
           />
-        </div>
-        <div>
-          <Label htmlFor="smtp-pass">Contraseña {connected && '(sin cambios)'}</Label>
+        </SettingsRow>
+        <SettingsRow
+          label="Contraseña"
+          hint={connected ? 'Déjala vacía para no cambiarla' : undefined}
+        >
           <Input
-            id="smtp-pass"
+            aria-label="Contraseña"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={connected ? '••••••••' : 'contraseña de aplicación'}
+            className="w-56"
           />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label htmlFor="smtp-fromname">Nombre del remitente</Label>
+        </SettingsRow>
+        <SettingsRow label="Nombre del remitente">
           <Input
-            id="smtp-fromname"
+            aria-label="Nombre del remitente"
             value={fromName}
             onChange={(e) => setFromName(e.target.value)}
             placeholder="Tu empresa"
+            className="w-56"
           />
-        </div>
-        <div>
-          <Label htmlFor="smtp-fromemail">Correo del remitente</Label>
+        </SettingsRow>
+        <SettingsRow label="Correo del remitente">
           <Input
-            id="smtp-fromemail"
+            aria-label="Correo del remitente"
             value={fromEmail}
             onChange={(e) => setFromEmail(e.target.value)}
             placeholder="(por defecto, el usuario)"
+            className="w-56"
           />
-        </div>
-      </div>
-
-      <label className="text-secondary flex items-center gap-2 text-xs">
-        <input type="checkbox" checked={secure} onChange={(e) => setSecure(e.target.checked)} />
-        Conexión segura (SSL/TLS directo, puerto 465)
-      </label>
-
-      <p className="text-tertiary text-xs">
-        Con Gmail: activa la verificación en dos pasos y genera una{' '}
-        <span className="text-secondary">contraseña de aplicación</span> (host{' '}
-        <span className="font-mono">smtp.gmail.com</span>, puerto 587).
-      </p>
-
-      <div className="flex gap-2">
-        <Button size="sm" type="submit" disabled={busy}>
-          {busy ? 'Guardando…' : connected ? 'Actualizar' : 'Conectar'}
-        </Button>
-        {connected && (
-          <Button size="sm" variant="ghost" type="button" onClick={disconnect}>
-            Desconectar
-          </Button>
-        )}
-      </div>
+        </SettingsRow>
+        <ActionsRow connected={connected} busy={busy} onDisconnect={disconnect} />
+      </SettingsGroup>
     </form>
   );
 }
 
-function WhatsappCard({ initial }) {
+function WhatsappGroup({ initial }) {
   const confirm = useConfirm();
   const [connected, setConnected] = useState(initial.connected);
   const [phoneNumberId, setPhoneNumberId] = useState(initial.phoneNumberId || '');
@@ -202,63 +228,55 @@ function WhatsappCard({ initial }) {
   }
 
   return (
-    <form onSubmit={save} className="border-border bg-surface space-y-3 rounded-lg border p-4">
-      <div className="flex items-center justify-between">
-        <div className="text-primary flex items-center gap-2 text-sm font-medium">
-          <MessageCircle size={16} /> WhatsApp (Cloud API de Meta)
-        </div>
-        {connected && <ConnectedBadge />}
-      </div>
-
-      <div>
-        <Label htmlFor="wa-phone">ID del número (phone_number_id)</Label>
-        <Input
-          id="wa-phone"
-          value={phoneNumberId}
-          onChange={(e) => setPhoneNumberId(e.target.value)}
-          placeholder="1234567890"
-        />
-      </div>
-      <div>
-        <Label htmlFor="wa-token">Token de acceso {connected && '(sin cambios)'}</Label>
-        <Input
-          id="wa-token"
-          type="password"
-          value={accessToken}
-          onChange={(e) => setAccessToken(e.target.value)}
-          placeholder={connected ? '••••••••' : 'EAAG...'}
-        />
-      </div>
-      <div>
-        <Label htmlFor="wa-biz">ID de la cuenta de empresa (opcional)</Label>
-        <Input id="wa-biz" value={businessId} onChange={(e) => setBusinessId(e.target.value)} />
-      </div>
-
-      <p className="text-tertiary text-xs">
-        En Meta for Developers: crea una app, añade el producto WhatsApp y copia el{' '}
-        <span className="font-mono">phone_number_id</span> y un token de acceso. Tienes un número de
-        prueba gratis.
-      </p>
-
-      <div className="flex gap-2">
-        <Button size="sm" type="submit" disabled={busy}>
-          {busy ? 'Guardando…' : connected ? 'Actualizar' : 'Conectar'}
-        </Button>
-        {connected && (
-          <Button size="sm" variant="ghost" type="button" onClick={disconnect}>
-            Desconectar
-          </Button>
-        )}
-      </div>
+    <form onSubmit={save}>
+      <SettingsGroup
+        title="WhatsApp (Cloud API de Meta)"
+        footnote="En Meta for Developers: crea una app, añade el producto WhatsApp y copia el phone_number_id y un token de acceso. Tienes un número de prueba gratis. El token se guarda cifrado."
+      >
+        <SettingsRow label="Estado">
+          <StatusChip connected={connected} />
+        </SettingsRow>
+        <SettingsRow label="ID del número" hint="phone_number_id">
+          <Input
+            aria-label="ID del número"
+            value={phoneNumberId}
+            onChange={(e) => setPhoneNumberId(e.target.value)}
+            placeholder="1234567890"
+            className="w-56"
+          />
+        </SettingsRow>
+        <SettingsRow
+          label="Token de acceso"
+          hint={connected ? 'Déjalo vacío para no cambiarlo' : undefined}
+        >
+          <Input
+            aria-label="Token de acceso"
+            type="password"
+            value={accessToken}
+            onChange={(e) => setAccessToken(e.target.value)}
+            placeholder={connected ? '••••••••' : 'EAAG…'}
+            className="w-56"
+          />
+        </SettingsRow>
+        <SettingsRow label="ID de la cuenta de empresa" hint="Opcional">
+          <Input
+            aria-label="ID de la cuenta de empresa"
+            value={businessId}
+            onChange={(e) => setBusinessId(e.target.value)}
+            className="w-56"
+          />
+        </SettingsRow>
+        <ActionsRow connected={connected} busy={busy} onDisconnect={disconnect} />
+      </SettingsGroup>
     </form>
   );
 }
 
 export function IntegrationsPanel({ email, whatsapp }) {
   return (
-    <div className="space-y-6">
-      <EmailCard initial={email} />
-      <WhatsappCard initial={whatsapp} />
+    <div>
+      <EmailGroup initial={email} />
+      <WhatsappGroup initial={whatsapp} />
     </div>
   );
 }

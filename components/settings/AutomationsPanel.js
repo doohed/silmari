@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Trash2, Plus, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
+import { SettingsGroup, SettingsRow, SettingsEmpty } from '@/components/ui/SettingsGroup';
 import { Select } from '@/components/ui/Select';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import {
@@ -184,27 +184,44 @@ export function AutomationsPanel({ initialAutomations, objects, members }) {
     objects.find((o) => o.slug === slug)?.fields.find((f) => f.name === fieldName)?.label ??
     fieldName;
 
-  return (
-    <div className="space-y-6">
-      <form onSubmit={create} className="border-border bg-bg space-y-4 rounded-lg border p-4">
-        <div>
-          <Label htmlFor="auto-name">Nombre</Label>
-          <Input
-            id="auto-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="p. ej. Avisar al asignar una oportunidad grande"
-          />
-        </div>
+  /**
+   * Resume una regla en una línea para el `hint` de su fila. Antes eran tres
+   * párrafos apilados dentro de la tarjeta; en una lista agrupada, el resumen
+   * tiene que caber en un renglón y el detalle vive al editar.
+   */
+  function describe(a) {
+    const when = EVENTS.find((e) => e.value === a.trigger.event)?.label.toLowerCase();
+    const conds = a.conditions.length
+      ? ` y ${a.conditions.length} ${a.conditions.length === 1 ? 'condición' : 'condiciones'}`
+      : '';
+    const acts = `${a.actions.length} ${a.actions.length === 1 ? 'acción' : 'acciones'}`;
+    const last = a.runLog.length
+      ? ` · última ejecución ${a.runLog[0].ok ? 'ok' : 'con error'}`
+      : '';
+    return `Cuando ${when} en ${objectLabel(a.trigger.objectSlug)}${conds} → ${acts}${last}`;
+  }
 
-        {/* Disparador */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label>Cuando</Label>
-            <Select value={event} onChange={setEvent} options={EVENTS} />
-          </div>
-          <div>
-            <Label>En</Label>
+  return (
+    <div>
+      <form onSubmit={create}>
+        <SettingsGroup
+          title="Nueva automatización"
+          footnote="Se dispara con el evento que elijas, comprueba las condiciones y ejecuta las acciones en orden. Una regla que se dispara a sí misma se corta a los cinco saltos."
+        >
+          <SettingsRow label="Nombre">
+            <Input
+              aria-label="Nombre"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="p. ej. Avisar al asignar"
+              className="w-56"
+            />
+          </SettingsRow>
+
+          <SettingsRow label="Cuando">
+            <Select value={event} onChange={setEvent} options={EVENTS} className="w-56" />
+          </SettingsRow>
+          <SettingsRow label="En">
             <Select
               value={objectSlug}
               onChange={(v) => {
@@ -212,242 +229,201 @@ export function AutomationsPanel({ initialAutomations, objects, members }) {
                 setConditions([]);
               }}
               options={objects.map((o) => ({ value: o.slug, label: o.labelSingular }))}
+              className="w-56"
             />
-          </div>
-        </div>
+          </SettingsRow>
 
-        {/* Condiciones */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="mb-0">Y se cumple (opcional)</Label>
-            <button
-              type="button"
-              onClick={addCondition}
-              className="text-accent flex items-center gap-1 text-xs"
-            >
-              <Plus size={13} /> Condición
-            </button>
-          </div>
-          {conditions.length === 0 && (
-            <p className="text-tertiary text-xs">Sin condiciones: se ejecuta siempre.</p>
-          )}
-          {conditions.map((c, i) => {
-            const field = fields.find((f) => f.name === c.fieldName);
-            const operators = field?.operators ?? [];
-            return (
-              <div key={i} className="flex items-center gap-2">
-                <div className="min-w-0 flex-1">
-                  <Select
-                    value={c.fieldName}
-                    onChange={(v) => {
-                      const nf = fields.find((f) => f.name === v);
-                      setCondition(i, { fieldName: v, operator: nf?.operators[0] });
-                    }}
-                    options={fields.map((f) => ({ value: f.name, label: f.label }))}
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <Select
-                    value={c.operator}
-                    onChange={(v) => setCondition(i, { operator: v })}
-                    options={operators.map((op) => ({ value: op, label: opLabel(op) }))}
-                  />
-                </div>
-                {!NO_VALUE.has(c.operator) && (
-                  <div className="min-w-0 flex-1">
-                    <Input
-                      value={c.value ?? ''}
-                      onChange={(e) => setCondition(i, { value: e.target.value })}
-                      placeholder="valor"
-                    />
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => removeCondition(i)}
-                  className="text-tertiary hover:text-danger shrink-0"
-                  aria-label="Quitar condición"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Acciones */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="mb-0">Entonces</Label>
-            <button
-              type="button"
-              onClick={addAction}
-              className="text-accent flex items-center gap-1 text-xs"
-            >
-              <Plus size={13} /> Acción
-            </button>
-          </div>
-          {actions.map((act, i) => (
-            <div key={i} className="border-border space-y-2 rounded-md border p-2.5">
-              <div className="flex items-center gap-2">
-                <div className="min-w-0 flex-1">
-                  <Select
-                    value={act.type}
-                    onChange={(v) => setAction(i, { type: v, config: {} })}
-                    options={ACTIONS}
-                  />
-                </div>
-                {actions.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeAction(i)}
-                    className="text-tertiary hover:text-danger shrink-0"
-                    aria-label="Quitar acción"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-
-              {act.type === 'create_task' && (
-                <div className="space-y-2">
-                  <Input
-                    value={act.config.title ?? ''}
-                    onChange={(e) => setActionConfig(i, { title: e.target.value })}
-                    placeholder="Título de la tarea"
-                  />
-                  <div>
-                    <span className="text-tertiary mb-1 block text-xs">Responsables</span>
-                    <MemberPicker
-                      members={members}
-                      selected={act.config.assigneeIds ?? []}
-                      onToggle={(id) => toggleActionMember(i, 'assigneeIds', id)}
-                    />
-                  </div>
-                  <Input
-                    type="number"
-                    value={act.config.dueInDays ?? ''}
-                    onChange={(e) =>
-                      setActionConfig(i, {
-                        dueInDays: e.target.value === '' ? undefined : Number(e.target.value),
-                      })
-                    }
-                    placeholder="Vence en (días) — opcional"
-                  />
-                </div>
+          <SettingsRow stacked label="Y se cumple (opcional)">
+            <div className="space-y-2">
+              {conditions.length === 0 && (
+                <p className="text-tertiary text-xs">Sin condiciones: se ejecuta siempre.</p>
               )}
-
-              {act.type === 'update_field' && (
-                <div className="grid grid-cols-2 gap-2">
-                  <Select
-                    value={act.config.fieldName ?? ''}
-                    onChange={(v) => setActionConfig(i, { fieldName: v })}
-                    options={writableFields.map((f) => ({ value: f.name, label: f.label }))}
-                    placeholder="Campo"
-                  />
-                  <Input
-                    value={act.config.value ?? ''}
-                    onChange={(e) => setActionConfig(i, { value: e.target.value })}
-                    placeholder="Nuevo valor"
-                  />
-                </div>
-              )}
-
-              {act.type === 'notify' && (
-                <div className="space-y-2">
-                  <Input
-                    value={act.config.title ?? ''}
-                    onChange={(e) => setActionConfig(i, { title: e.target.value })}
-                    placeholder="Título del aviso"
-                  />
-                  <Input
-                    value={act.config.body ?? ''}
-                    onChange={(e) => setActionConfig(i, { body: e.target.value })}
-                    placeholder="Detalle (opcional)"
-                  />
-                  <div>
-                    <span className="text-tertiary mb-1 block text-xs">Destinatarios</span>
-                    <MemberPicker
-                      members={members}
-                      selected={act.config.userIds ?? []}
-                      onToggle={(id) => toggleActionMember(i, 'userIds', id)}
-                    />
+              {conditions.map((c, i) => {
+                const field = fields.find((f) => f.name === c.fieldName);
+                const operators = field?.operators ?? [];
+                return (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <Select
+                        value={c.fieldName}
+                        onChange={(v) => {
+                          const nf = fields.find((f) => f.name === v);
+                          setCondition(i, { fieldName: v, operator: nf?.operators[0] });
+                        }}
+                        options={fields.map((f) => ({ value: f.name, label: f.label }))}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Select
+                        value={c.operator}
+                        onChange={(v) => setCondition(i, { operator: v })}
+                        options={operators.map((op) => ({ value: op, label: opLabel(op) }))}
+                      />
+                    </div>
+                    {!NO_VALUE.has(c.operator) && (
+                      <div className="min-w-0 flex-1">
+                        <Input
+                          value={c.value ?? ''}
+                          onChange={(e) => setCondition(i, { value: e.target.value })}
+                          placeholder="valor"
+                        />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeCondition(i)}
+                      className="text-tertiary hover:text-danger shrink-0"
+                      aria-label="Quitar condición"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
-                </div>
-              )}
+                );
+              })}
+              <Button type="button" variant="secondary" size="sm" onClick={addCondition}>
+                <Plus size={13} /> Añadir condición
+              </Button>
             </div>
-          ))}
-        </div>
+          </SettingsRow>
 
-        <Button size="sm" type="submit" disabled={saving || !name.trim() || !objectSlug}>
-          {saving ? 'Creando…' : 'Crear automatización'}
-        </Button>
+          <SettingsRow stacked label="Entonces">
+            <div className="space-y-2">
+              {actions.map((act, i) => (
+                <div key={i} className="border-border space-y-2 rounded-md border p-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <Select
+                        value={act.type}
+                        onChange={(v) => setAction(i, { type: v, config: {} })}
+                        options={ACTIONS}
+                      />
+                    </div>
+                    {actions.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeAction(i)}
+                        className="text-tertiary hover:text-danger shrink-0"
+                        aria-label="Quitar acción"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+
+                  {act.type === 'create_task' && (
+                    <div className="space-y-2">
+                      <Input
+                        value={act.config.title ?? ''}
+                        onChange={(e) => setActionConfig(i, { title: e.target.value })}
+                        placeholder="Título de la tarea"
+                      />
+                      <div>
+                        <span className="text-tertiary mb-1 block text-xs">Responsables</span>
+                        <MemberPicker
+                          members={members}
+                          selected={act.config.assigneeIds ?? []}
+                          onToggle={(id) => toggleActionMember(i, 'assigneeIds', id)}
+                        />
+                      </div>
+                      <Input
+                        type="number"
+                        value={act.config.dueInDays ?? ''}
+                        onChange={(e) =>
+                          setActionConfig(i, {
+                            dueInDays: e.target.value === '' ? undefined : Number(e.target.value),
+                          })
+                        }
+                        placeholder="Vence en (días) — opcional"
+                      />
+                    </div>
+                  )}
+
+                  {act.type === 'update_field' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <Select
+                        value={act.config.fieldName ?? ''}
+                        onChange={(v) => setActionConfig(i, { fieldName: v })}
+                        options={writableFields.map((f) => ({ value: f.name, label: f.label }))}
+                        placeholder="Campo"
+                      />
+                      <Input
+                        value={act.config.value ?? ''}
+                        onChange={(e) => setActionConfig(i, { value: e.target.value })}
+                        placeholder="Nuevo valor"
+                      />
+                    </div>
+                  )}
+
+                  {act.type === 'notify' && (
+                    <div className="space-y-2">
+                      <Input
+                        value={act.config.title ?? ''}
+                        onChange={(e) => setActionConfig(i, { title: e.target.value })}
+                        placeholder="Título del aviso"
+                      />
+                      <Input
+                        value={act.config.body ?? ''}
+                        onChange={(e) => setActionConfig(i, { body: e.target.value })}
+                        placeholder="Detalle (opcional)"
+                      />
+                      <div>
+                        <span className="text-tertiary mb-1 block text-xs">Destinatarios</span>
+                        <MemberPicker
+                          members={members}
+                          selected={act.config.userIds ?? []}
+                          onToggle={(id) => toggleActionMember(i, 'userIds', id)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <Button type="button" variant="secondary" size="sm" onClick={addAction}>
+                <Plus size={13} /> Añadir acción
+              </Button>
+            </div>
+          </SettingsRow>
+
+          <SettingsRow label="Crear la automatización">
+            <Button size="md" type="submit" disabled={saving || !name.trim() || !objectSlug}>
+              {saving ? 'Creando…' : 'Crear'}
+            </Button>
+          </SettingsRow>
+        </SettingsGroup>
       </form>
 
-      {/* Lista */}
-      <ul className="space-y-3">
-        {automations.length === 0 && (
-          <li className="text-tertiary text-sm">Sin automatizaciones</li>
-        )}
+      <SettingsGroup title="Automatizaciones">
+        {automations.length === 0 && <SettingsEmpty>Todavía no has creado ninguna</SettingsEmpty>}
         {automations.map((a) => (
-          <li key={a.id} className="border-border bg-surface rounded-lg border p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <Zap size={14} className={a.enabled ? 'text-accent' : 'text-tertiary'} />
-                  <p className="text-primary truncate text-sm font-medium">{a.name}</p>
-                </div>
-                <p className="text-secondary mt-0.5 text-xs">
-                  Cuando {EVENTS.find((e) => e.value === a.trigger.event)?.label.toLowerCase()} en{' '}
-                  <span className="text-primary">{objectLabel(a.trigger.objectSlug)}</span>
-                  {a.conditions.length > 0 && (
-                    <>
-                      {' '}
-                      y {a.conditions.length}{' '}
-                      {a.conditions.length === 1 ? 'condición' : 'condiciones'}
-                    </>
-                  )}{' '}
-                  → {a.actions.length} {a.actions.length === 1 ? 'acción' : 'acciones'}
-                </p>
-                {a.conditions.length > 0 && (
-                  <p className="text-tertiary mt-1 truncate text-xs">
-                    {a.conditions
-                      .map(
-                        (c) =>
-                          `${fieldLabel(a.trigger.objectSlug, c.fieldName)} ${opLabel(c.operator)}${
-                            NO_VALUE.has(c.operator) ? '' : ` "${c.value ?? ''}"`
-                          }`,
-                      )
-                      .join(' · ')}
-                  </p>
-                )}
-                {a.runLog.length > 0 && (
-                  <p className="text-tertiary mt-1 text-xs">
-                    Última ejecución: {a.runLog[0].ok ? 'ok' : `error (${a.runLog[0].error})`}
-                  </p>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => toggle(a.id)}
-                  className={`rounded-md border px-2 py-0.5 text-xs ${a.enabled ? 'border-accent text-accent' : 'border-border text-tertiary'}`}
-                >
-                  {a.enabled ? 'Activa' : 'Inactiva'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => remove(a.id, a.name)}
-                  className="text-tertiary hover:text-danger"
-                  aria-label="Borrar automatización"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
+          <SettingsRow
+            key={a.id}
+            icon={<Zap size={15} className={a.enabled ? 'text-accent' : 'text-tertiary'} />}
+            label={a.name}
+            hint={describe(a)}
+          >
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => toggle(a.id)}
+                aria-pressed={a.enabled}
+                className={a.enabled ? 'border-accent text-accent' : 'text-tertiary'}
+              >
+                {a.enabled ? 'Activa' : 'Inactiva'}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => remove(a.id, a.name)}
+                aria-label={`Borrar ${a.name}`}
+                className="hover:text-danger"
+              >
+                <Trash2 size={14} />
+              </Button>
             </div>
-          </li>
+          </SettingsRow>
         ))}
-      </ul>
+      </SettingsGroup>
     </div>
   );
 }
