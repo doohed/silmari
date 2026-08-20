@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getContext } from '@/lib/auth/dal';
-import { destroySessionCookie } from '@/lib/auth/session';
+import { createSessionCookie, destroySessionCookie } from '@/lib/auth/session';
 import { toActionError } from '@/lib/errors/to-response';
 import { parseOrThrow } from '@/lib/validation/zod-helpers';
 import { changePasswordSchema } from '@/lib/validation/auth';
@@ -47,8 +47,25 @@ export async function updateWorkspaceAction(input) {
   if (res.ok) revalidatePath('/', 'layout');
   return res;
 }
+
+/**
+ * Cambia la contraseña. `changePassword` corta todas las sesiones abiertas
+ * (`User.sessionsValidFrom`), así que hay que **re-emitir la cookie** de esta
+ * misma sesión: si no, el usuario se quedaría fuera de la app justo después de
+ * cambiar su contraseña desde Ajustes.
+ */
 export async function changePasswordAction(input) {
-  return withCtx((ctx) => changePassword(ctx, parseOrThrow(changePasswordSchema, input)));
+  /** @type {{ userId: string, workspaceId: string } | null} */
+  let session = null;
+  const res = await withCtx(async (ctx) => {
+    const out = await changePassword(ctx, parseOrThrow(changePasswordSchema, input));
+    // Se guarda aquí dentro, no releyendo el contexto después: tras el cambio,
+    // la cookie que trae la petición ya no es válida.
+    session = { userId: ctx.userId, workspaceId: ctx.workspaceId };
+    return out;
+  });
+  if (res.ok && session) await createSessionCookie(session);
+  return res;
 }
 
 /**

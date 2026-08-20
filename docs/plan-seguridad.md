@@ -390,7 +390,7 @@ enmascara los errores reales y regala una forma barata de llenar el log.
 
 Las tres fases son independientes; el orden es por riesgo.
 
-### Fase 1 — Lo que hay que parchear ya · ~½ jornada
+### Fase 1 — Lo que hay que parchear ya · ✅ **hecha** (20/08/2026)
 
 | #   | Hallazgo | Archivos                                                                                                            |
 | --- | -------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -402,6 +402,31 @@ Las tres fases son independientes; el orden es por riesgo.
 1.1 y 1.2 comparten test (`tests/unit/query-builder.test.js`) y se hacen de un
 tirón. 1.4 va **al final de la fase** y con el dev server reiniciado, porque es
 el único que puede echar a un usuario de su sesión si se hace mal.
+
+**Cómo quedó.** `npm test` 159 ✓ · `npm run test:integration` 196 ✓ ·
+`npm run lint` sin errores · `npm run build` correcto.
+
+- **S-01** — `coerceFilterValue` en `lib/field-types/helpers.js`, aplicado en
+  `query-builder.js:56` y `automations/engine.js`. Ningún tipo de campo tocado.
+  Los operadores de conjunto además envuelven el valor suelto, así que un
+  `isAnyOf` con una cadena pasa de reventar en Mongo a funcionar.
+- **S-08** — `decodeCursor` descarta el `sortValue` no escalar, y un `id` que no
+  es ObjectId es ahora `ValidationError` en vez de 500.
+- **S-03** — `lib/forms/redirect-url.js` (nuevo, puro, comprobado en **los dos
+  lados**: el servicio al guardar y el renderizador antes de navegar).
+  `getPublicForm` tampoco sirve ya una URL insegura que estuviera guardada, y
+  `scripts/clean-form-redirect-urls.mjs` limpia la BD.
+  **Pendiente de operación:** correr ese script una vez por entorno.
+- **S-04** — `User.sessionsValidFrom` + `isSessionCurrent` (`lib/auth/jwt.js`),
+  comprobado en `getContext` junto a la consulta de miembro (en paralelo, no en
+  serie). `changePasswordAction` re-emite la cookie para no echar de la app a
+  quien acaba de cambiar su contraseña.
+  ⚠️ **Al desplegar hay que reiniciar el proceso**: cambia el esquema de un
+  modelo y Mongoose conserva el compilado anterior en caliente.
+- **Fuera de plan, de paso:** `tests/integration/api.test.js` no cargaba desde el
+  traslado de la API a `app/(workspace)/api/` (importaba `@/app/api/v1/…`).
+  Corregidas las tres rutas de import; el fichero vuelve a cubrir la API pública,
+  que es justo por donde entra S-01.
 
 ### Fase 2 — Exposición hacia fuera y límites · ~½ jornada
 

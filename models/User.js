@@ -13,6 +13,7 @@ import mongoose from 'mongoose';
  * @property {Date} [emailVerifiedAt] Null mientras no se confirma la dirección.
  * @property {OnboardingStep} onboardingStep
  * @property {Date} [lastActiveAt]
+ * @property {Date} [sessionsValidFrom] Corte de validez de las sesiones emitidas.
  */
 
 const ONBOARDING_STEPS = ['WORKSPACE', 'PROFILE', 'INVITE', 'PLAN', 'WELCOME', 'DONE'];
@@ -34,6 +35,11 @@ const userSchema = new mongoose.Schema(
     // ni las creadas por invitación; el alta nueva lo pone en WORKSPACE.
     onboardingStep: { type: String, enum: ONBOARDING_STEPS, default: 'DONE' },
     lastActiveAt: { type: Date, default: null },
+    // Corte de validez de las sesiones: todo JWT emitido ANTES de esta fecha
+    // deja de valer (lo comprueba `lib/auth/dal.js`). Se adelanta al cambiar o
+    // restablecer la contraseña, que es el momento en que hay que echar al que
+    // pudiera tener la cuenta tomada. Null = sin cortes, vale cualquier sesión.
+    sessionsValidFrom: { type: Date, default: null },
     // Soft delete de la cuenta (danger zone). Las guardas de auth la rechazan.
     deletedAt: { type: Date, default: null },
   },

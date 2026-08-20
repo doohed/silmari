@@ -8,6 +8,7 @@ import {
   invalidatePendingResets,
 } from '@/lib/accounts/password-reset';
 import { changePassword } from '@/lib/accounts/profile';
+import { encryptSession, decryptSession, isSessionCurrent } from '@/lib/auth/jwt';
 import PasswordReset from '@/models/PasswordReset';
 import User from '@/models/User';
 
@@ -68,6 +69,47 @@ describe('recuperación de contraseña', () => {
     expect(firstAfter.usedAt).not.toBeNull();
     const pending = await PasswordReset.countDocuments({ userId: first.userId, usedAt: null });
     expect(pending).toBe(1);
+  });
+
+  it('restablecer la contraseña invalida las sesiones ya emitidas', async () => {
+    const { email, userId, workspaceId } = await account();
+
+    // Sesión emitida ANTES: es la que tendría quien se hubiera colado.
+    const antes = await decryptSession(await encryptSession({ userId, workspaceId }));
+
+    const { randomBytes, createHash } = await import('node:crypto');
+    const raw = randomBytes(32).toString('base64url');
+    await PasswordReset.create({
+      userId,
+      tokenHash: createHash('sha256').update(raw).digest('hex'),
+      expiresAt: new Date(Date.now() + 3600_000),
+    });
+    // El corte va en segundos: sin esperar, la sesión vieja caería en el mismo
+    // segundo que el corte y seguiría valiendo.
+    await new Promise((r) => setTimeout(r, 1100));
+    await resetPassword({ token: raw, password: 'nuevaClave9' });
+
+    const user = await User.findOne({ email }).select('sessionsValidFrom').lean();
+    expect(user.sessionsValidFrom).toBeTruthy();
+    expect(isSessionCurrent(antes, user.sessionsValidFrom)).toBe(false);
+
+    // Y una sesión emitida después del cambio sí vale.
+    const despues = await decryptSession(await encryptSession({ userId, workspaceId }));
+    expect(isSessionCurrent(despues, user.sessionsValidFrom)).toBe(true);
+  });
+
+  it('cambiar la contraseña desde Ajustes también corta las sesiones abiertas', async () => {
+    const { email, userId, workspaceId, role } = await account();
+    const antes = await decryptSession(await encryptSession({ userId, workspaceId }));
+
+    await new Promise((r) => setTimeout(r, 1100));
+    await changePassword(
+      { userId, workspaceId, role },
+      { currentPassword: 'secret123', newPassword: 'otraClave9' },
+    );
+
+    const user = await User.findOne({ email }).select('sessionsValidFrom').lean();
+    expect(isSessionCurrent(antes, user.sessionsValidFrom)).toBe(false);
   });
 
   it('un token válido cambia la contraseña y deja de servir', async () => {

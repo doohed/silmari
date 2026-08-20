@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { createAccount } from '@/lib/accounts/signup';
 import { createApiKey } from '@/lib/auth/api-key';
-import { GET as listGET, POST as listPOST } from '@/app/api/v1/[objectSlug]/route';
+import { GET as listGET, POST as listPOST } from '@/app/(workspace)/api/v1/[objectSlug]/route';
 import {
   GET as oneGET,
   PATCH as onePATCH,
   DELETE as oneDELETE,
-} from '@/app/api/v1/[objectSlug]/[recordId]/route';
-import { GET as objectsGET } from '@/app/api/v1/metadata/objects/route';
+} from '@/app/(workspace)/api/v1/[objectSlug]/[recordId]/route';
+import { GET as objectsGET } from '@/app/(workspace)/api/v1/metadata/objects/route';
 
 const BASE = 'http://localhost/api/v1';
 

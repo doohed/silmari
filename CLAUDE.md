@@ -206,6 +206,25 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   Next 16 + React 19): JWT en cookie httpOnly (`secure` solo en prod);
   `proxy.js` (chequeo optimista, antes `middleware`) + DAL (`lib/auth/dal.js`)
   para la comprobación real. `server-only` blinda `session.js`/`dal.js`.
+- **Un JWT no se revoca; se corta por fecha.** `User.sessionsValidFrom` es el
+  sustituto: cambiar o restablecer la contraseña la adelanta, e `isSessionCurrent`
+  (`lib/auth/jwt.js`, puro) descarta en el DAL toda sesión firmada antes. Sin
+  esto, a quien le roban la cuenta cambia la contraseña y **la sesión del
+  atacante sigue viva hasta 7 días**. Dos detalles que hay que respetar: el `iat`
+  del token va en **segundos**, así que la comparación es `>=` (si no, quien
+  cambia su contraseña se echa a sí mismo); y `changePasswordAction`
+  **re-emite la cookie** después de cambiarla, capturando el ctx _dentro_ de
+  `withCtx` — releerlo después ya no valdría, porque la cookie de la petición ha
+  dejado de ser válida.
+- **Los valores de filtro se coaccionan a escalares** (`coerceFilterValue` en
+  `lib/field-types/helpers.js`, aplicado en `query-builder.js` y en el motor de
+  automatizaciones). Los `buildFilter` de cada tipo incrustan el valor directo en
+  el match, así que un objeto lo leería Mongo como **operador** (`{$regex}`,
+  `{$ne}`…) y el cliente pasaría de elegir un filtro a escribir la consulta —
+  con una regex de backtracking catastrófico, a quemar la CPU de la BD. Mismo
+  motivo por el que `decodeCursor` descarta un `sortValue` que no sea escalar.
+  Si añades un tipo de campo nuevo, **no** repitas la coacción en su
+  `buildFilter`: ya viene hecha del llamante.
 - **Orden manual con `fractional-indexing`** (claves string): `records.position`
   es **`String`**. Sin orden de columna, los registros se listan por `position`
   y se **reordenan arrastrando**; el cursor por defecto también va sobre

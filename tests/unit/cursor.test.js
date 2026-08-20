@@ -13,4 +13,15 @@ describe('cursor', () => {
     expect(decodeCursor('')).toBeNull();
     expect(decodeCursor('no-base64-json')).toBeNull();
   });
+
+  it('descarta un sortValue con forma de objeto', () => {
+    // Acabaría dentro del match de Mongo como operador; se trata como corrupto.
+    expect(decodeCursor(encodeCursor({ sortValue: { $ne: null }, id: 'abc' }))).toBeNull();
+    expect(decodeCursor(encodeCursor({ sortValue: ['a'], id: 'abc' }))).toBeNull();
+    // Los escalares y el null siguen pasando.
+    expect(decodeCursor(encodeCursor({ sortValue: null, id: 'abc' }))).toEqual({
+      sortValue: null,
+      id: 'abc',
+    });
+  });
 });

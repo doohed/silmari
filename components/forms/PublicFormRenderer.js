@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { isSafeRedirectUrl } from '@/lib/forms/redirect-url';
 
 /** Tipo de <input> según el tipo de campo del CRM (mejora la UX móvil). */
 function inputType(fieldType) {
@@ -45,7 +46,10 @@ export function PublicFormRenderer({ form }) {
         setError(json?.error?.message || json?.message || 'No se pudo enviar el formulario');
         return;
       }
-      if (form.redirectUrl) {
+      // Segunda comprobación del esquema, aquí en el sink: un `javascript:` en
+      // este campo se ejecutaría en nuestro propio origen. El servidor ya la
+      // hace, pero esto cubre lo que se guardara antes de que existiera.
+      if (isSafeRedirectUrl(form.redirectUrl)) {
         window.location.href = form.redirectUrl;
         return;
       }
