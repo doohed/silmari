@@ -19,6 +19,7 @@ import {
   hardDeleteRecord,
   exportRecords,
   importRecords,
+  assertBulkSize,
 } from '@/lib/records/service';
 import { updateView, createView, deleteView } from '@/lib/views/service';
 import { listObjects } from '@/lib/metadata/object-service';
@@ -87,13 +88,14 @@ export async function deleteRecordAction(input) {
   return withCtx((ctx) => softDeleteRecord(ctx, input));
 }
 
-/** Borrado masivo. */
+/** Borrado masivo. Mismo tope que el resto de operaciones por lotes. */
 export async function bulkDeleteAction({ objectSlug, recordIds }) {
   return withCtx(async (ctx) => {
-    for (const recordId of recordIds) {
+    const ids = assertBulkSize(recordIds);
+    for (const recordId of ids) {
       await softDeleteRecord(ctx, { objectSlug, recordId });
     }
-    return { deleted: recordIds.length };
+    return { deleted: ids.length };
   });
 }
 

@@ -2,6 +2,8 @@ import { getContext } from '@/lib/auth/dal';
 import { getStorage } from '@/lib/storage';
 import { createAttachment } from '@/lib/attachments/service';
 import { validateUpload } from '@/lib/attachments/limits';
+import { assertStorageWithinPlan } from '@/lib/billing/limits';
+import { consumeRateLimit } from '@/lib/http/rate-limit';
 import { errorResponse } from '@/lib/errors/to-response';
 import { UnauthorizedError, ValidationError } from '@/lib/errors/domain-errors';
 
@@ -12,6 +14,11 @@ export async function POST(request) {
   try {
     const ctx = await getContext();
     if (!ctx) throw new UnauthorizedError();
+
+    // Freno por workspace: 10 MB por archivo sin tope de ritmo son tantos MB
+    // como peticiones quepan. El cupo es generoso para no molestar a quien sube
+    // los adjuntos de una ficha de golpe.
+    consumeRateLimit(`upload:${ctx.workspaceId}`, { limit: 60, windowMs: 60_000 });
 
     const form = await request.formData();
     const file = form.get('file');
@@ -26,10 +33,11 @@ export async function POST(request) {
       throw new ValidationError('Targets no válidos');
     }
 
-    // Tamaño y tipo se validan ANTES de escribir en disco: no queremos que un
-    // archivo rechazado llegue a tocar el storage.
+    // Tamaño, tipo y espacio del plan se validan ANTES de escribir en disco: no
+    // queremos que un archivo rechazado llegue a tocar el storage.
     const check = validateUpload({ size: file.size, mimeType: file.type });
     if (!check.ok) throw new ValidationError(check.message);
+    await assertStorageWithinPlan(ctx, file.size);
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const { key, size } = await getStorage().put({

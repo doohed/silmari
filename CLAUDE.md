@@ -370,7 +370,33 @@ es un _partial unique index_ acotado por la clave; borrar un campo no elimina el
   compatibilidad) para que rotar el secreto de sesión no deje ilegibles los
   secretos de todos los workspaces. Migración: `scripts/rotate-integration-secret.mjs`.
 - **Webhooks**: despacho real en created/updated/deleted desde la capa de
-  servicios, firma **HMAC**, log de entregas y reintento manual.
+  servicios, firma **HMAC**, log de entregas y reintento manual. El destino pasa
+  por `assertPublicUrl` (`lib/http/safe-url.js`) **dos veces**: al guardarlo y
+  otra vez justo antes de cada `fetch`. La segunda no sobra: un dominio que hoy
+  resuelve a una IP pública puede resolver mañana a `127.0.0.1` (DNS rebinding).
+  Sin esta guardia, un ADMIN apunta el webhook a `169.254.169.254` y la función
+  se convierte en un cliente HTTP con nuestros privilegios de red — y el
+  `statusCode` del log de entregas le hace de oráculo. Las redirecciones **no se
+  siguen** (`redirect: 'manual'`), porque un destino público podría contestar
+  302 hacia dentro. ⚠️ La comprobación de red **solo se aplica en producción**:
+  en dev y en los tests se apunta a `127.0.0.1` a propósito y bloquearlo dejaría
+  la función imposible de probar. Si la pruebas en local y "no bloquea", es esto.
+- **Los adjuntos también tienen tope de plan** (`storageBytes` en
+  `lib/billing/plans.js`, `assertStorageWithinPlan`): 10 MB por archivo sin tope
+  de conjunto son tantos MB como peticiones quepan, y con el storage en disco
+  local llenar el disco se lleva por delante también a Mongo. Va aparte de
+  `assertWithinPlan` porque se cuenta en bytes, no en unidades.
+- **El CSV exportado neutraliza las fórmulas** (`lib/records/csv.js`, puro).
+  Excel y Sheets interpretan como fórmula toda celda que empiece por `=`, `+`,
+  `-` o `@`, y los datos entran por sitios que no controlamos (formulario
+  público, leads de Meta): un lead llamado `=HYPERLINK(...)` se lleva la fila al
+  abrirlo. Entrecomillar **no** basta — las comillas son del formato CSV y la
+  hoja las quita antes de mirar el contenido; hay que anteponer `'`.
+- **Topes de operaciones masivas** en `lib/records/limits.js` (puro, compartido
+  con el cliente como `lib/attachments/limits.js`): 1000 filas por import, 500
+  ids por lote. Se aplican en el **servicio**, no en la UI, porque por ahí pasan
+  también la API pública y las server actions; lo del diálogo es solo un aviso
+  temprano.
 - **Entrada de leads** (`lib/leads/`): `POST /api/v1/intake/meta` (API key con
   scope `records:write`) recibe leads de **Meta Lead Ads** reenviados por
   Zapier/Make. Es **entrante**, al revés que `lib/webhooks/` (saliente). El

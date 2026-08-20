@@ -9,7 +9,10 @@ import {
   reorderRecords,
   softDeleteRecord,
   restoreRecord,
+  importRecords,
+  bulkUpdateRecords,
 } from '@/lib/records/service';
+import { MAX_IMPORT_ROWS, MAX_BULK_IDS } from '@/lib/records/limits';
 import { generateKeyBetween } from 'fractional-indexing';
 import { listTimeline } from '@/lib/timeline/service';
 
@@ -25,6 +28,34 @@ async function owner() {
 }
 
 describe('capa genérica de registros', () => {
+  it('las operaciones masivas tienen tope, y se rechazan antes de empezar', async () => {
+    const ctx = await owner();
+
+    // Cada fila importada abre su propia transacción: sin tope, una llamada
+    // basta para dejar la instancia ocupada indefinidamente.
+    const filas = Array.from({ length: MAX_IMPORT_ROWS + 1 }, (_, i) => ({ name: `Fila ${i}` }));
+    await expect(importRecords(ctx, { objectSlug: 'companies', rows: filas })).rejects.toThrow(
+      new RegExp(`${MAX_IMPORT_ROWS} filas`),
+    );
+
+    const ids = Array.from({ length: MAX_BULK_IDS + 1 }, (_, i) => String(i));
+    await expect(
+      bulkUpdateRecords(ctx, {
+        objectSlug: 'companies',
+        recordIds: ids,
+        fieldName: 'name',
+        value: 'x',
+      }),
+    ).rejects.toThrow(new RegExp(`${MAX_BULK_IDS} registros`));
+
+    // Y por debajo del tope sigue funcionando igual.
+    const res = await importRecords(ctx, {
+      objectSlug: 'companies',
+      rows: [{ name: 'Acme' }, { name: 'Globex' }],
+    });
+    expect(res.created).toBe(2);
+  });
+
   it('crea, lee y valida contra la metadata', async () => {
     const ctx = await owner();
     const rec = await createRecord(ctx, {

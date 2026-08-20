@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { isWritableField } from '@/lib/field-types';
 import { importRecordsAction } from '@/app/(workspace)/objects/actions';
+import { MAX_IMPORT_ROWS } from '@/lib/records/limits';
 
 const IGNORE = '__ignore__';
 
@@ -117,6 +118,12 @@ export function ImportDialog({ open, onOpenChange, objectSlug, fields, onImporte
               </div>
 
               <p className="text-tertiary text-xs">{rows.length} filas en el archivo</p>
+              {rows.length > MAX_IMPORT_ROWS && (
+                <p className="text-danger text-xs">
+                  El servidor importa como mucho {MAX_IMPORT_ROWS} filas de una vez. Divide el
+                  archivo y hazlo en varias tandas.
+                </p>
+              )}
 
               {result && (
                 <div className="border-border bg-bg rounded-md border p-3 text-sm">

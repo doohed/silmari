@@ -1,10 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { createAccount } from '@/lib/accounts/signup';
 import { getSubscription } from '@/lib/billing/service';
-import { assertWithinPlan, currentUsage } from '@/lib/billing/limits';
+import {
+  assertWithinPlan,
+  currentUsage,
+  assertStorageWithinPlan,
+  currentStorageBytes,
+} from '@/lib/billing/limits';
 import { createApiKey } from '@/lib/auth/api-key';
 import { createWebhook } from '@/lib/webhooks/service';
 import { createRecord } from '@/lib/records/service';
+import { createAttachment } from '@/lib/attachments/service';
 import Subscription from '@/models/Subscription';
 import StripeEvent from '@/models/StripeEvent';
 import { claimEvent } from '@/lib/billing/service';
@@ -50,6 +56,28 @@ describe('facturación: planes y límites', () => {
       token: expect.any(String),
     });
     await expect(createApiKey(ctx, { name: 'tercera' })).rejects.toThrow(/límite de 2/i);
+  });
+
+  it('el espacio de adjuntos también tiene tope de plan', async () => {
+    const ctx = await owner();
+    const MB = 1024 * 1024;
+
+    // Gratis son 100 MB: 95 usados dejan sitio para 4, no para 10.
+    await createAttachment(ctx, {
+      name: 'grande.pdf',
+      mimeType: 'application/pdf',
+      size: 95 * MB,
+      storageKey: `${ctx.workspaceId}/grande.pdf`,
+      targets: [],
+    });
+    expect(await currentStorageBytes(ctx.workspaceId)).toBe(95 * MB);
+
+    await expect(assertStorageWithinPlan(ctx, 4 * MB)).resolves.toBeUndefined();
+    await expect(assertStorageWithinPlan(ctx, 10 * MB)).rejects.toThrow(/espacio de 100 MB/i);
+
+    // Y subir de plan lo desbloquea, como el resto de límites.
+    await setPlan(ctx, 'PRO');
+    await expect(assertStorageWithinPlan(ctx, 10 * MB)).resolves.toBeUndefined();
   });
 
   it('subir de plan desbloquea el tope al instante', async () => {

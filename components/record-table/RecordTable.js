@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { Maximize2, GripVertical } from 'lucide-react';
 import { getFieldType } from '@/lib/field-types';
 import { readFieldValue } from '@/lib/records/field-path';
+import { toCsv } from '@/lib/records/csv';
 import { getFieldComponents } from '@/components/fields/registry';
 import {
   listRecordsAction,
@@ -415,13 +416,11 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
     persistView({ viewFilters });
   }
 
-  function csvCell(field, record) {
+  /** Texto plano de una celda para el CSV (el escapado lo pone `toCsv`). */
+  function cellText(field, record) {
     const value = readFieldValue(record, field);
     const { toText } = getFieldComponents(field.type);
-    const text = toText
-      ? toText(value, field)
-      : getFieldType(field.type).toSearchText(value, field);
-    return `"${String(text ?? '').replace(/"/g, '""')}"`;
+    return toText ? toText(value, field) : getFieldType(field.type).toSearchText(value, field);
   }
 
   async function exportCsv() {
@@ -434,9 +433,11 @@ export function RecordTable({ objectSlug, object, initialView, initialPage, view
       const r = await exportRecordsAction({ objectSlug, filters, sorts });
       exportRows = r.ok ? r.data.records : rows;
     }
-    const header = cols.map((f) => f.label).join(',');
-    const lines = exportRows.map((r) => cols.map((f) => csvCell(f, r)).join(','));
-    const blob = new Blob([[header, ...lines].join('\n')], { type: 'text/csv' });
+    const csv = toCsv(
+      cols.map((f) => f.label),
+      exportRows.map((r) => cols.map((f) => cellText(f, r))),
+    );
+    const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `${objectSlug}.csv`;

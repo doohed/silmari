@@ -428,7 +428,7 @@ el único que puede echar a un usuario de su sesión si se hace mal.
   Corregidas las tres rutas de import; el fichero vuelve a cubrir la API pública,
   que es justo por donde entra S-01.
 
-### Fase 2 — Exposición hacia fuera y límites · ~½ jornada
+### Fase 2 — Exposición hacia fuera y límites · ✅ **hecha** (20/08/2026)
 
 | #   | Hallazgo | Archivos                                                                                                  |
 | --- | -------- | --------------------------------------------------------------------------------------------------------- |
@@ -436,6 +436,37 @@ el único que puede echar a un usuario de su sesión si se hace mal.
 | 2.2 | S-07     | `lib/records/csv.js` (nuevo), `components/record-table/RecordTable.js`                                    |
 | 2.3 | S-05     | `lib/records/service.js`, `app/(workspace)/objects/actions.js`, `components/record-table/ImportDialog.js` |
 | 2.4 | S-06     | `app/(workspace)/api/upload/route.js`, `lib/billing/plans.js`, `lib/billing/limits.js`                    |
+
+**Cómo quedó.** `npm test` 174 ✓ · `npm run test:integration` 198 ✓ ·
+`npm run lint` sin errores · `npm run build` correcto.
+
+- **S-02** — `lib/http/safe-url.js` (nuevo, puro en su parte clasificadora):
+  bloquea privadas, loopback, link-local (`169.254/16`), CGNAT, multicast y la
+  IPv4 encajada en IPv6 (`::ffff:127.0.0.1`, NAT64). Se comprueba al guardar
+  **y otra vez antes de cada `fetch`** (rebinding), y las redirecciones no se
+  siguen. **Decisión que conviene conocer:** la comprobación de red solo se
+  aplica en **producción** — en dev y en los tests se apunta un webhook a
+  `127.0.0.1` a propósito, y bloquearlo dejaría la función imposible de probar
+  sin ganar nada (el riesgo de SSRF es tener red interna y credenciales que
+  robar). Mismo criterio que ya sigue `secure` en las cookies. El esquema
+  (`file://`, `gopher://`) sí se rechaza en todos los entornos.
+  **Revisa la lista blanca de puertos** (`80, 443, 8080, 8443`) si algún cliente
+  autoaloja su receptor en otro: es un `Set` de una línea en ese módulo.
+- **S-07** — `lib/records/csv.js` (nuevo, puro): antepone `'` a las celdas que
+  empiezan por `=`, `+`, `-`, `@`, tab o CR. De paso la cabecera pasa a ir
+  entrecomillada, que antes no lo estaba (una etiqueta con coma rompía el CSV).
+- **S-05** — `lib/records/limits.js` (nuevo, puro y compartido con el cliente):
+  1000 filas por import, 500 ids por lote, aplicados en `importRecords`,
+  `bulkUpdateRecords` y `bulkDeleteAction`. El `ImportDialog` avisa antes de
+  enviar.
+- **S-06** — `consumeRateLimit` por workspace en `/api/upload` (60/min) y
+  **cuota de espacio por plan** (`storageBytes`: 100 MB en Gratis, 5 GB en Pro,
+  sin tope en Business), comprobada **antes** de escribir en disco.
+
+**Un fallo que encontró un test:** `assertPublicUrl` no resolvía las IPv6
+literales, porque `url.hostname` las devuelve entre corchetes (`[::1]`) y
+`dns.lookup` no las acepta así. Bloqueaba igual, pero por el motivo equivocado
+("no se puede resolver el dominio") — un dominio con AAAA interna habría pasado.
 
 ### Fase 3 — Higiene · ~2-3 h
 
