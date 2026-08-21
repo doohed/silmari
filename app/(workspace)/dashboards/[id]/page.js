@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { requireContext } from '@/lib/auth/dal';
-import { getDashboard, getOpportunityMetrics } from '@/lib/dashboards/service';
+import { getDashboard, listDashboards, getOpportunityMetrics } from '@/lib/dashboards/service';
 import { NotFoundError } from '@/lib/errors/domain-errors';
 import { DashboardView } from '@/components/dashboards/DashboardView';
 
@@ -16,6 +16,14 @@ export default async function DashboardDetailPage({ params }) {
     if (err instanceof NotFoundError) notFound();
     throw err;
   }
-  const metrics = await getOpportunityMetrics(ctx);
-  return <DashboardView dashboard={dashboard} metrics={metrics} />;
+  // Los paneles hermanos alimentan la banda de pestañas: cambiar de panel sin
+  // pasar por la lista. Solo hacen falta id y nombre, no sus widgets.
+  const [panels, metrics] = await Promise.all([listDashboards(ctx), getOpportunityMetrics(ctx)]);
+  return (
+    <DashboardView
+      dashboard={dashboard}
+      panels={panels.map((p) => ({ id: p.id, name: p.name }))}
+      metrics={metrics}
+    />
+  );
 }

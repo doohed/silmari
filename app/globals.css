@@ -22,6 +22,13 @@
   --bg: #ebebee; /* fondo de la ventana: gris, para que la lámina destaque */
   --surface: #ffffff; /* láminas, tarjetas, filas, paneles */
   --sunken: #f4f4f6; /* tarjeta ANIDADA dentro de otra: separa sin borde */
+  /* Lienzo del panel: el suelo sobre el que flotan los widgets. Token propio y
+     no `--bg` porque el lienzo se ve DENTRO de la lámina, con el rail justo al
+     lado: con el mismo gris, la lámina desaparecía y el panel parecía un hueco
+     recortado en la ventana. Tiene que quedar entre la tarjeta y el fondo de la
+     ventana en los DOS temas — por eso tampoco vale `--sunken`, que en oscuro
+     es más claro que `--surface`. */
+  --canvas: #f5f5f7;
   --elevated: #ffffff; /* popovers, dropdowns, diálogos */
   --border: #e6e6ea; /* separador hairline por defecto */
   --border-strong: #d0d0d6; /* borde de énfasis / foco de celda */
@@ -108,6 +115,8 @@
   --bg: #1a1a1c;
   --surface: #242427;
   --sunken: #2b2b2f;
+  /* Más claro que `--bg` (#1a1a1c) y más oscuro que la tarjeta (#242427). */
+  --canvas: #1f1f22;
   --elevated: #2e2e33;
   --border: #35353a;
   --border-strong: #4a4a51;
@@ -180,6 +189,7 @@
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-sunken: var(--sunken);
+  --color-canvas: var(--canvas);
   /* `action`, no `primary`: `--color-primary` ya está tomado por el color de
      TEXTO principal (`text-primary`) y redefinirlo lo rompería todo. */
   --color-action: var(--primary);
@@ -319,6 +329,32 @@ h3 {
   background: var(--elevated);
   border: 0.5px solid var(--border-strong);
   border-radius: var(--radius-xl);
+  box-shadow: var(--elev-lg);
+}
+
+/* Widget del panel: una LÁMINA PEQUEÑA sobre el gris de la ventana, hermana de
+   `.mac-sheet`. Por eso comparte su remate (`--elev-sheet`: canto de 0.5px más
+   una sombra corta) y NO lleva `border` de 1px: un borde entero convierte la
+   tarjeta en una caja web, y encima se suma al canto de la sombra dejando un
+   filo de dos tonos. El radio es el de la lámina un escalón por debajo
+   (`--radius-2xl` frente a `--radius-3xl`), que es la relación que guardan en
+   macOS una ventana y las tarjetas de dentro.
+   `overflow: hidden` no es decorativo: la banda de título del widget
+   (`.mac-list-head`) llega a los cantos y sin recorte asomaría por las esquinas
+   redondeadas. */
+.mac-widget {
+  background: var(--surface);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--elev-sheet);
+  overflow: hidden;
+}
+/* En modo edición la tarjeta NO se tiñe. Se probó con un halo de acento y con
+   ocho tarjetas a la vez la rejilla entera se volvía naranja: el acento pierde
+   el sentido justo cuando marca todo. Lo que anuncia la edición son los
+   controles que aparecen en la banda de título y el cursor de agarre; el color
+   se reserva para el botón «Hecho» de la barra.
+   Al arrastrar sí sube de plano: la tarjeta se despega como una ventana. */
+.mac-widget[data-dragging='true'] {
   box-shadow: var(--elev-lg);
 }
 

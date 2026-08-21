@@ -1,30 +1,49 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { Plus, X, GripVertical, Pencil, Check, Scaling, ChevronLeft } from 'lucide-react';
+import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { ArrowLeft, Check, LayoutGrid, Pencil, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
-import { WIDGETS, defaultSizeFor, nextSize } from '@/lib/dashboards/catalog';
+import { Avatar } from '@/components/ui/Avatar';
+import { defaultSizeFor, nextSize } from '@/lib/dashboards/catalog';
 import {
+  createDashboardAction,
   updateDashboardWidgetsAction,
   renameDashboardAction,
 } from '@/app/(workspace)/dashboards/actions';
-import { Widget } from './Widget';
+import { WidgetCard } from './WidgetCard';
+import { AddWidgetMenu } from './AddWidgetMenu';
+
+/* El mismo botón de icono que la cabecera de la ficha (`RecordHeader`): las dos
+   barras de `h-12` se ven en la misma sesión y un «volver» de otro tamaño se
+   nota enseguida. */
+const HEADER_ICON_BTN =
+  'text-tertiary hover:bg-chip-gray hover:text-primary flex size-7 shrink-0 items-center justify-center rounded-md transition-colors';
 
 /**
- * Detalle de un panel: cabecera con vuelta a la lista y título renombrable, más
- * la rejilla de widgets del catálogo. En modo edición se pueden añadir, quitar y
- * reordenar widgets (se guarda al momento).
+ * Detalle de un panel, con la misma anatomía que una ficha de registro: barra de
+ * ventana de `h-12` (volver + nombre editable + recuento + acciones), **banda de
+ * títulos** de `.mac-list-head` con los paneles hermanos como pestañas, y debajo
+ * el lienzo de widgets.
+ *
+ * Que el nombre salga a la vez en la barra y en la pestaña activa no es una
+ * repetición: es el reparto de una ventana con pestañas del sistema —el título
+ * dice dónde estás (y ahí se renombra), las pestañas son solo navegación.
+ *
+ * En modo edición se pueden añadir, quitar, redimensionar y reordenar widgets;
+ * cada cambio se guarda al momento.
+ *
  * @param {{
  *   dashboard: { id:string, name:string, widgets: Array<{id:string,type:string,w:number,h:number}> },
+ *   panels: Array<{ id:string, name:string }>,
  *   metrics: object,
  * }} props
  */
-export function DashboardView({ dashboard, metrics }) {
+export function DashboardView({ dashboard, panels, metrics }) {
   const router = useRouter();
   const [widgets, setWidgets] = useState(dashboard.widgets);
   const [name, setName] = useState(dashboard.name);
@@ -42,11 +61,11 @@ export function DashboardView({ dashboard, metrics }) {
     if (!r.ok) toast.error(r.message || 'No se pudo guardar el panel');
   }
 
-  function onDragEnd(e) {
-    const { active: a, over } = e;
-    if (!over || a.id === over.id) return;
-    const from = widgets.findIndex((w) => w.id === a.id);
+  function onDragEnd({ active, over }) {
+    if (!over || active.id === over.id) return;
+    const from = widgets.findIndex((w) => w.id === active.id);
     const to = widgets.findIndex((w) => w.id === over.id);
+    if (from < 0 || to < 0) return;
     persist(arrayMove(widgets, from, to));
   }
 
@@ -73,21 +92,33 @@ export function DashboardView({ dashboard, metrics }) {
     });
   };
 
+  const createPanel = () =>
+    startTransition(async () => {
+      const r = await createDashboardAction({ name: `Panel ${(panels?.length ?? 0) + 1}` });
+      if (!r.ok) return toast.error(r.message || 'No se pudo crear el panel');
+      router.push(`/dashboards/${r.data.id}`);
+      router.refresh();
+    });
+
+  /** Entra en edición y abre el menú: el atajo del estado vacío. */
+  const startAdding = () => {
+    setEditing(true);
+    setAdding(true);
+  };
+
   return (
     <div className="flex h-full flex-col">
-      {/* `h-12` y `px-3` como `RecordViewBar` y como la cabecera de la ficha:
-        las tres barras superiores de la app cierran en la misma línea. */}
-      <div className="border-border flex h-12 shrink-0 items-center justify-between gap-3 border-b px-3">
-        <div className="flex min-w-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => router.push('/dashboards')}
-            className="text-tertiary hover:bg-chip-gray hover:text-primary flex size-7 shrink-0 items-center justify-center rounded-md transition-colors"
-            aria-label="Volver a paneles"
-            title="Volver a paneles"
-          >
-            <ChevronLeft size={16} />
-          </button>
+      {/* Barra de ventana. `h-12` y `px-3` como `RecordViewBar` y `RecordHeader`:
+        las barras superiores de la app cierran todas en la misma línea.
+        `relative z-40` para que el menú de «Añadir widget» caiga por encima del
+        lienzo en vez de partirse contra él. */}
+      <header className="border-border relative z-40 flex h-12 shrink-0 items-center gap-2 border-b px-3">
+        <Link href="/dashboards" className={HEADER_ICON_BTN} aria-label="Volver a paneles">
+          <ArrowLeft size={16} />
+        </Link>
+        <Avatar name={name} size={20} className="ml-0.5 shrink-0" />
+
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           {renaming ? (
             <input
               ref={renameRef}
@@ -100,7 +131,7 @@ export function DashboardView({ dashboard, metrics }) {
                 if (e.key === 'Enter') submitRename();
                 if (e.key === 'Escape') setRenaming(false);
               }}
-              className="bg-elevated text-primary ring-accent h-7 rounded-md px-2 text-[13px] font-semibold ring-2 outline-none ring-inset"
+              className="bg-elevated text-primary ring-accent h-7 min-w-0 flex-1 rounded-md px-2 text-[13px] font-semibold ring-2 outline-none ring-inset"
               aria-label="Nombre del panel"
             />
           ) : (
@@ -108,12 +139,16 @@ export function DashboardView({ dashboard, metrics }) {
               type="button"
               onClick={() => setRenaming(true)}
               title="Clic para renombrar"
-              className="hover:bg-chip-gray/60 text-primary flex h-7 max-w-md items-center rounded-md px-2 text-[13px] font-semibold"
+              className="hover:bg-chip-gray/60 text-primary flex h-7 min-w-0 items-center rounded-md px-2 text-[13px] font-semibold"
             >
               <span className="truncate">{name}</span>
             </button>
           )}
+          {/* El recuento en terciario y tabular, igual que el de la lista de
+            paneles y el de la barra de vistas. */}
+          <span className="text-tertiary shrink-0 text-xs tabular-nums">{widgets.length}</span>
         </div>
+
         <div className="relative flex shrink-0 items-center gap-1">
           {editing && (
             <Button size="sm" variant="ghost" onClick={() => setAdding((a) => !a)}>
@@ -130,21 +165,59 @@ export function DashboardView({ dashboard, metrics }) {
           >
             {editing ? <Check size={14} /> : <Pencil size={14} />} {editing ? 'Hecho' : 'Editar'}
           </Button>
-          {adding && <AddMenu existing={widgets} onAdd={add} onClose={() => setAdding(false)} />}
+          {adding && (
+            <AddWidgetMenu existing={widgets} onAdd={add} onClose={() => setAdding(false)} />
+          )}
         </div>
-      </div>
+      </header>
 
-      {/* Lienzo sobre el GRIS de la ventana, no sobre la lámina blanca: unas
+      {/* Banda de títulos con los paneles del workspace como pestañas: la misma
+        clase, la misma altura y la misma pastilla en relieve que las pestañas de
+        la ficha. El «+» va FUERA del carril con scroll para que no se lo lleve
+        el desplazamiento cuando hay muchos paneles. */}
+      <nav
+        aria-label="Paneles"
+        className="mac-list-head flex shrink-0 items-center gap-1 pr-1.5 pl-1"
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto px-1">
+          {(panels ?? []).map((p) => {
+            const isActive = p.id === dashboard.id;
+            return (
+              <Link
+                key={p.id}
+                href={`/dashboards/${p.id}`}
+                data-active={isActive}
+                aria-current={isActive ? 'page' : undefined}
+                className="mac-tab flex shrink-0 items-center px-2.5 text-[11.5px] font-medium whitespace-nowrap"
+                title={p.name}
+              >
+                {isActive ? name : p.name}
+              </Link>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={createPanel}
+          disabled={pending}
+          className="mac-tab flex size-[22px] shrink-0 items-center justify-center disabled:opacity-50"
+          aria-label="Nuevo panel"
+          title="Nuevo panel"
+        >
+          <Plus size={13} />
+        </button>
+      </nav>
+
+      {/* Lienzo con su propio suelo (`--canvas`), no la lámina blanca: unas
         tarjetas blancas con borde sobre blanco no se leen como tarjetas, se leen
-        como recuadros. `--bg` es más oscuro que `--surface` en los dos temas, así
-        que el widget queda por encima del fondo en claro y en oscuro (al revés
-        que `--sunken`, que en oscuro es el más claro de los dos). */}
-      <div className="bg-bg min-h-0 flex-1 overflow-auto p-4">
+        como recuadros. Pero tampoco `--bg`: el rail lateral es ese mismo gris y
+        se ve justo al lado, así que la lámina desaparecía y el panel parecía un
+        hueco recortado en la ventana. `--canvas` queda ENTRE la tarjeta y el
+        fondo de la ventana en los dos temas (por eso no vale `--sunken`, que en
+        oscuro es más claro que `--surface`). */}
+      <div className="bg-canvas min-h-0 flex-1 overflow-auto p-4">
         {widgets.length === 0 ? (
-          <p className="text-tertiary text-[13px]">
-            Este panel está vacío. Pulsa <span className="font-medium">Editar</span> y añade
-            widgets.
-          </p>
+          <EmptyCanvas onAdd={startAdding} />
         ) : (
           <DndContext
             id="dashboard-view-dnd"
@@ -153,9 +226,9 @@ export function DashboardView({ dashboard, metrics }) {
             onDragEnd={onDragEnd}
           >
             <SortableContext items={widgets.map((w) => w.id)} strategy={rectSortingStrategy}>
-              <div className="grid grid-flow-dense auto-rows-[7.5rem] grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="grid grid-flow-dense auto-rows-[7.5rem] grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
                 {widgets.map((w) => (
-                  <SortableCard
+                  <WidgetCard
                     key={w.id}
                     widget={w}
                     metrics={metrics}
@@ -173,86 +246,26 @@ export function DashboardView({ dashboard, metrics }) {
   );
 }
 
-function SortableCard({ widget, metrics, editing, onRemove, onResize }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: widget.id,
-    disabled: !editing,
-  });
-  const def = WIDGETS.find((x) => x.type === widget.type);
-
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    gridColumn: `span ${widget.w}`,
-    gridRow: `span ${widget.h}`,
-  };
-
+/**
+ * Lienzo vacío. Mismo esqueleto que el estado vacío de la tabla de registros
+ * (tesela de acento, título, una línea de ayuda y la acción), para que la app
+ * no tenga dos maneras de decir «aquí todavía no hay nada».
+ */
+function EmptyCanvas({ onAdd }) {
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="bg-surface border-border flex min-h-0 flex-col rounded-xl border p-4 shadow-sm"
-    >
-      <div className="mb-2 flex h-5 items-center justify-between gap-2">
-        <p className="text-secondary truncate text-[11.5px] font-medium">
-          {def?.title ?? widget.type}
-        </p>
-        {editing && (
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={onResize}
-              className="text-tertiary hover:text-primary"
-              aria-label="Cambiar tamaño"
-              title={`Tamaño ${widget.w}×${widget.h} · clic para cambiar`}
-            >
-              <Scaling size={14} />
-            </button>
-            <button
-              type="button"
-              onClick={onRemove}
-              className="text-tertiary hover:text-danger"
-              aria-label="Quitar widget"
-            >
-              <X size={14} />
-            </button>
-            <span
-              {...attributes}
-              {...listeners}
-              className="text-tertiary hover:text-secondary cursor-grab active:cursor-grabbing"
-              aria-label="Reordenar"
-            >
-              <GripVertical size={14} />
-            </span>
-          </div>
-        )}
+    <div className="anim-fade-up flex h-full flex-col items-center justify-center gap-3 p-10 text-center">
+      <div className="bg-accent-subtle text-accent mb-1 flex size-14 items-center justify-center rounded-2xl shadow-sm">
+        <LayoutGrid size={24} />
       </div>
-      <div className="min-h-0 flex-1">
-        <Widget type={widget.type} metrics={metrics} />
-      </div>
+      <p className="text-primary text-base font-medium">Este panel está vacío</p>
+      <p className="text-secondary max-w-xs text-xs">
+        Añade widgets para seguir el pipeline, las oportunidades por etapa o el valor cerrado por
+        mes.
+      </p>
+      <Button size="sm" onClick={onAdd}>
+        <Plus size={14} /> Añadir widget
+      </Button>
     </div>
-  );
-}
-
-function AddMenu({ onAdd, onClose }) {
-  return (
-    <>
-      <div className="fixed inset-0 z-30" onClick={onClose} />
-      <div className="anim-pop mac-menu absolute top-full right-0 z-40 mt-1 max-h-80 w-64 overflow-auto p-1">
-        {WIDGETS.map((w) => (
-          <button
-            key={w.type}
-            type="button"
-            onClick={() => onAdd(w.type)}
-            className="hover:bg-accent hover:text-accent-fg text-primary group flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px]"
-          >
-            <Plus size={13} className="text-tertiary group-hover:text-accent-fg shrink-0" />
-            <span className="truncate">{w.title}</span>
-          </button>
-        ))}
-      </div>
-    </>
   );
 }
 

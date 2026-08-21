@@ -104,10 +104,39 @@ Mapa de lo que hace la app y dónde vive (visión de usuario en `README.md`):
   `.mac-list-head`, `.mac-row`, `.mac-list-fill`), aunque escrita a mano —
   columnas fijas, sin metadata, sin TanStack Table. La **última columna se
   estira**: con todas fijas, la banda de cabecera terminaba a media lámina.
-  El lienzo de widgets va sobre `--bg`, el **gris de la ventana**, no sobre la
-  lámina: unas tarjetas blancas con borde sobre blanco no se leen como tarjetas.
-  `--bg` y no `--sunken` porque tiene que ser más oscuro que la tarjeta en los
-  **dos** temas, y en oscuro `--sunken` es el más claro de los dos.
+  El lienzo de widgets tiene **suelo propio** (`--canvas`), no la lámina blanca:
+  unas tarjetas blancas con borde sobre blanco no se leen como tarjetas. Pero
+  tampoco `--bg`, que es lo que se probó primero: el rail lateral es ese mismo
+  gris y se ve justo al lado, así que la lámina desaparecía y el panel parecía un
+  hueco recortado en la ventana. `--canvas` queda **entre** la tarjeta y el fondo
+  de la ventana en los **dos** temas — por eso tampoco vale `--sunken`, que en
+  oscuro es más claro que `--surface`.
+  El **detalle de un panel** (`/dashboards/[id]`, `DashboardView`) tiene la misma
+  anatomía que una ficha de registro: barra de `h-12` (volver + nombre editable +
+  recuento) y debajo una **banda `.mac-list-head` con los paneles hermanos como
+  pestañas** (`.mac-tab`) más un «+» para crear. Que el nombre salga a la vez en
+  la barra y en la pestaña activa **no es una repetición**: es el reparto de una
+  ventana con pestañas del sistema — el título dice dónde estás (y es donde se
+  renombra), las pestañas son solo navegación. Cada widget es una **lámina
+  pequeña** (`.mac-widget`, hermana de `.mac-sheet`: mismo remate `--elev-sheet`,
+  sin `border` de 1 px) **con la misma banda de título** que la cabecera de
+  columnas de la tabla; eso es lo que hace que el panel se lea como parte de la
+  app y no como un dashboard web incrustado. En edición el **asa de arrastre es
+  la banda entera**, como la barra de título de una ventana: de `useSortable` se
+  toman solo los `listeners`, **nunca los `attributes`** (ponen `role="button"` y
+  la banda contiene botones — anidarlos es ARIA inválido y hacía que se anunciara
+  «… 2×2 cambiar Quitar widget»); los botones de dentro cortan el `pointerdown`
+  o un clic de tres píxeles se convierte en arrastre. La tarjeta **no se tiñe de
+  acento al editar**: con ocho a la vez la rejilla entera se volvía naranja y el
+  acento deja de marcar nada. El control de tamaño **dice el tamaño** (`2×2`) en
+  vez de llevar icono: en 13 px `Scaling` se leía como «abrir en otra ventana».
+  El cuerpo de la tarjeta es un **`@container`** (un widget mide entre 1/4 y 4/4
+  de la rejilla; un `md:` no distingue una tarjeta de 1×1 de una de 4×2 en la
+  misma pantalla) y `StatTile` escoge cuerpo por ahí, no por el largo del número:
+  con una escalera por longitud, cuatro cifras en fila salían cada una de un
+  tamaño. En `BarChart` la etiqueta de valor se ancla a la **columna** y se sube
+  con `bottom: calc(<pct>% + 4px)`: colgada de la barra (40 px) un importe se
+  recortaba a «2.14…».
 - **Command menu ⌘K, búsqueda global y favoritos** (`components/command-menu/`,
   `lib/search/`, `lib/favorites/`).
 - **Ajustes** (`/settings`): perfil (foto, contraseña, **idioma**, borrar cuenta),
@@ -559,6 +588,8 @@ formula-eval.js`, cálculo en `hydrate`, config en `settings.formula`, editor en
   - `.mac-sheet` — la lámina de contenido (solo redondea en `md+`).
   - `.mac-vibrancy` — fondo del rail y de las barras de navegación.
   - `.mac-menu` — material de popovers, desplegables y diálogos.
+  - `.mac-widget` — lámina pequeña (tarjeta del panel): el remate de
+    `.mac-sheet` un escalón por debajo, sin `border` de 1 px.
   - `.mac-segment` — control segmentado; el estado se lee de `aria-pressed` o
     `data-active`, sin clases condicionales en el marcado.
   - `.mac-list-head` / `.mac-tab` — la **banda de títulos** y sus pestañas. La
