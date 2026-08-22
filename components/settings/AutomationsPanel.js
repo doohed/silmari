@@ -9,6 +9,11 @@ import { SettingsGroup, SettingsRow, SettingsEmpty } from '@/components/ui/Setti
 import { Select } from '@/components/ui/Select';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import {
+  conditionInputKind,
+  defaultConditionValue,
+  operatorTakesValue,
+} from '@/lib/automations/condition-value';
+import {
   listAutomationsAction,
   createAutomationAction,
   toggleAutomationAction,
@@ -25,9 +30,6 @@ const ACTIONS = [
   { value: 'update_field', label: 'Actualizar un campo' },
   { value: 'notify', label: 'Avisar a alguien' },
 ];
-
-// Operadores sin valor a la derecha.
-const NO_VALUE = new Set(['isEmpty', 'isNotEmpty']);
 
 const OPERATOR_LABELS = {
   eq: 'es igual a',
@@ -76,6 +78,56 @@ function MemberPicker({ members, selected, onToggle }) {
   );
 }
 
+/**
+ * El control del valor de una condición, elegido por el **tipo del campo**. Un
+ * input de texto para todo era lo que dejaba escribir condiciones imposibles de
+ * cumplir: la etiqueta de un SELECT en vez de su `value`, o un «no» en un
+ * booleano que el filtro leía como `true`. Ver `lib/automations/condition-value`.
+ */
+function ConditionValueInput({ field, value, onChange }) {
+  const kind = conditionInputKind(field?.type);
+
+  if (kind === 'select') {
+    return (
+      <Select
+        value={String(value ?? '')}
+        onChange={onChange}
+        options={field?.options ?? []}
+        placeholder="Opción"
+      />
+    );
+  }
+  if (kind === 'boolean') {
+    return (
+      <Select
+        value={value === false || value === 'false' ? 'false' : 'true'}
+        onChange={(v) => onChange(v === 'true')}
+        options={[
+          { value: 'true', label: 'Sí' },
+          { value: 'false', label: 'No' },
+        ]}
+      />
+    );
+  }
+
+  const inputType =
+    kind === 'number'
+      ? 'number'
+      : kind === 'date'
+        ? 'date'
+        : kind === 'datetime'
+          ? 'datetime-local'
+          : 'text';
+  return (
+    <Input
+      type={inputType}
+      value={value ?? ''}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="valor"
+    />
+  );
+}
+
 export function AutomationsPanel({ initialAutomations, objects, members }) {
   const confirm = useConfirm();
   const [automations, setAutomations] = useState(initialAutomations);
@@ -101,7 +153,11 @@ export function AutomationsPanel({ initialAutomations, objects, members }) {
   function addCondition() {
     const f = fields[0];
     if (!f) return;
-    setConditions((c) => [...c, { fieldName: f.name, operator: f.operators[0], value: '' }]);
+    const operator = f.operators[0];
+    setConditions((c) => [
+      ...c,
+      { fieldName: f.name, operator, value: defaultConditionValue(f, operator) },
+    ]);
   }
   function setCondition(i, patch) {
     setConditions((c) => c.map((cond, j) => (j === i ? { ...cond, ...patch } : cond)));
@@ -151,7 +207,7 @@ export function AutomationsPanel({ initialAutomations, objects, members }) {
       conditions: conditions.map((c) => ({
         fieldName: c.fieldName,
         operator: c.operator,
-        value: NO_VALUE.has(c.operator) ? null : c.value,
+        value: operatorTakesValue(c.operator) ? c.value : null,
       })),
       actions,
     });
@@ -264,7 +320,15 @@ export function AutomationsPanel({ initialAutomations, objects, members }) {
                         value={c.fieldName}
                         onChange={(v) => {
                           const nf = fields.find((f) => f.name === v);
-                          setCondition(i, { fieldName: v, operator: nf?.operators[0] });
+                          const op = nf?.operators[0];
+                          // El valor se reinicia con el campo: el de un SELECT no
+                          // vale para un número, y arrastrarlo dejaba la condición
+                          // guardada con un valor de otro tipo.
+                          setCondition(i, {
+                            fieldName: v,
+                            operator: op,
+                            value: defaultConditionValue(nf, op),
+                          });
                         }}
                         options={fields.map((f) => ({ value: f.name, label: f.label }))}
                       />
@@ -272,16 +336,23 @@ export function AutomationsPanel({ initialAutomations, objects, members }) {
                     <div className="min-w-0 flex-1">
                       <Select
                         value={c.operator}
-                        onChange={(v) => setCondition(i, { operator: v })}
+                        onChange={(v) =>
+                          setCondition(i, {
+                            operator: v,
+                            value: operatorTakesValue(v)
+                              ? (c.value ?? defaultConditionValue(field, v))
+                              : null,
+                          })
+                        }
                         options={operators.map((op) => ({ value: op, label: opLabel(op) }))}
                       />
                     </div>
-                    {!NO_VALUE.has(c.operator) && (
+                    {operatorTakesValue(c.operator) && (
                       <div className="min-w-0 flex-1">
-                        <Input
-                          value={c.value ?? ''}
-                          onChange={(e) => setCondition(i, { value: e.target.value })}
-                          placeholder="valor"
+                        <ConditionValueInput
+                          field={field}
+                          value={c.value}
+                          onChange={(v) => setCondition(i, { value: v })}
                         />
                       </div>
                     )}

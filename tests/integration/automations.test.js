@@ -4,7 +4,7 @@ import { createAccount } from '@/lib/accounts/signup';
 import { _resetSubscribers } from '@/lib/events/bus';
 import { listNotifications } from '@/lib/notifications/service';
 import { getObjectBySlug } from '@/lib/metadata/object-service';
-import { deleteField } from '@/lib/metadata/field-service';
+import { createField, deleteField } from '@/lib/metadata/field-service';
 import { createRecord, getRecord } from '@/lib/records/service';
 import { listForRecord } from '@/lib/activities/service';
 import {
@@ -80,6 +80,107 @@ describe('automatizaciones · CRUD y permisos', () => {
         actions: [{ type: 'notify', config: {} }],
       }),
     ).rejects.toThrow(/desconocido/i);
+  });
+});
+
+/** Añade a Empresas un SELECT "stage" y un BOOLEAN "active". */
+async function withTypedFields(ctx) {
+  const companies = await getObjectBySlug(ctx, 'companies');
+  await createField(ctx, {
+    objectMetadataId: companies.id,
+    name: 'stage',
+    label: 'Etapa',
+    type: 'SELECT',
+    options: [
+      { value: 'nuevo', label: 'Nuevo' },
+      { value: 'cliente', label: 'Cliente' },
+    ],
+  });
+  await createField(ctx, {
+    objectMetadataId: companies.id,
+    name: 'active',
+    label: 'Activo',
+    type: 'BOOLEAN',
+  });
+}
+
+describe('automatizaciones · condiciones tipadas', () => {
+  it('una condición sobre un SELECT casa aunque se escriba la etiqueta', async () => {
+    // El caso que no disparaba nunca: el SELECT guarda `option.value` (`cliente`)
+    // y el editor pedía texto libre, así que «Cliente» no casaba con nada.
+    const ctx = await owner();
+    await withTypedFields(ctx);
+    await createAutomation(ctx, {
+      name: 'Solo clientes',
+      trigger: { event: 'record.created', objectSlug: 'companies' },
+      conditions: [{ fieldName: 'stage', operator: 'is', value: 'Cliente' }],
+      actions: [{ type: 'create_task', config: { title: 'Dar de alta' } }],
+    });
+
+    const { record, event } = await seedCompany(ctx, { name: 'Casa SA', stage: 'cliente' });
+    await runAutomationsForEvent(ctx, event);
+
+    const tasks = await listForRecord(ctx, { recordId: record.id, type: 'TASK' });
+    expect(tasks).toHaveLength(1);
+  });
+
+  it('rechaza al guardar un valor que no es una opción del SELECT', async () => {
+    const ctx = await owner();
+    await withTypedFields(ctx);
+    await expect(
+      createAutomation(ctx, {
+        name: 'Etapa inventada',
+        trigger: { event: 'record.created', objectSlug: 'companies' },
+        conditions: [{ fieldName: 'stage', operator: 'is', value: 'Prospecto' }],
+        actions: [{ type: 'create_task', config: { title: 'x' } }],
+      }),
+    ).rejects.toThrow(/no es una opción/i);
+  });
+
+  it('una condición booleana en «no» se guarda como false y casa', async () => {
+    // `Boolean('false')` es `true`: con texto libre, «este campo está en no» era
+    // inexpresable y la regla disparaba justo al revés de lo escrito.
+    const ctx = await owner();
+    await withTypedFields(ctx);
+    const auto = await createAutomation(ctx, {
+      name: 'Inactivas',
+      trigger: { event: 'record.created', objectSlug: 'companies' },
+      conditions: [{ fieldName: 'active', operator: 'eq', value: 'no' }],
+      actions: [{ type: 'create_task', config: { title: 'Reactivar' } }],
+    });
+    expect(auto.conditions[0].value).toBe(false);
+
+    const apagada = await seedCompany(ctx, { name: 'Apagada SA', active: false });
+    await runAutomationsForEvent(ctx, apagada.event);
+    expect(await listForRecord(ctx, { recordId: apagada.record.id, type: 'TASK' })).toHaveLength(1);
+
+    const encendida = await seedCompany(ctx, { name: 'Viva SA', active: true });
+    await runAutomationsForEvent(ctx, encendida.event);
+    expect(await listForRecord(ctx, { recordId: encendida.record.id, type: 'TASK' })).toHaveLength(
+      0,
+    );
+  });
+
+  it('una condición numérica se guarda como número, no como texto', async () => {
+    const ctx = await owner();
+    const companies = await getObjectBySlug(ctx, 'companies');
+    await createField(ctx, {
+      objectMetadataId: companies.id,
+      name: 'empleados',
+      label: 'Empleados',
+      type: 'NUMBER',
+    });
+    const auto = await createAutomation(ctx, {
+      name: 'Grandes',
+      trigger: { event: 'record.created', objectSlug: 'companies' },
+      conditions: [{ fieldName: 'empleados', operator: 'gt', value: '100' }],
+      actions: [{ type: 'create_task', config: { title: 'Cuenta grande' } }],
+    });
+    expect(auto.conditions[0].value).toBe(100);
+
+    const { record, event } = await seedCompany(ctx, { name: 'Grande SA', empleados: 500 });
+    await runAutomationsForEvent(ctx, event);
+    expect(await listForRecord(ctx, { recordId: record.id, type: 'TASK' })).toHaveLength(1);
   });
 });
 

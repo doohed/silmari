@@ -36,6 +36,10 @@ export default async function AutomationsPage() {
           type: f.type,
           operators: getFieldType(f.type).filterOperators,
           writable: isWritableField(f),
+          // Las opciones reales de un SELECT: el editor de condiciones las
+          // ofrece en un desplegable en vez de pedir el valor a mano, que era
+          // la forma de escribir una condición que no casaba nunca.
+          options: (f.options ?? []).map((o) => ({ value: o.value, label: o.label })),
         })),
       };
     }),
