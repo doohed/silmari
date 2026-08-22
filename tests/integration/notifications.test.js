@@ -50,7 +50,7 @@ describe('notificaciones', () => {
     expect(await unreadCount(ctx)).toBe(1);
   });
 
-  it('nunca notifica al propio actor', async () => {
+  it('por defecto no notifica al propio actor', async () => {
     const ctx = await owner();
     const created = await notifyUsers({
       workspaceId: ctx.workspaceId,
@@ -61,6 +61,20 @@ describe('notificaciones', () => {
     });
     expect(created).toBe(0);
     expect(await unreadCount(ctx)).toBe(0);
+  });
+
+  it('con excludeActor:false sí notifica al propio actor', async () => {
+    const ctx = await owner();
+    const created = await notifyUsers({
+      workspaceId: ctx.workspaceId,
+      userIds: [ctx.userId],
+      actorId: ctx.userId,
+      excludeActor: false,
+      type: 'automation',
+      title: 'Nueva empresa',
+    });
+    expect(created).toBe(1);
+    expect(await unreadCount(ctx)).toBe(1);
   });
 
   it('descarta destinatarios de tipo API key', async () => {

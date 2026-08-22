@@ -173,6 +173,27 @@ describe('automatizaciones · motor', () => {
     expect(inbox[0].title).toBe('Nueva empresa');
   });
 
+  it('avisa también al destinatario que provocó el disparo', async () => {
+    // El caso de un workspace de una persona: el mismo usuario crea el registro
+    // y es el destinatario de la regla. `notifyUsers` descarta al actor por
+    // defecto; la acción `notify` lo desactiva a propósito (ver el motor).
+    const ctx = await owner();
+    await createAutomation(ctx, {
+      name: 'Avísame a mí',
+      trigger: { event: 'record.created', objectSlug: 'companies' },
+      actions: [{ type: 'notify', config: { userIds: [ctx.userId], title: 'La creaste tú' } }],
+    });
+
+    const { record, event } = await seedCompany(ctx, { name: 'Yo Mismo SA' });
+    await runAutomationsForEvent(ctx, event);
+
+    const inbox = await listNotifications(ctx, {});
+    expect(inbox).toHaveLength(1);
+    expect(inbox[0].title).toBe('La creaste tú');
+    // Y el enlace lleva al registro, no a la lista del objeto.
+    expect(inbox[0].url).toBe(`/objects/companies/${record.id}`);
+  });
+
   it('corta la cadena al alcanzar la profundidad máxima', async () => {
     const ctx = await owner();
     await createAutomation(ctx, {
