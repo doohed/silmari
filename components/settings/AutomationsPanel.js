@@ -185,6 +185,25 @@ export function AutomationsPanel({ initialAutomations, objects, members }) {
     fieldName;
 
   /**
+   * Cola del resumen: qué pasó la última vez. «ok» a secas era una mentira útil
+   * para nadie — una acción `notify` sin destinatarios se ejecuta sin error y no
+   * avisa a nadie, y una regla cuyas condiciones no casan nunca no dejaba rastro
+   * ninguno. Ahora se distinguen los tres finales: sin efecto, omitida y ok.
+   */
+  function lastRunLabel(a) {
+    const last = a.runLog[0];
+    if (!last) {
+      if (a.skippedCount > 0) {
+        return ` · evaluada ${a.skippedCount} ${a.skippedCount === 1 ? 'vez' : 'veces'}, sin coincidencias`;
+      }
+      return ' · sin ejecuciones todavía';
+    }
+    if (!last.ok) return ' · última ejecución con error';
+    if (last.details.some((d) => !d.ok)) return ' · última ejecución sin efecto';
+    return ' · última ejecución ok';
+  }
+
+  /**
    * Resume una regla en una línea para el `hint` de su fila. Antes eran tres
    * párrafos apilados dentro de la tarjeta; en una lista agrupada, el resumen
    * tiene que caber en un renglón y el detalle vive al editar.
@@ -195,10 +214,7 @@ export function AutomationsPanel({ initialAutomations, objects, members }) {
       ? ` y ${a.conditions.length} ${a.conditions.length === 1 ? 'condición' : 'condiciones'}`
       : '';
     const acts = `${a.actions.length} ${a.actions.length === 1 ? 'acción' : 'acciones'}`;
-    const last = a.runLog.length
-      ? ` · última ejecución ${a.runLog[0].ok ? 'ok' : 'con error'}`
-      : '';
-    return `Cuando ${when} en ${objectLabel(a.trigger.objectSlug)}${conds} → ${acts}${last}`;
+    return `Cuando ${when} en ${objectLabel(a.trigger.objectSlug)}${conds} → ${acts}${lastRunLabel(a)}`;
   }
 
   return (
